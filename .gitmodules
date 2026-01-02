@@ -1,0 +1,6 @@
+[submodule "libs/FreeRTOS_cpp11"]
+	path = libs/FreeRTOS_cpp11
+	url = https://github.com/yusein-ali/FreeRTOS_cpp11.git
+[submodule "doc/FreeRTOS-Kernel-Book"]
+	path = doc/FreeRTOS-Kernel-Book
+	url = https://github.com/yusein-ali/FreeRTOS-Kernel-Book.git
