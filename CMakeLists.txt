@@ -23,15 +23,20 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
+
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
-set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
+# set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+# pull other libraries if they do not exist
 include(FREERTOS_KERNEL_import.cmake)
 include(FreeRTOS_CPP11_import.cmake)
 
 project(picoboard_freertos_test C CXX ASM)
+# Global BLE toggle for elec_c7222 modules.
+option(ENABLE_BLE "Enable BLE helpers" ON)
+
 
 # Include FreeRTOS-cpp11 library configuration
 include(FreeRTOS_Cpp11_lib.cmake)
@@ -39,10 +44,13 @@ include(FreeRTOS_Cpp11_lib.cmake)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+# elec_c7222 helpers
+include(${CMAKE_SOURCE_DIR}/libs/elec_c7222/elec_c7222.cmake)
+
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(picoboard_freertos_test
-                    main_free_rtos.cpp
+                    main_ble.cpp
                     ${FREERTOS_CPP11_SOURCES}
                 )
 
@@ -70,10 +78,12 @@ target_link_options(picoboard_freertos_test PRIVATE
 target_link_libraries(picoboard_freertos_test PRIVATE
     pico_stdlib
     FreeRTOS-Kernel-Heap4
+    pico_btstack_ble
+    pico_btstack_cyw43
+    pico_cyw43_arch_none
+    hardware_adc
+    ELEC_C7222
 )
-if (PICO_CYW43_SUPPORTED)
-    target_link_libraries(picoboard_freertos_test PRIVATE pico_cyw43_arch_none)
-endif()
 
 # Enable libstdc++ thread support so <mutex> works for the FreeRTOS C++ wrappers.
 target_compile_definitions(picoboard_freertos_test PRIVATE
