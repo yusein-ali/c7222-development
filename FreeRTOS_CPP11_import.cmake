@@ -8,7 +8,7 @@ endif()
 
 # If no path provided, download to libs/FreeRTOS-cpp11
 if ((NOT FREERTOS_CPP11_PATH OR FREERTOS_CPP11_PATH STREQUAL "") AND DEFINED CMAKE_SOURCE_DIR)
-    set(_freertos_cpp11_local_path ${CMAKE_SOURCE_DIR}/libs/FreeRTOS-cpp11)
+    set(_freertos_cpp11_local_path ${CMAKE_SOURCE_DIR}/libs/FreeRTOS_cpp11)
     if (EXISTS ${_freertos_cpp11_local_path})
         set(FREERTOS_CPP11_PATH ${_freertos_cpp11_local_path})
         message(STATUS "Using existing FreeRTOS-cpp11 at ${_freertos_cpp11_local_path}")

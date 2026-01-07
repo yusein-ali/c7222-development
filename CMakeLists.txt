@@ -26,12 +26,6 @@ endif()
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
 set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
 
-# Must be set BEFORE pico_sdk_init() or include(pico_sdk_import.cmake)
-set(SKIP_PICO_MALLOC 1)
-
-# If using C++, also disable the SDK's C++ overrides so 'new' uses your malloc
-set(PICO_CXX_DISABLE_ALLOCATION_OVERRIDES 1)
-
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 include(FREERTOS_KERNEL_import.cmake)
