@@ -6,10 +6,12 @@
 
 #include "pico/stdlib.h"
 #include <assert.h>
-#include <stdio.h>
 #include <chrono>
-#include <thread>
 #include <new>
+#include <stdio.h>
+#include <iostream>
+#include <thread>
+#include <functional>
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -24,123 +26,137 @@
 
 using namespace std::chrono_literals;
 
-int pico_led_init()
-{
+int pico_led_init() {
 #if defined(PICO_DEFAULT_LED_PIN)
-  gpio_init(PICO_DEFAULT_LED_PIN);
-  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-  return PICO_OK;
+	gpio_init(PICO_DEFAULT_LED_PIN);
+	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+	return PICO_OK;
 #elif defined(CYW43_WL_GPIO_LED_PIN)
-  return cyw43_arch_init();
+	return cyw43_arch_init();
 #else
-  return PICO_ERROR_GENERIC;
+	return PICO_ERROR_GENERIC;
 #endif
 }
 
-void pico_set_led(bool led_on)
-{
+void pico_set_led(bool led_on) {
 #if defined(PICO_DEFAULT_LED_PIN)
-  gpio_put(PICO_DEFAULT_LED_PIN, led_on);
+	gpio_put(PICO_DEFAULT_LED_PIN, led_on);
 #elif defined(CYW43_WL_GPIO_LED_PIN)
-  cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, led_on);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, led_on);
 #endif
 }
 
 std::thread led_thread;
 std::thread log_thread;
 
-static void led_task()
-{
-  vTaskPrioritySet(nullptr, tskIDLE_PRIORITY + 1);
-  
-  const auto led_delay = std::chrono::milliseconds(LED_DELAY_MS);
-  for (;;)
-  {
-    pico_set_led(true);
-    printf("LED ON (std::thread)\n");
-    std::this_thread::sleep_for(led_delay);
+static void led_task() {
+	vTaskPrioritySet(nullptr, tskIDLE_PRIORITY + 1);
 
-    pico_set_led(false);
-    printf("LED OFF (std::thread)\n");
-    std::this_thread::sleep_for(led_delay);
-  }
+	const auto led_delay = std::chrono::milliseconds(LED_DELAY_MS);
+	for(;;) {
+		pico_set_led(true);
+		printf("LED ON (std::thread)\n");
+		std::this_thread::sleep_for(led_delay);
+
+		pico_set_led(false);
+		printf("LED OFF (std::thread)\n");
+		std::this_thread::sleep_for(led_delay);
+	}
 }
 
-static void log_task()
-{
-  vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
-  for (;;)
-  {
-    printf("Low priority logger tick\n");
-    std::this_thread::sleep_for(1s);
-  }
+static void log_task() {
+	vTaskPrioritySet(nullptr, tskIDLE_PRIORITY);
+	for(;;) {
+		printf("Low priority logger tick\n");
+		std::this_thread::sleep_for(1s);
+	}
 }
-
-
 
 // 1. The Startup Logic
 void startup_wrapper(void* param) {
-	// A. Now the scheduler IS running.
 
-	// B. Create your C++ threads here
-	led_thread = std::thread{led_task};
-	led_thread.detach();
-	log_thread = std::thread{log_task};
-	log_thread.detach();
-	// The taks can actually start, run, and signal "I'm alive",
-	// so wait_for_start() will succeed.
-
-	// D. Delete this startup task (cleanup)
-	vTaskDelete(NULL);
 }
 
-int main()
-{
-  bool bRet = stdio_init_all();
-  assert(bRet != false);
-  int rc = pico_led_init();
-  hard_assert(rc == PICO_OK);
+class BaseClass{
+public:
+    static BaseClass& instance() {
+        static BaseClass instance;
+        return instance;
+    }
 
+    BaseClass(const BaseClass&) = delete;
+    BaseClass& operator=(const BaseClass&) = delete;
+    BaseClass(BaseClass&&) = delete;
+    BaseClass& operator=(BaseClass&&) = delete;
 
-  // Create the ONE raw task manually
-  // led_thread = new std::thread{led_task};
-  // log_thread = new std::thread{log_task};
-  TaskHandle_t xHandle = nullptr;
-  xTaskCreate(startup_wrapper, "Startup", 2048, NULL, 1, &xHandle);
-  hard_assert(xHandle != nullptr);
-  // vTaskCoreAffinitySet(xHandle, 1 << 0);
-  // C. Now detach works!
-  // Start Scheduler
-  vTaskStartScheduler();
+    virtual ~BaseClass() {
+        std::cout << "BaseClass destructor\n";
+    }
 
-  while (true)
-  {
-    tight_loop_contents();
-  }
+    void startup() {
+      // A. Now the scheduler IS running.
+      std::this_thread::sleep_for(100ms); // Give time for scheduler to stabilise
+      std::cout << "BaseClass startup\n";
+      // B. Create your C++ threads here
+      led_thread = std::thread{led_task};
+      led_thread.detach();
+      log_thread = std::thread{log_task};
+      log_thread.detach();
+      // The taks can actually start, run, and signal "I'm alive",
+      // so wait_for_start() will succeed.
+
+      // D. Delete this startup task (cleanup)
+      std::cout << "BaseClass startup ending, deleting task\n";
+      vTaskDelete(NULL);
+	}
+
+private:
+    BaseClass() {
+        std::cout << "BaseClass constructor\n";
+    }
+};
+
+int main() {
+	bool bRet = stdio_init_all();
+	assert(bRet != false);
+	int rc = pico_led_init();
+	hard_assert(rc == PICO_OK);
+  std::cout << "Pico LED initialized\n";
+  auto func = std::bind(&BaseClass::startup, &BaseClass::instance());
+	// Create the ONE raw task manually
+	// led_thread = new std::thread{led_task};
+	// log_thread = new std::thread{log_task};
+	// TaskHandle_t xHandle = nullptr;
+	xTaskCreate([](void*){ BaseClass::instance().startup(); }, "Startup", 2048, NULL, 1, nullptr);
+	// hard_assert(xHandle != nullptr);
+	// C. Now detach works!
+	// Start Scheduler
+	vTaskStartScheduler();
+
+	while(true) {
+		tight_loop_contents();
+	}
 }
 
 extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
 	// Breakpoint here!
 	// If you hit this, you know 100% that 'pcTaskName' (likely "Startup") ran out of stack.
-	while(1){
-
-  }
+	while(1) {}
 }
 
+// #include <stdlib.h>
 
-#include <stdlib.h>
-
-extern "C" void* __wrap_malloc(size_t size) {
-	return pvPortMalloc(size);
-}
-extern "C" void __wrap_free(void* ptr) {
-	vPortFree(ptr);
-}
-extern "C" void* __wrap_calloc(size_t num, size_t size) {
-	size_t total = num * size;
-	void* ptr = pvPortMalloc(total);
-	if(ptr)
-		memset(ptr, 0, total);
-	return ptr;
-}
+// extern "C" void* __wrap_malloc(size_t size) {
+// 	return pvPortMalloc(size);
+// }
+// extern "C" void __wrap_free(void* ptr) {
+// 	vPortFree(ptr);
+// }
+// extern "C" void* __wrap_calloc(size_t num, size_t size) {
+// 	size_t total = num * size;
+// 	void* ptr = pvPortMalloc(total);
+// 	if(ptr)
+// 		memset(ptr, 0, total);
+// 	return ptr;
+// }
 // Note: realloc is complex in Heap 4, avoid if possible or implement strictly.
