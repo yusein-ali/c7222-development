@@ -11,7 +11,7 @@
 #include <vector>
 
 
-namespace c7222::ble::gap {
+namespace c7222 {
 
 /**
  * @brief Maximum length for legacy advertising data (length + type + value).
