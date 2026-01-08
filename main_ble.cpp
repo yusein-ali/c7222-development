@@ -6,25 +6,28 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <advertisement_data.hpp>
+#include <gap.hpp>
 
 // Define a simple advertisement payload
-const uint8_t adv_data[] = {
-	// Flags: General Discoverable Mode, BR/EDR Not Supported
-	0x02,
-	0x01,
-	0x06,
-	// Name: "Pico2_BLE"
-	0x0A,
-	0x09,
-	'P',
-	'i',
-	'c',
-	'o',
-	'2',
-	'_',
-	'B',
-	'L',
-	'E'};
+// const uint8_t adv_data[] = {
+// 	// Flags: General Discoverable Mode, BR/EDR Not Supported
+// 	0x02,
+// 	0x01,
+// 	0x06,
+// 	// Name: "Pico2_BLE"
+// 	0x0A,
+// 	0x09,
+// 	'P',
+// 	'i',
+// 	'c',
+// 	'o',
+// 	'2',
+// 	'_',
+// 	'B',
+// 	'L',
+// 	'E'};
+
+c7222::AdvertisementDataBuilder adv_builder;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 // Replace this line:
@@ -57,7 +60,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packe
 		printf("BTstack is up and running.\n");
 
 		// 1. Set Advertisement Data
-		gap_advertisements_set_data(sizeof(adv_data), (uint8_t*) adv_data);
+		gap_advertisements_set_data(adv_builder.size(), const_cast<uint8_t*>(adv_builder.bytes()));
 
 		// 2. Set Advertisement Parameters (Interval: 100ms approx)
 		// min_interval * 0.625ms, max_interval * 0.625ms
@@ -87,8 +90,9 @@ void ble_app_task(void* params) {
 	(void) params;
 
 	// Generate the packet using the advertisement data class
-	c7222::AdvertisementData adv;
-
+	adv_builder.clear();
+	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::Flags, (uint8_t)0x06));
+	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::CompleteLocalName, "Pico2_BLE++", sizeof("Pico2_BLE++")));
 	
 	// Initialize CYW43 Architecture (Starts the SDK background worker)
 	if(cyw43_arch_init()) {

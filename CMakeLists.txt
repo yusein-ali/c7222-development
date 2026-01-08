@@ -44,6 +44,11 @@ include(FreeRTOS_Cpp11_lib.cmake)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+# Locate size utility for post-build size reporting.
+if (NOT DEFINED CMAKE_SIZE_UTIL OR CMAKE_SIZE_UTIL STREQUAL "")
+    find_program(CMAKE_SIZE_UTIL NAMES arm-none-eabi-size size)
+endif()
+
 # elec_c7222 helpers
 include(${CMAKE_SOURCE_DIR}/libs/elec_c7222/elec_c7222.cmake)
 
@@ -73,6 +78,7 @@ target_link_options(picoboard_freertos_test PRIVATE
     "LINKER:--wrap=malloc"
     "LINKER:--wrap=free"
     "LINKER:--wrap=calloc"
+    "LINKER:-Map=${CMAKE_BINARY_DIR}/picoboard_freertos_test.map"
 )
 # pull in common dependencies
 target_link_libraries(picoboard_freertos_test PRIVATE
@@ -97,3 +103,11 @@ pico_enable_stdio_uart(picoboard_freertos_test  0)
 pico_add_extra_outputs(picoboard_freertos_test)
 
 # add url via pico_set_program_url
+
+if (CMAKE_SIZE_UTIL)
+    add_custom_command(TARGET picoboard_freertos_test POST_BUILD
+        COMMAND ${CMAKE_SIZE_UTIL} $<TARGET_FILE:picoboard_freertos_test>
+    )
+else()
+    message(WARNING "CMAKE_SIZE_UTIL not found; size report disabled.")
+endif()
