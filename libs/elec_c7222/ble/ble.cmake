@@ -1,13 +1,23 @@
 set(ELEC_C7222_BLE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 if (DEFINED PICO_SDK_PATH AND NOT PICO_SDK_PATH STREQUAL "")
-    file(GLOB ELEC_C7222_BLE_SOURCES "${ELEC_C7222_BLE_DIR}/rpi_pico/*.cpp")
+    file(GLOB ELEC_C7222_BLE_SOURCES
+        "${ELEC_C7222_BLE_DIR}/rpi_pico/*.cpp"
+        "${ELEC_C7222_BLE_DIR}/platform/rpi_pico/*.cpp"
+    )
 else()
-    file(GLOB ELEC_C7222_BLE_SOURCES "${ELEC_C7222_BLE_DIR}/grader/*.cpp")
+    file(GLOB ELEC_C7222_BLE_SOURCES
+        "${ELEC_C7222_BLE_DIR}/grader/*.cpp"
+        "${ELEC_C7222_BLE_DIR}/platform/grader/*.cpp"
+    )
 endif()
+file(GLOB ELEC_C7222_BLE_COMMON_SOURCES "${ELEC_C7222_BLE_DIR}/src/*.cpp")
 
 add_library(ELEC_C7222_BLE INTERFACE)
-target_sources(ELEC_C7222_BLE INTERFACE ${ELEC_C7222_BLE_SOURCES})
+target_sources(ELEC_C7222_BLE INTERFACE 
+                    ${ELEC_C7222_BLE_SOURCES} 
+                    ${ELEC_C7222_BLE_COMMON_SOURCES})
+                    
 target_include_directories(ELEC_C7222_BLE INTERFACE "${ELEC_C7222_BLE_DIR}/include")
 
 # Submodules (only GAP for now)

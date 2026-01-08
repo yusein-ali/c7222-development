@@ -540,13 +540,33 @@ class AdvertisementDataBuilder {
 			uint8_t length = data_[index];
 			AdvertisementDataType type = static_cast<AdvertisementDataType>(data_[index + 1]);
 			size_t value_size = length - 1;
-			AdvertisementData ad(type, &data_[index + 2], value_size);
-			ads.push_back(ad);
+			ads.emplace_back(type, &data_[index + 2], value_size);
 			index += length + 1;
 		}
 		return ads;
 	}
 
+	/**
+	 * @brief Decode a raw advertising payload buffer into a list of AD structures.
+	 *
+	 * @param adv_data Pointer to raw advertising bytes.
+	 * @param adv_data_size Total buffer size in bytes.
+	 * @return List of decoded AD structures.
+	 */
+
+	static std::list<AdvertisementData> decode_buffer_to_advertisement_data_list(const uint8_t* adv_data, size_t adv_data_size) {
+		std::list<AdvertisementData> ads;
+		size_t index = 0;
+		while(index < adv_data_size) {
+			uint8_t length = adv_data[index];
+			AdvertisementDataType type = static_cast<AdvertisementDataType>(adv_data[index +1]);
+			size_t value_size = length - 1;
+			ads.emplace_back(type, &adv_data[index + 2], value_size);
+			index += length + 1;
+		}
+		return ads;
+	}
+	
   private:
 	/**
 	 * @brief Stored raw advertising payload bytes.
