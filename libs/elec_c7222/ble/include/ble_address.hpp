@@ -39,27 +39,6 @@ class BleAddress {
 	BleAddress() = default;
 
 	/**
-	 * @brief Construct from a raw Bluetooth address.
-	 *
-	 * @param address Raw Bluetooth address (6 bytes).
-	 * @param type Address type (defaults to Unknown).
-	 */
-	explicit BleAddress(const RawAddress& address, AddressType type = AddressType::Unknown)
-		: type_(type),
-		  address_(address) {}
-
-	/**
-	 * @brief Construct from a raw Bluetooth address array.
-	 *
-	 * @param address Raw Bluetooth address (6 bytes).
-	 * @param type Address type (defaults to Unknown).
-	 */
-	explicit BleAddress(const uint8_t (&address)[kLength], AddressType type = AddressType::Unknown)
-		: type_(type) {
-		std::copy(address, address + kLength, address_.begin());
-	}
-
-	/**
 	 * @brief Construct from address type and raw Bluetooth address.
 	 *
 	 * @param type Address type.
@@ -69,13 +48,7 @@ class BleAddress {
 		: type_(type),
 		  address_(address) {}
 
-	/**
-	 * @brief Construct from address type and raw Bluetooth address array.
-	 *
-	 * @param type Address type.
-	 * @param address Raw Bluetooth address (6 bytes).
-	 */
-	BleAddress(AddressType type, const uint8_t (&address)[kLength])
+	BleAddress(AddressType type, const uint8_t address[kLength])
 		: type_(type) {
 		std::copy(address, address + kLength, address_.begin());
 	}
