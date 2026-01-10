@@ -5,13 +5,14 @@
 #ifndef TEMPLATE_BLE_GAP_ADVERTISEMENT_DATA_HPP
 #define TEMPLATE_BLE_GAP_ADVERTISEMENT_DATA_HPP
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <iosfwd>
 #include <list>
 #include <type_traits>
 #include <vector>
-#include <algorithm>
 
 namespace c7222 {
 
@@ -45,6 +46,14 @@ enum class AdvertisementDataType : uint8_t {
  */
 class AdvertisementData {
   public:
+	enum class Flags : uint8_t {
+		LE_Limited_Discoverable_Mode = 0x01,
+		LE_General_Discoverable_Mode = 0x02,
+		BR_EDR_Not_Supported = 0x04,
+		Simultaneous_LE_and_BR_EDR_Controller = 0x08,
+		Simultaneous_LE_and_BR_EDR_Host = 0x10,
+		All = 0x1f,
+	};
 
 	/**
 	 * @brief Build an AD structure from a byte vector.
@@ -79,7 +88,7 @@ class AdvertisementData {
 	template <typename T> AdvertisementData(AdvertisementDataType type, const T* object_ptr, size_t elem_count) {
 		static_assert(!std::is_pointer<T>::value, "object_ptr must point to a concrete type");
 		// static_assert(std::is_array<T>::value, "object_ptr must be an array type");
-		build(type, reinterpret_cast<const std::uint8_t*>(object_ptr), sizeof(T)*elem_count);
+		build(type, reinterpret_cast<const std::uint8_t*>(object_ptr), sizeof(T) * elem_count);
 	}
 
 	/**
@@ -99,7 +108,7 @@ class AdvertisementData {
 		if(std::is_object<T>::value)
 			build(type, reinterpret_cast<const std::uint8_t*>(&object_ref), sizeof(T));
 		else {
-			T obj = object_ref; 
+			T obj = object_ref;
 			build(type, reinterpret_cast<const std::uint8_t*>(&obj), sizeof(T));
 		}
 	}
@@ -182,7 +191,8 @@ class AdvertisementData {
 		new_data.insert(new_data.end(), other.data().cbegin(), other.data().cend());
 		return new_data;
 	}
-
+	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad);
+	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData::Flags& flag);
 	/**
 	 * @brief Validate the AD length field for a given type.
 	 *
@@ -293,7 +303,7 @@ class AdvertisementData {
 			__builtin_trap();
 		}
 
-		assert(validate_length(type, size+1) && "Invalid AdvertisementData size for given type");
+		assert(validate_length(type, size + 1) && "Invalid AdvertisementData size for given type");
 
 		const size_t total = size + ADVERTISEMENT_DATA_STRUCT_HEADER_OVERHEAD;
 		if(total > ADVERTISEMENT_DATA_LEGACY_MAX_SIZE) {
@@ -321,7 +331,7 @@ class AdvertisementData {
  * AdvertisementData objects. The caller is responsible for ensuring
  * the combined size stays within the legacy 31-byte limit.
  */
-std::vector<uint8_t> operator+(const AdvertisementData& lhs, const AdvertisementData& rhs) {
+inline std::vector<uint8_t> operator+(const AdvertisementData& lhs, const AdvertisementData& rhs) {
 	std::vector<uint8_t> combined;
 	combined.reserve(lhs.size() + rhs.size());
 	combined.insert(combined.end(), lhs.data().cbegin(), lhs.data().cend());
@@ -340,7 +350,7 @@ class AdvertisementDataBuilder {
 	/**
 	 * @brief Create an empty builder.
 	 */
-	AdvertisementDataBuilder(){
+	AdvertisementDataBuilder() {
 		data_.reserve(ADVERTISEMENT_DATA_LEGACY_MAX_SIZE);
 	}
 
@@ -498,15 +508,14 @@ class AdvertisementDataBuilder {
 		std::list<AdvertisementData> ads = ad.to_advertisement_data_list();
 		std::list<AdvertisementData> my_ads = to_advertisement_data_list();
 
-		for(const auto& a : ads) {
-			auto it = std::find_if(my_ads.cbegin(), my_ads.cend(),
-								   [&a](const AdvertisementData& existing_ad) {
-									   return existing_ad.data() == a.data();
-								   });
+		for(const auto& a: ads) {
+			auto it = std::find_if(my_ads.cbegin(), my_ads.cend(), [&a](const AdvertisementData& existing_ad) {
+				return existing_ad.data() == a.data();
+			});
 			if(it == my_ads.cend()) {
 				add(a);
 			} else {
-				// already exists, so we must hard-assert 
+				// already exists, so we must hard-assert
 				assert(false && "AdvertisementData already exists in the builder");
 			}
 		}
@@ -554,19 +563,22 @@ class AdvertisementDataBuilder {
 	 * @return List of decoded AD structures.
 	 */
 
-	static std::list<AdvertisementData> decode_buffer_to_advertisement_data_list(const uint8_t* adv_data, size_t adv_data_size) {
+	static std::list<AdvertisementData> decode_buffer_to_advertisement_data_list(const uint8_t* adv_data,
+																				 size_t adv_data_size) {
 		std::list<AdvertisementData> ads;
 		size_t index = 0;
 		while(index < adv_data_size) {
 			uint8_t length = adv_data[index];
-			AdvertisementDataType type = static_cast<AdvertisementDataType>(adv_data[index +1]);
+			AdvertisementDataType type = static_cast<AdvertisementDataType>(adv_data[index + 1]);
 			size_t value_size = length - 1;
 			ads.emplace_back(type, &adv_data[index + 2], value_size);
 			index += length + 1;
 		}
 		return ads;
 	}
-	
+
+	friend std::ostream& operator<<(std::ostream& os, const AdvertisementDataBuilder& adb);
+
   private:
 	/**
 	 * @brief Stored raw advertising payload bytes.
@@ -575,5 +587,62 @@ class AdvertisementDataBuilder {
 };
 
 } // namespace c7222
+
+constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs, c7222::AdvertisementData::Flags rhs) {
+	return static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs);
+}
+constexpr uint8_t operator|(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
+	uint8_t ret = lhs | static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+constexpr uint8_t operator|=(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
+	uint8_t ret = lhs | static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
+	uint8_t ret = static_cast<uint8_t>(lhs) | rhs;
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+
+constexpr uint8_t operator&(c7222::AdvertisementData::Flags lhs, c7222::AdvertisementData::Flags rhs) {
+	return static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs);
+}
+
+constexpr uint8_t operator&(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
+	uint8_t ret = lhs & static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+
+constexpr uint8_t operator&=(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
+	uint8_t ret = lhs & static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+
+constexpr uint8_t operator&(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
+	uint8_t ret = static_cast<uint8_t>(lhs) & rhs;
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+
+constexpr uint8_t operator^(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
+	uint8_t ret = lhs ^ static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+constexpr uint8_t operator^=(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
+	uint8_t ret = lhs ^ static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
+constexpr uint8_t operator^(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
+	uint8_t ret = static_cast<uint8_t>(lhs) & rhs;
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	return ret;
+}
 
 #endif // TEMPLATE_BLE_GAP_ADVERTISEMENT_DATA_HPP
