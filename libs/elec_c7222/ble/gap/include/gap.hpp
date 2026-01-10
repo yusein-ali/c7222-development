@@ -1,6 +1,6 @@
 /**
  * @file gap.hpp
- * @brief GAP event definitions and handlers.
+ * @brief Provides a C++ wrapper for the BTstack Generic Access Profile (GAP).
  */
 #ifndef ELEC_C7222_BLE_GAP_HPP
 #define ELEC_C7222_BLE_GAP_HPP
@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 
+#include "advertisement_data.hpp"
 #include "ble_address.hpp"
 #include "ble_error.hpp"
 #include "non_copyable.hpp"
@@ -22,304 +23,451 @@ enum class BleError : uint8_t;
 
 using ConnectionHandle = uint16_t;
 
+/**
+ * @class Gap
+ * @brief Manages Generic Access Profile (GAP) functionality for BLE.
+ *
+ * @details
+ * This class provides a high-level, object-oriented interface for managing the
+ * BLE GAP layer, acting as a C++ wrapper around the underlying C-based BTstack
+ * API. It simplifies common GAP operations such as advertising, scanning, and
+ * connection management by maintaining state and handling HCI event dispatching.
+ *
+ * The `Gap` class is implemented as a singleton, accessible via `getInstance()`,
+ * ensuring a single point of control for the device's GAP layer.
+ *
+ * ---
+ * ### Design Logic
+ *
+ * The class abstracts away the low-level details of the BTstack. It works by:
+ * 1.  **Configuration Caching:** Storing advertising parameters, data, and other
+ *     settings within the class.
+ * 2.  **State Management:** Tracking the advertising state (`isAdvertisingEnabled()`)
+ *     and connection status (`isConnected()`).
+ * 3.  **Event-Driven Callbacks:** Using the `EventHandler` interface, which users
+ *     can implement to react to BLE events (e.g., connection, disconnection,
+ *     advertising reports) in a clean, C++ idiomatic way.
+ * 4.  **HCI Event Dispatching:** The `dispatch_ble_hci_packet` method is the entry
+ *     point for raw HCI events from the BTstack, which are then parsed and
+ *     forwarded to the appropriate `EventHandler` methods.
+ *
+ * ---
+ * ### Advertising Configuration
+ *
+ * To start advertising, you must configure three main components:
+ * 1.  **Advertising Parameters:** Define the "how" of advertising.
+ *     - **Type:** Connectable, scannable, non-connectable, etc.
+ *     - **Interval:** The frequency of advertising packets.
+ *     - **Channels:** Which BLE channels to advertise on.
+ *     This is configured using `setAdvertisingParameters()`.
+ *
+ * 2.  **Advertising Data:** The main payload (up to 31 bytes) that is broadcast
+ *     to all listening devices. This typically includes flags and the device name.
+ *     This is configured using `setAdvertisingData()`.
+ *
+ * 3.  **Scan Response Data (Optional):** An additional 31-byte payload that a
+ *     central device can request after seeing the initial advertisement. This is
+ *     often used for supplementary information that doesn't fit in the main payload.
+ *     This is configured using `setScanResponseData()`.
+ *
+ * ### Applying Configurations and Utilities
+ *
+ * - **`setAdvertisingParameters(const AdvertisementParameters& params)`:** Takes a struct
+ *   that defines the advertising behavior. A default-constructed `AdvertisementParameters`
+ *   provides standard connectable, undirected advertising settings.
+ *
+ * - **`setAdvertisingData(...)` / `setScanResponseData(...)`:** These methods accept
+ *   a raw pointer and length. For convenience, `setAdvertisingData` is overloaded to
+ *   accept a `std::vector<uint8_t>` or an `AdvertisementDataBuilder` instance, which
+ *   is the recommended utility for safely constructing valid advertising payloads.
+ *
+ * - **`startAdvertising()` / `stopAdvertising()`:** Simple methods to enable or
+ *   disable advertising.
+ *
+ * ### Dynamic Data Updates
+ *
+ * You can update advertising or scan response data at any time, even while
+ * advertising is active. The `setAdvertisingData` and `setScanResponseData` methods
+ * will automatically handle the underlying requirements of the RPi Pico BLE stack:
+ * they temporarily stop advertising, apply the new data, and restart advertising
+ * if it was previously enabled. This ensures a seamless update without manual
+ * intervention.
+ *
+ * ---
+ * ### Complete Code Example
+ *
+ * Below is a complete example of setting up and starting a connectable BLE
+ * advertisement with a device name.
+ *
+ * ```cpp
+ * #include "gap.hpp"
+ * #include "advertisement_data.hpp"
+ * #include <iostream>
+ *
+ * // --- 1. Implement an event handler ---
+ * class MyGapEventHandler : public c7222::Gap::EventHandler {
+ * public:
+ *     void onAdvertisingStart(uint8_t status) const override {
+ *         if (status == 0) {
+ *             std::cout << "Advertising started successfully." << std::endl;
+ *         } else {
+ *             std::cout << "Failed to start advertising, status: " << (int)status << std::endl;
+ *         }
+ *     }
+ *
+ *     void onConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
+ *                               const c7222::BleAddress& address,
+ *                               uint16_t, uint16_t, uint16_t) const override {
+ *         if (status == 0) {
+ *             std::cout << "Device connected: " << address << std::endl;
+ *         }
+ *     }
+ *
+ *     void onDisconnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
+ *                                  uint8_t reason) const override {
+ *         std::cout << "Device disconnected, reason: " << (int)reason << std::endl;
+ *         // After disconnection, we can restart advertising.
+ *         c7222::Gap::getInstance().startAdvertising();
+ *         std::cout << "Advertising restarted." << std::endl;
+ *     }
+ * };
+ *
+ * // --- Main application logic ---
+ * void setup_ble_advertising() {
+ *     // Get the singleton instance of the Gap class.
+ *     auto& gap = c7222::Gap::getInstance();
+ *
+ *     // --- 2. Register the event handler ---
+ *     // Note: The handler instance must exist for the lifetime of the application.
+ *     static MyGapEventHandler my_handler;
+ *     gap.addEventHandler(my_handler);
+ *
+ *     // --- 3. Configure advertising parameters ---
+ *     // We can use the default parameters for standard connectable advertising.
+ *     c7222::Gap::AdvertisementParameters params;
+ *     // Set a custom interval: 200ms to 250ms
+ *     // Interval is in units of 0.625 ms, so 320 * 0.625 = 200ms, 400 * 0.625 = 250ms
+ *     params.min_interval = 320;
+ *     params.max_interval = 400;
+ *     gap.setAdvertisingParameters(params);
+ *
+ *     // --- 4. Build and set advertising data ---
+ *     c7222::AdvertisementDataBuilder ad_builder;
+ *     ad_builder.add(c7222::AdvertisementData::Type::Flags,
+ *                    c7222::AdvertisementData::Flags::LeGeneralDiscoverable |
+ *                    c7222::AdvertisementData::Flags::BrEdrNotSupported);
+ *     ad_builder.add(c7222::AdvertisementData::Type::CompleteLocalName, "PicoW-BLE");
+ *     gap.setAdvertisingData(ad_builder);
+ *
+ *     // --- 5. Start advertising ---
+ *     gap.startAdvertising();
+ * }
+ *
+ * // In your main function, you would call setup_ble_advertising()
+ * // and then process BLE events in your main loop.
+ * // For example, in a loop:
+ * // ble_stack_process();
+ *
+ * ```
+ */
 class Gap : public NonCopyableNonMovable {
-	public:
-	  /**
-	   * @brief Event IDs used by Gap::EventHandler.
-	   */
-	  enum class EventId : uint8_t {
-		  /**
-		   * Security level update for an active connection.
-		   * BTstack event: GAP_EVENT_SECURITY_LEVEL.
-		   */
-		  SecurityLevel,
-		  /**
-		   * Dedicated bonding procedure finished with status and peer address.
-		   * BTstack event: GAP_EVENT_DEDICATED_BONDING_COMPLETED.
-		   */
-		  DedicatedBondingCompleted,
-		  /**
-		   * Legacy advertising report while scanning.
-		   * BTstack event: GAP_EVENT_ADVERTISING_REPORT.
-		   */
-		  AdvertisingReport,
-		  /**
-		   * Extended advertising report while scanning.
-		   * BTstack event: GAP_EVENT_EXTENDED_ADVERTISING_REPORT.
-		   */
-		  ExtendedAdvertisingReport,
-		  /**
-		   * Classic inquiry result payload received.
-		   * BTstack event: GAP_EVENT_INQUIRY_RESULT.
-		   */
-		  InquiryResult,
-		  /**
-		   * Inquiry procedure completed.
-		   * BTstack event: GAP_EVENT_INQUIRY_COMPLETE.
-		   */
-		  InquiryComplete,
-		  /**
-		   * RSSI measurement result for a connection.
-		   * BTstack event: GAP_EVENT_RSSI_MEASUREMENT.
-		   */
-		  RssiMeasurement,
-		  /**
-		   * Local out-of-band data generated or available.
-		   * BTstack event: GAP_EVENT_LOCAL_OOB_DATA.
-		   */
-		  LocalOobData,
-		  /**
-		   * Pairing procedure has started.
-		   * BTstack event: GAP_EVENT_PAIRING_STARTED.
-		   */
-		  PairingStarted,
-		  /**
-		   * Pairing procedure has completed with status.
-		   * BTstack event: GAP_EVENT_PAIRING_COMPLETE.
-		   */
-		  PairingComplete,
-		  /**
-		   * A connection was terminated with a reason code.
-		   * BTstack event: HCI_EVENT_DISCONNECTION_COMPLETE.
-		   */
-		  DisconnectionComplete,
-		  /**
-		   * Generic HCI command completion event (check opcode for details).
-		   * BTstack event: HCI_EVENT_COMMAND_COMPLETE.
-		   */
-		  CommandComplete,
-		  /**
-		   * Scan request received by an advertiser.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED.
-		   */
-		  LeScanRequestReceived,
-		  /**
-		   * LE scan procedure timed out.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_TIMEOUT.
-		   */
-		  LeScanTimeout,
-		  /**
-		   * Periodic advertising sync established.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
-		   */
-		  LePeriodicAdvertisingSyncEstablished,
-		  /**
-		   * Periodic advertising report received.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT.
-		   */
-		  LePeriodicAdvertisingReport,
-		  /**
-		   * Periodic advertising sync lost.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_LOST.
-		   */
-		  LePeriodicAdvertisingSyncLost,
-		  /**
-		   * LE connection complete (legacy subevent).
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_COMPLETE.
-		   */
-		  LeConnectionComplete,
-		  /**
-		   * LE enhanced connection complete (addresses included).
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE.
-		   */
-		  LeEnhancedConnectionComplete,
-		  /**
-		   * Remote device requests connection parameter updates.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST.
-		   */
-		  LeRemoteConnectionParameterRequest,
-		  /**
-		   * Connection parameters update completed.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE.
-		   */
-		  LeConnectionUpdateComplete,
-		  /**
-		   * LE PHY update procedure completed.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE.
-		   */
-		  LePhyUpdateComplete,
-		  /**
-		   * LE data length update reported for a connection.
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE.
-		   */
-		  LeDataLengthChange,
-		  /**
-		   * Extended advertising set terminated (timeout or connection).
-		   * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED.
-		   */
-		  LeAdvertisingSetTerminated,
-		  /**
-		   * L2CAP connection parameter update request event.
-		   * BTstack event: L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST.
-		   */
-		  L2capConnectionParameterUpdateRequest,
-		  /**
-		   * Privacy enabled and ready; raised after successful configuration.
-		   * BTstack: no dedicated event.
-		   */
-		  PrivacyEnabled
-	  };
-	  /**
-	   * @brief Extended advertising event properties (bitfield).
-	   */
-	  enum class AdvertisingEventType : uint16_t {
-		  /**
-		   * Advertising is connectable.
-		   */
-		  Connectable = 0x0001,
-		  /**
-		   * Advertising is scannable.
-		   */
-		  Scannable = 0x0002,
-		  /**
-		   * Advertising is directed to a specific peer.
-		   */
-		  Directed = 0x0004,
-		  /**
-		   * High duty cycle directed advertising.
-		   */
-		  HighDutyCycle = 0x0008,
-		  /**
-		   * Legacy advertising PDUs.
-		   */
-		  Legacy = 0x0010,
-		  /**
-		   * Advertiser address is omitted from the report.
-		   */
-		  Anonymous = 0x0020,
-		  /**
-		   * Include the TX power in the report.
-		   */
-		  IncludeTxPower = 0x0040
-	  };
+  public:
+	/**
+	 * @brief Event IDs used by Gap::EventHandler.
+	 */
+	enum class EventId : uint8_t {
+		/**
+		 * Security level update for an active connection.
+		 * BTstack event: GAP_EVENT_SECURITY_LEVEL.
+		 */
+		SecurityLevel,
+		/**
+		 * Dedicated bonding procedure finished with status and peer address.
+		 * BTstack event: GAP_EVENT_DEDICATED_BONDING_COMPLETED.
+		 */
+		DedicatedBondingCompleted,
+		/**
+		 * Legacy advertising report while scanning.
+		 * BTstack event: GAP_EVENT_ADVERTISING_REPORT.
+		 */
+		AdvertisingReport,
+		/**
+		 * Extended advertising report while scanning.
+		 * BTstack event: GAP_EVENT_EXTENDED_ADVERTISING_REPORT.
+		 */
+		ExtendedAdvertisingReport,
+		/**
+		 * Classic inquiry result payload received.
+		 * BTstack event: GAP_EVENT_INQUIRY_RESULT.
+		 */
+		InquiryResult,
+		/**
+		 * Inquiry procedure completed.
+		 * BTstack event: GAP_EVENT_INQUIRY_COMPLETE.
+		 */
+		InquiryComplete,
+		/**
+		 * RSSI measurement result for a connection.
+		 * BTstack event: GAP_EVENT_RSSI_MEASUREMENT.
+		 */
+		RssiMeasurement,
+		/**
+		 * Local out-of-band data generated or available.
+		 * BTstack event: GAP_EVENT_LOCAL_OOB_DATA.
+		 */
+		LocalOobData,
+		/**
+		 * Pairing procedure has started.
+		 * BTstack event: GAP_EVENT_PAIRING_STARTED.
+		 */
+		PairingStarted,
+		/**
+		 * Pairing procedure has completed with status.
+		 * BTstack event: GAP_EVENT_PAIRING_COMPLETE.
+		 */
+		PairingComplete,
+		/**
+		 * A connection was terminated with a reason code.
+		 * BTstack event: HCI_EVENT_DISCONNECTION_COMPLETE.
+		 */
+		DisconnectionComplete,
+		/**
+		 * Generic HCI command completion event (check opcode for details).
+		 * BTstack event: HCI_EVENT_COMMAND_COMPLETE.
+		 */
+		CommandComplete,
+		/**
+		 * Scan request received by an advertiser.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED.
+		 */
+		LeScanRequestReceived,
+		/**
+		 * LE scan procedure timed out.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_TIMEOUT.
+		 */
+		LeScanTimeout,
+		/**
+		 * Periodic advertising sync established.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
+		 */
+		LePeriodicAdvertisingSyncEstablished,
+		/**
+		 * Periodic advertising report received.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT.
+		 */
+		LePeriodicAdvertisingReport,
+		/**
+		 * Periodic advertising sync lost.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_LOST.
+		 */
+		LePeriodicAdvertisingSyncLost,
+		/**
+		 * LE connection complete (legacy subevent).
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_COMPLETE.
+		 */
+		LeConnectionComplete,
+		/**
+		 * LE enhanced connection complete (addresses included).
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE.
+		 */
+		LeEnhancedConnectionComplete,
+		/**
+		 * Remote device requests connection parameter updates.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST.
+		 */
+		LeRemoteConnectionParameterRequest,
+		/**
+		 * Connection parameters update completed.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE.
+		 */
+		LeConnectionUpdateComplete,
+		/**
+		 * LE PHY update procedure completed.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE.
+		 */
+		LePhyUpdateComplete,
+		/**
+		 * LE data length update reported for a connection.
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE.
+		 */
+		LeDataLengthChange,
+		/**
+		 * Extended advertising set terminated (timeout or connection).
+		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED.
+		 */
+		LeAdvertisingSetTerminated,
+		/**
+		 * L2CAP connection parameter update request event.
+		 * BTstack event: L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST.
+		 */
+		L2capConnectionParameterUpdateRequest,
+		/**
+		 * Privacy enabled and ready; raised after successful configuration.
+		 * BTstack: no dedicated event.
+		 */
+		PrivacyEnabled
+	};
+	/**
+	 * @brief Extended advertising event properties (bitfield).
+	 */
+	enum class AdvertisingEventType : uint16_t {
+		/**
+		 * Advertising is connectable.
+		 */
+		Connectable = 0x0001,
+		/**
+		 * Advertising is scannable.
+		 */
+		Scannable = 0x0002,
+		/**
+		 * Advertising is directed to a specific peer.
+		 */
+		Directed = 0x0004,
+		/**
+		 * High duty cycle directed advertising.
+		 */
+		HighDutyCycle = 0x0008,
+		/**
+		 * Legacy advertising PDUs.
+		 */
+		Legacy = 0x0010,
+		/**
+		 * Advertiser address is omitted from the report.
+		 */
+		Anonymous = 0x0020,
+		/**
+		 * Include the TX power in the report.
+		 */
+		IncludeTxPower = 0x0040
+	};
 
-	  /**
-	   * @brief LE PHY values reported in extended advertising reports.
-	   */
-	  enum class Phy : uint8_t {
-		  /**
-		   * No PHY specified / not available.
-		   */
-		  None = 0x00,
-		  /**
-		   * LE 1M PHY.
-		   */
-		  Le1M = 0x01,
-		  /**
-		   * LE 2M PHY.
-		   */
-		  Le2M = 0x02,
-		  /**
-		   * LE Coded PHY.
-		   */
-		  LeCoded = 0x03
-	  };
+	/**
+	 * @brief LE PHY values reported in extended advertising reports.
+	 */
+	enum class Phy : uint8_t {
+		/**
+		 * No PHY specified / not available.
+		 */
+		None = 0x00,
+		/**
+		 * LE 1M PHY.
+		 */
+		Le1M = 0x01,
+		/**
+		 * LE 2M PHY.
+		 */
+		Le2M = 0x02,
+		/**
+		 * LE Coded PHY.
+		 */
+		LeCoded = 0x03
+	};
 
-	  /**
-	   * @brief Legacy advertising types for LE advertising parameters.
-	   */
-	  enum class AdvertisingType : uint8_t {
-		  /**
-		   * Connectable undirected advertising (ADV_IND).
-		   */
-		  AdvInd = 0x00,
-		  /**
-		   * Connectable directed advertising (ADV_DIRECT_IND).
-		   */
-		  AdvDirectInd = 0x01,
-		  /**
-		   * Scannable undirected advertising (ADV_SCAN_IND).
-		   */
-		  AdvScanInd = 0x02,
-		  /**
-		   * Non-connectable undirected advertising (ADV_NONCONN_IND).
-		   */
-		  AdvNonConnInd = 0x03
-	  };
+	/**
+	 * @brief Legacy advertising types for LE advertising parameters.
+	 */
+	enum class AdvertisingType : uint8_t {
+		/**
+		 * Connectable undirected advertising (ADV_IND).
+		 */
+		AdvInd = 0x00,
+		/**
+		 * Connectable directed advertising (ADV_DIRECT_IND).
+		 */
+		AdvDirectInd = 0x01,
+		/**
+		 * Scannable undirected advertising (ADV_SCAN_IND).
+		 */
+		AdvScanInd = 0x02,
+		/**
+		 * Non-connectable undirected advertising (ADV_NONCONN_IND).
+		 */
+		AdvNonConnInd = 0x03
+	};
 
-	  /**
-	   * @brief Direct address type for directed advertising.
-	   */
-	  enum class DirectAddressType : uint8_t {
-		  /**
-		   * Public device address.
-		   */
-		  Public = 0x00,
-		  /**
-		   * Random device address.
-		   */
-		  Random = 0x01
-	  };
+	/**
+	 * @brief Direct address type for directed advertising.
+	 */
+	enum class DirectAddressType : uint8_t {
+		/**
+		 * Public device address.
+		 */
+		Public = 0x00,
+		/**
+		 * Random device address.
+		 */
+		Random = 0x01
+	};
 
-	  /**
-	   * @brief Advertising channel map bitfield.
-	   */
-	  enum class AdvertisingChannelMap : uint8_t {
-		  /**
-		   * Channel 37 enabled.
-		   */
-		  Channel37 = 0x01,
-		  /**
-		   * Channel 38 enabled.
-		   */
-		  Channel38 = 0x02,
-		  /**
-		   * Channel 39 enabled.
-		   */
-		  Channel39 = 0x04,
-		  /**
-		   * All advertising channels enabled (37, 38, 39).
-		   */
-		  All = 0x07
-	  };
+	/**
+	 * @brief Advertising channel map bitfield.
+	 */
+	enum class AdvertisingChannelMap : uint8_t {
+		/**
+		 * Channel 37 enabled.
+		 */
+		Channel37 = 0x01,
+		/**
+		 * Channel 38 enabled.
+		 */
+		Channel38 = 0x02,
+		/**
+		 * Channel 39 enabled.
+		 */
+		Channel39 = 0x04,
+		/**
+		 * All advertising channels enabled (37, 38, 39).
+		 */
+		All = 0x07
+	};
 
-	  /**
-	   * @brief Advertising filter policy.
-	   */
-	  enum class AdvertisingFilterPolicy : uint8_t {
-		  /**
-		   * Allow any scan and any connect request.
-		   */
-		  ScanAnyConnectAny = 0x00,
-		  /**
-		   * Allow scan from whitelist, connect from any.
-		   */
-		  ScanWhitelistConnectAny = 0x01,
-		  /**
-		   * Allow scan from any, connect from whitelist.
-		   */
-		  ScanAnyConnectWhitelist = 0x02,
-		  /**
-		   * Allow scan and connect from whitelist only.
-		   */
-		  ScanWhitelistConnectWhitelist = 0x03
-	  };
+	/**
+	 * @brief Advertising filter policy.
+	 */
+	enum class AdvertisingFilterPolicy : uint8_t {
+		/**
+		 * Allow any scan and any connect request.
+		 */
+		ScanAnyConnectAny = 0x00,
+		/**
+		 * Allow scan from whitelist, connect from any.
+		 */
+		ScanWhitelistConnectAny = 0x01,
+		/**
+		 * Allow scan from any, connect from whitelist.
+		 */
+		ScanAnyConnectWhitelist = 0x02,
+		/**
+		 * Allow scan and connect from whitelist only.
+		 */
+		ScanWhitelistConnectWhitelist = 0x03
+	};
 
-	  struct AdvertisingReport {
-		  /**
-		   * Advertising event properties.
-		   */
-		  AdvertisingEventType advertising_event_type;
-		  /**
-		   * Advertiser address.
-		   */
-		  BleAddress address;
-		  /**
-		   * RSSI in dBm (signed).
-		   */
-		  int8_t rssi;
-		  /**
-		   * Advertising data payload (valid during callback only).
-		   */
-		  const uint8_t* data;
-		  /**
-		   * Number of bytes in the advertising data payload.
-		   */
-		  uint8_t data_length;
-		  friend std::ostream& operator<<(std::ostream& os, const AdvertisingReport& ar);
-	  };
+	struct AdvertisingReport {
+		/**
+		 * Advertising event properties.
+		 */
+		AdvertisingEventType advertising_event_type;
+		/**
+		 * Advertiser address.
+		 */
+		BleAddress address;
+		/**
+		 * RSSI in dBm (signed).
+		 */
+		int8_t rssi;
+		/**
+		 * Advertising data payload (valid during callback only).
+		 */
+		const uint8_t* data;
+		/**
+		 * Number of bytes in the advertising data payload.
+		 */
+		uint8_t data_length;
+		friend std::ostream& operator<<(std::ostream& os, const AdvertisingReport& ar);
+	};
 
-	struct ExtendedAdvertisingReport{
+	struct ExtendedAdvertisingReport {
 		/**
 		 * Advertising event properties.
 		 */
@@ -367,7 +515,7 @@ class Gap : public NonCopyableNonMovable {
 		friend std::ostream& operator<<(std::ostream& os, const ExtendedAdvertisingReport& ear);
 	};
 
-	struct InquiryResult{
+	struct InquiryResult {
 		/**
 		 * Peer device address.
 		 */
@@ -428,7 +576,7 @@ class Gap : public NonCopyableNonMovable {
 		friend std::ostream& operator<<(std::ostream& os, const InquiryResult& ir);
 	};
 
-	struct EventHandler{
+	struct EventHandler {
 		/**
 		 * @brief GAP event callback interface.
 		 *
@@ -444,8 +592,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED.
 		 */
-		virtual void onScanRequestReceived(uint8_t advertising_handle,
-										   const BleAddress& scanner_address) const {}
+		virtual void onScanRequestReceived(uint8_t advertising_handle, const BleAddress& scanner_address) const {}
 
 		/**
 		 * Called when advertising enable completes.
@@ -601,9 +748,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_DISCONNECTION_COMPLETE.
 		 */
-		virtual void onDisconnectionComplete(uint8_t status,
-											 ConnectionHandle con_handle,
-											 uint8_t reason) const {}
+		virtual void onDisconnectionComplete(uint8_t status, ConnectionHandle con_handle, uint8_t reason) const {}
 
 		/**
 		 * Called when LE PHYs have been read.
@@ -615,10 +760,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_COMMAND_COMPLETE for HCI_LE_READ_PHY.
 		 */
-		virtual void onReadPhy(uint8_t status,
-							   ConnectionHandle con_handle,
-							   Phy tx_phy,
-							   Phy rx_phy) const {}
+		virtual void onReadPhy(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
 
 		/**
 		 * Called when the PHY update process completes.
@@ -630,10 +772,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE.
 		 */
-		virtual void onPhyUpdateComplete(uint8_t status,
-										 ConnectionHandle con_handle,
-										 Phy tx_phy,
-										 Phy rx_phy) const {}
+		virtual void onPhyUpdateComplete(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
 
 		/**
 		 * Called when data length changes for a connection.
@@ -644,9 +783,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE.
 		 */
-		virtual void onDataLengthChange(ConnectionHandle con_handle,
-										uint16_t tx_size,
-										uint16_t rx_size) const {}
+		virtual void onDataLengthChange(ConnectionHandle con_handle, uint16_t tx_size, uint16_t rx_size) const {}
 
 		/**
 		 * Called when privacy becomes enabled and ready.
@@ -730,10 +867,8 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_PAIRING_STARTED.
 		 */
-		virtual void onPairingStarted(ConnectionHandle con_handle,
-									  const BleAddress& address,
-									  bool ssp,
-									  bool initiator) const {}
+		virtual void
+		onPairingStarted(ConnectionHandle con_handle, const BleAddress& address, bool ssp, bool initiator) const {}
 
 		/**
 		 * Called when GAP_EVENT_PAIRING_COMPLETE is received.
@@ -744,9 +879,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_PAIRING_COMPLETE.
 		 */
-		virtual void onPairingComplete(ConnectionHandle con_handle,
-									   const BleAddress& address,
-									   uint8_t status) const {}
+		virtual void onPairingComplete(ConnectionHandle con_handle, const BleAddress& address, uint8_t status) const {}
 
 	  protected:
 		/**
@@ -803,16 +936,13 @@ class Gap : public NonCopyableNonMovable {
 		 * Uses ADV_IND with a 100-150 ms interval on all channels and no whitelist.
 		 */
 		AdvertisementParameters()
-			: advertising_type(AdvertisingType::AdvInd),
-			  direct_address_type(DirectAddressType::Public),
-			  direct_address{},
-			  min_interval(0x00A0),
-			  max_interval(0x00F0),
+			: advertising_type(AdvertisingType::AdvInd), direct_address_type(DirectAddressType::Public),
+			  direct_address{}, min_interval(0x00A0), max_interval(0x00F0),
 			  channel_map(static_cast<uint8_t>(AdvertisingChannelMap::All)),
 			  filter_policy(AdvertisingFilterPolicy::ScanAnyConnectAny) {}
 	};
 
-	struct PreferredConnectionParameters{
+	struct PreferredConnectionParameters {
 		/**
 		 * @brief Minimum connection interval (unit: 1.25 ms).
 		 */
@@ -833,7 +963,7 @@ class Gap : public NonCopyableNonMovable {
 		uint16_t supervision_timeout;
 	};
 
-	struct ConnectionParameters{
+	struct ConnectionParameters {
 		/**
 		 * @brief Current connection interval (unit: 1.25 ms).
 		 */
@@ -864,6 +994,26 @@ class Gap : public NonCopyableNonMovable {
 	void setAdvertisingData(uint8_t length, const uint8_t* data);
 
 	/**
+	 * @brief Set legacy advertising data payload from a vector.
+	 *
+	 * @param data Advertising data payload.
+	 */
+	void setAdvertisingData(const std::vector<uint8_t>& data) {
+		setAdvertisingData(static_cast<uint8_t>(data.size()), data.data());
+	}
+
+	/**
+	 * @brief Set legacy advertising data payload from an AdvertisementDataBuilder.
+	 *
+	 * @param data_builder AdvertisementDataBuilder instance containing the payload.
+	 * @note The data from the builder is copied.
+	 */
+	void setAdvertisingData(const AdvertisementDataBuilder& data_builder) {
+		auto data = data_builder.data();
+		setAdvertisingData(static_cast<uint8_t>(data.size()), data.data());
+	}
+
+	/**
 	 * @brief Set scan response data payload (ADV_SCAN_IND).
 	 */
 	void setScanResponseData(uint8_t length, const uint8_t* data);
@@ -882,14 +1032,12 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Request a connection parameter update (peripheral role).
 	 */
-	BleError requestConnectionParameterUpdate(ConnectionHandle con_handle,
-												const PreferredConnectionParameters& params);
+	BleError requestConnectionParameterUpdate(ConnectionHandle con_handle, const PreferredConnectionParameters& params);
 
 	/**
 	 * @brief Update connection parameters (central role).
 	 */
-	BleError updateConnectionParameters(ConnectionHandle con_handle,
-										  const PreferredConnectionParameters& params);
+	BleError updateConnectionParameters(ConnectionHandle con_handle, const PreferredConnectionParameters& params);
 
 	/**
 	 * @brief Read the RSSI for a connection.
@@ -922,7 +1070,7 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	bool getConnectionParameters(ConnectionHandle con_handle, ConnectionParameters& out) const {
 		const auto it = connection_parameters_.find(con_handle);
-		if (it == connection_parameters_.end()) {
+		if(it == connection_parameters_.end()) {
 			return false;
 		}
 		out = it->second;
@@ -957,7 +1105,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @return true if a random address has been set.
 	 */
 	bool getRandomAddress(BleAddress& address) const {
-		if (!random_address_set_) {
+		if(!random_address_set_) {
 			return false;
 		}
 		address = random_address_;
@@ -978,7 +1126,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @return true if advertising parameters have been set.
 	 */
 	bool getAdvertisingParameters(AdvertisementParameters& params) const {
-		if (!advertising_params_set_) {
+		if(!advertising_params_set_) {
 			return false;
 		}
 		params = advertising_params_;
@@ -1029,13 +1177,13 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Get the singleton instance.
 	 */
-	static Gap& getInstance(){
-		if(instance_ == nullptr){
+	static Gap& getInstance() {
+		if(instance_ == nullptr) {
 			instance_ = new Gap();
 		}
 		return *instance_;
 	}
-	
+
 	/**
 	 * @brief Dispatch a raw HCI packet into the GAP event pipeline.
 	 *
@@ -1045,10 +1193,10 @@ class Gap : public NonCopyableNonMovable {
 	 * @return BLE error status.
 	 */
 	virtual BleError dispatch_ble_hci_packet(uint8_t packet_type,
-									const uint8_t* packet_data,
-									uint16_t packet_data_size);
+											 const uint8_t* packet_data,
+											 uint16_t packet_data_size);
 
-	protected:
+  protected:
 	/**
 	 * @brief Dispatch a mapped GAP event to registered handlers.
 	 *
@@ -1059,8 +1207,7 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	virtual BleError dispatch_event(EventId event_id, const uint8_t* event_data, uint16_t event_data_size);
 
-	private:
-
+  private:
 	Gap() = default;
 	Gap(const Gap&) = delete;
 	Gap& operator=(const Gap&) = delete;
@@ -1137,18 +1284,61 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::DirectAddressType type);
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingChannelMap map);
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingFilterPolicy policy);
 
-constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs,
-							c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator|(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator|=(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs);
-constexpr uint8_t operator&(c7222::Gap::AdvertisingChannelMap lhs,
-							c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator&(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator&=(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator&(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs);
-constexpr uint8_t operator^(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator^=(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs);
-constexpr uint8_t operator^(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs);
+constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	return static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs);
+}
+constexpr uint8_t operator|(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	uint8_t ret = lhs | static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+constexpr uint8_t operator|=(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	uint8_t ret = lhs | static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs) {
+	uint8_t ret = static_cast<uint8_t>(lhs) | rhs;
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+
+constexpr uint8_t operator&(c7222::Gap::AdvertisingChannelMap lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	return static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs);
+}
+
+constexpr uint8_t operator&(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	uint8_t ret = lhs & static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+
+constexpr uint8_t operator&=(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	uint8_t ret = lhs & static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+
+constexpr uint8_t operator&(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs) {
+	uint8_t ret = static_cast<uint8_t>(lhs) & rhs;
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+
+constexpr uint8_t operator^(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	uint8_t ret = lhs ^ static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+constexpr uint8_t operator^=(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+	uint8_t ret = lhs ^ static_cast<uint8_t>(rhs);
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
+constexpr uint8_t operator^(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs) {
+	uint8_t ret = static_cast<uint8_t>(lhs) & rhs;
+	assert(ret <= static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All));
+	return ret;
+}
 
 #endif // ELEC_C7222_BLE_GAP_HPP
