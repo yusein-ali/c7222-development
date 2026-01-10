@@ -1,5 +1,21 @@
 build
 build_local
+.cache
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.d
+*.lst
+*.axf
+*.out
+*.log
+*.dep
+*.swp
+*.swo
+*.tmp
+*.bak
 !.vscode/*
 
 libs/FreeRTOS-Kernel/*
