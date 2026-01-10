@@ -30,8 +30,9 @@ using ConnectionHandle = uint16_t;
  * @details
  * This class provides a high-level, object-oriented interface for managing the
  * BLE GAP layer, acting as a C++ wrapper around the underlying C-based BTstack
- * API. It simplifies common GAP operations such as advertising, scanning, and
- * connection management by maintaining state and handling HCI event dispatching.
+ * API. It simplifies common GAP operations such as advertising and connection
+ * management by maintaining state and handling HCI event dispatching. Scanning
+ * is currently exposed only via events, not via public start/stop APIs.
  *
  * The `Gap` class is implemented as a singleton, accessible via `getInstance()`,
  * ensuring a single point of control for the device's GAP layer.
@@ -49,10 +50,11 @@ using ConnectionHandle = uint16_t;
  *     advertising reports) in a clean, C++ idiomatic way.
  * 4.  **HCI Event Dispatching:** The `dispatch_ble_hci_packet` method is the entry
  *     point for raw HCI events from the BTstack, which are then parsed and
- *     forwarded to the appropriate `EventHandler` methods.
+ *     forwarded to the appropriate `EventHandler` methods. Your application
+ *     must call this for events to reach the handlers.
  *
  * ---
- * ### Advertising Configuration
+ * ### Advertising Configuration (Legacy)
  *
  * To start advertising, you must configure three main components:
  * 1.  **Advertising Parameters:** Define the "how" of advertising.
@@ -94,10 +96,19 @@ using ConnectionHandle = uint16_t;
  * intervention.
  *
  * ---
- * ### Complete Code Example
+ * ### Limitations / Future Work
+ *
+ * - **Extended advertising:** not implemented in this wrapper yet. The API only
+ *   supports legacy advertising (31-byte payloads, ADV_* types).
+ * - **Scanning control:** scan start/stop configuration is not exposed yet. Only
+ *   scan-related events are surfaced via `EventHandler`.
+ *
+ * ---
+ * ### Complete Code Example (Peripheral / Advertising)
  *
  * Below is a complete example of setting up and starting a connectable BLE
- * advertisement with a device name.
+ * advertisement with a device name. It also shows a minimal event dispatch
+ * hook that forwards BTstack HCI events into the Gap instance.
  *
  * ```cpp
  * #include "gap.hpp"
@@ -163,11 +174,39 @@ using ConnectionHandle = uint16_t;
  *     gap.startAdvertising();
  * }
  *
- * // In your main function, you would call setup_ble_advertising()
- * // and then process BLE events in your main loop.
- * // For example, in a loop:
- * // ble_stack_process();
+ * // Forward BTstack HCI events to Gap. Call this from your BTstack callback.
+ * void on_btstack_event(uint8_t packet_type, const uint8_t* packet, uint16_t size) {
+ *     c7222::Gap::getInstance().dispatch_ble_hci_packet(packet_type, packet, size);
+ * }
  *
+ * // In your main function, call setup_ble_advertising() and then
+ * // process BLE events in your main loop (e.g., ble_stack_process()).
+ *
+ * ```
+ *
+ * ---
+ * ### Minimal Event-Only Example (e.g., central role)
+ *
+ * If another component configures scanning or connections, you can still use
+ * `Gap` for event handling by registering a handler and dispatching HCI events.
+ *
+ * ```cpp
+ * #include "gap.hpp"
+ *
+ * class MyGapEventHandler : public c7222::Gap::EventHandler {
+ * public:
+ *     void onConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
+ *                               const c7222::BleAddress&, uint16_t, uint16_t, uint16_t) const override {
+ *         if (status == 0) {
+ *             (void)handle;
+ *         }
+ *     }
+ * };
+ *
+ * void init_gap_events() {
+ *     static MyGapEventHandler handler;
+ *     c7222::Gap::getInstance().addEventHandler(handler);
+ * }
  * ```
  */
 class Gap : public NonCopyableNonMovable {
