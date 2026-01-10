@@ -44,10 +44,10 @@ include(FreeRTOS_Cpp11_lib.cmake)
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# Locate size utility for post-build size reporting.
-if (NOT DEFINED CMAKE_SIZE_UTIL OR CMAKE_SIZE_UTIL STREQUAL "")
-    find_program(CMAKE_SIZE_UTIL NAMES arm-none-eabi-size size)
-endif()
+# Locate the correct size utility from the ARM toolchain
+get_filename_component(PICO_TOOLCHAIN_BIN_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+find_program(CMAKE_SIZE_UTIL NAMES ${PICO_GCC_TRIPLE}-size HINTS ${PICO_TOOLCHAIN_BIN_DIR} REQUIRED)
+message(STATUS "Found size tool: ${CMAKE_SIZE_UTIL}")
 
 # elec_c7222 helpers
 include(${CMAKE_SOURCE_DIR}/libs/elec_c7222/elec_c7222.cmake)
