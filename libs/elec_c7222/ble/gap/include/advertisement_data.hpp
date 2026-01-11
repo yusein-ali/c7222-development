@@ -361,7 +361,7 @@ class AdvertisementDataBuilder {
 	 *
 	 * @param ads List of AD structures to add.
 	 */
-	AdvertisementDataBuilder(std::list<AdvertisementData> ads) {
+	AdvertisementDataBuilder(const std::list<AdvertisementData>& ads) {
 		for(const auto& ad: ads) {
 			add(ad);
 		}
@@ -369,6 +369,82 @@ class AdvertisementDataBuilder {
 			   "Built advertisement data is invalid. check the added AdvertisementData items.");
 	}
 
+	/**
+	 * @brief Replace the payload with a list of AD structures.
+	 *
+	 * @param ads List of AD structures to set.
+	 * @return true if all structures were added, false if a structure would overflow.
+	 */
+	bool set(const std::list<AdvertisementData>& ads) {
+		clear();
+		for(const auto& ad: ads) {
+			if(!add(ad)) {
+				return false;
+			}
+		}
+		assert(AdvertisementData::validate_buffer(data_) &&
+			   "Built advertisement data is invalid. check the added AdvertisementData items.");
+		return true;
+	}
+
+	/**
+	 * @brief Remove the last AD structure from the payload.
+	 *
+	 * @return true if an AD structure was removed, false if the payload is empty or invalid.
+	 */
+	bool pop() {
+		if(data_.empty()) {
+			return false;
+		}
+
+		size_t index = 0;
+		size_t last_start = 0;
+
+		while(index < data_.size()) {
+			uint8_t length = data_[index];
+			if(length == 0) {
+				return false;
+			}
+
+			size_t next = index + static_cast<size_t>(length) + 1;
+			if(next > data_.size()) {
+				return false;
+			}
+
+			last_start = index;
+			index = next;
+		}
+
+		data_.erase(data_.begin() + static_cast<std::ptrdiff_t>(last_start), data_.end());
+		return true;
+	}
+
+	/**
+	 * @brief Add an AD structure to the payload.
+	 *
+	 * @param ad AD structure to add.
+	 * @return true if added, false if the payload would overflow.
+	 */
+	bool push(const AdvertisementData& ad) {
+		return add(ad);
+	}
+
+	/**
+	 * @brief Add a list of AD structures to the payload.
+	 *
+	 * @param ads List of AD structures to add.
+	 * @return true if all structures were added, false if a structure would overflow.
+	 */
+	bool add(const std::list<AdvertisementData>& ads) {
+		for(const auto& ad: ads) {
+			if(!add(ad)) {
+				return false;
+			}
+		}
+		assert(AdvertisementData::validate_buffer(data_) &&
+			   "Built advertisement data is invalid. check the added AdvertisementData items.");
+		return true;
+	}
 	/**
 	 * @brief Add an AD structure to the payload.
 	 *
@@ -436,6 +512,7 @@ class AdvertisementDataBuilder {
 		AdvertisementData ad(type, object_ref);
 		return add(ad);
 	}
+
 
 	/**
 	 * @brief Return the raw advertising payload bytes.
