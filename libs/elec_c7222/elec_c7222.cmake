@@ -12,7 +12,7 @@ elseif (NOT DEFINED ELEC_C7222_ENABLE_BLE)
 endif()
 
 # Immediate child modules.
-include(${ELEC_C7222_DIR}/platform/platform.cmake)
+include(${ELEC_C7222_DIR}/devices/devices.cmake)
 include(${ELEC_C7222_DIR}/utils/utils.cmake)
 
 target_link_libraries(ELEC_C7222 INTERFACE
