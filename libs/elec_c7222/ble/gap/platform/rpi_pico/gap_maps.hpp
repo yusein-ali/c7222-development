@@ -2,10 +2,20 @@
 #define ELEC_C7222_BLE_GAP_PLATFORM_RPI_PICO_GAP_MAPS_HPP
 
 #include <cstdint>
+#include <btstack.h>
 
 #include "gap.hpp"
 
+
 namespace c7222::btstack_map {
+
+BleError map_btstack_status(int status);
+BleAddress::AddressType map_address_type(uint8_t btstack_type);
+BleAddress make_address(uint8_t btstack_type, const bd_addr_t addr);
+BleAddress make_unknown_address(const bd_addr_t addr);
+Gap::Phy map_phy(uint8_t btstack_phy) ;
+Gap::AdvertisingEventType map_legacy_advertising_event_type(uint8_t adv_type);
+
 
 bool to_btstack_event(Gap::EventId id, uint8_t& event_code, uint8_t& subevent_code);
 bool from_btstack_event(uint8_t event_code, uint8_t subevent_code, Gap::EventId& id);

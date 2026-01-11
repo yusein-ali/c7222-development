@@ -5,7 +5,7 @@
 
 #include <cstddef>
 
-namespace c7222{
+namespace c7222::btstack_map {
 namespace {
 
 struct EventMapEntry {
@@ -318,98 +318,64 @@ uint8_t from_btstack_advertising_channel_map(uint8_t map) {
 	return result;
 }
 
+BleError map_btstack_status(int status) {
+	if(status == 0) {
+		return BleError::Success;
+	}
+	if(status > 0) {
+		BleError mapped;
+		if(btstack_map::from_btstack_error(static_cast<uint8_t>(status), mapped)) {
+			return mapped;
+		}
+	}
+	return BleError::UnspecifiedError;
+}
+
+BleAddress::AddressType map_address_type(uint8_t btstack_type) {
+	BleAddress::AddressType type = BleAddress::AddressType::Unknown;
+	btstack_map::from_btstack_address_type(btstack_type, type);
+	return type;
+}
+
+BleAddress make_address(uint8_t btstack_type, const bd_addr_t addr) {
+	BleAddress::AddressType type = map_address_type(btstack_type);
+	return BleAddress(type, addr);
+}
+
+BleAddress make_unknown_address(const bd_addr_t addr) {
+	return BleAddress(BleAddress::AddressType::Unknown, addr);
+}
+
+Gap::Phy map_phy(uint8_t btstack_phy) {
+	Gap::Phy phy = Gap::Phy::None;
+	btstack_map::from_btstack_phy(btstack_phy, phy);
+	return phy;
+}
+
+Gap::AdvertisingEventType map_legacy_advertising_event_type(uint8_t adv_type) {
+	using EventType = Gap::AdvertisingEventType;
+	uint16_t bits = static_cast<uint16_t>(EventType::Legacy);
+	switch(adv_type) {
+	case 0x00: // ADV_IND
+		bits |= static_cast<uint16_t>(EventType::Connectable);
+		bits |= static_cast<uint16_t>(EventType::Scannable);
+		break;
+	case 0x01: // ADV_DIRECT_IND
+		bits |= static_cast<uint16_t>(EventType::Connectable);
+		bits |= static_cast<uint16_t>(EventType::Directed);
+		break;
+	case 0x02: // ADV_SCAN_IND
+		bits |= static_cast<uint16_t>(EventType::Scannable);
+		break;
+	case 0x03: // ADV_NONCONN_IND
+		break;
+	case 0x04: // SCAN_RSP
+		bits |= static_cast<uint16_t>(EventType::Scannable);
+		break;
+	default:
+		break;
+	}
+	return static_cast<EventType>(bits);
+}
+
 } // namespace c7222::btstack_map
-
-namespace c7222 {
-
-struct GapEventHandlers {
-	using Handler = void (*)(const uint8_t* event, uint16_t size);
-
-	Handler on_security_level = nullptr;
-	Handler on_dedicated_bonding_completed = nullptr;
-	Handler on_advertising_report = nullptr;
-	Handler on_extended_advertising_report = nullptr;
-	Handler on_inquiry_result = nullptr;
-	Handler on_inquiry_complete = nullptr;
-	Handler on_rssi_measurement = nullptr;
-	Handler on_local_oob_data = nullptr;
-	Handler on_pairing_started = nullptr;
-	Handler on_pairing_complete = nullptr;
-
-	bool dispatch_event(uint8_t event_code, const uint8_t* event, uint16_t size) const {
-		switch (event_code) {
-			case GAP_EVENT_SECURITY_LEVEL:
-				if (on_security_level) {
-					on_security_level(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_DEDICATED_BONDING_COMPLETED:
-				if (on_dedicated_bonding_completed) {
-					on_dedicated_bonding_completed(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_ADVERTISING_REPORT:
-				if (on_advertising_report) {
-					on_advertising_report(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_EXTENDED_ADVERTISING_REPORT:
-				if (on_extended_advertising_report) {
-					on_extended_advertising_report(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_INQUIRY_RESULT:
-				if (on_inquiry_result) {
-					on_inquiry_result(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_INQUIRY_COMPLETE:
-				if (on_inquiry_complete) {
-					on_inquiry_complete(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_RSSI_MEASUREMENT:
-				if (on_rssi_measurement) {
-					on_rssi_measurement(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_LOCAL_OOB_DATA:
-				if (on_local_oob_data) {
-					on_local_oob_data(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_PAIRING_STARTED:
-				if (on_pairing_started) {
-					on_pairing_started(event, size);
-					return true;
-				}
-				break;
-			case GAP_EVENT_PAIRING_COMPLETE:
-				if (on_pairing_complete) {
-					on_pairing_complete(event, size);
-					return true;
-				}
-				break;
-			default:
-				break;
-		}
-		return false;
-	}
-
-	bool dispatch_packet(uint8_t packet_type, const uint8_t* packet, uint16_t size) const {
-		if (packet_type != HCI_EVENT_PACKET) {
-			return false;
-		}
-		return dispatch_event(hci_event_packet_get_type(packet), packet, size);
-	}
-};
-
-} // namespace c7222
