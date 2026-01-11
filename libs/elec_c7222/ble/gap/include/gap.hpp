@@ -5,6 +5,7 @@
 #ifndef ELEC_C7222_BLE_GAP_HPP
 #define ELEC_C7222_BLE_GAP_HPP
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <iosfwd>
@@ -1053,6 +1054,17 @@ class Gap : public NonCopyableNonMovable {
 	}
 
 	/**
+	 * @brief Set legacy advertising data payload from the internal builder.
+	 *
+	 * Asserts that the builder contains at least one AD structure and validates.
+	 */
+	void setAdvertisingData() {
+		assert(advertisement_data_builder_.size() > 0 && "AdvertisementDataBuilder is empty");
+		assert(advertisement_data_builder_.validate() && "AdvertisementDataBuilder payload invalid");
+		setAdvertisingData(advertisement_data_builder_);
+	}
+
+	/**
 	 * @brief Set scan response data payload (ADV_SCAN_IND).
 	 */
 	void setScanResponseData(uint8_t length, const uint8_t* data);
@@ -1182,6 +1194,23 @@ class Gap : public NonCopyableNonMovable {
 	}
 
 	/**
+	 * @brief Access the internal advertisement data builder.
+	 *
+	 * Use this to assemble the legacy advertising payload before applying it
+	 * with setAdvertisingDataFromBuilder().
+	 */
+	AdvertisementDataBuilder& getAdvertisementDataBuilder() {
+		return advertisement_data_builder_;
+	}
+
+	/**
+	 * @brief Access the internal advertisement data builder (const).
+	 */
+	const AdvertisementDataBuilder& getAdvertisementDataBuilder() const {
+		return advertisement_data_builder_;
+	}
+
+	/**
 	 * @brief Check if advertising data has been set.
 	 */
 	bool isAdvertisingDataSet() const {
@@ -1216,11 +1245,11 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Get the singleton instance.
 	 */
-	static Gap& getInstance() {
+	static Gap* getInstance() {
 		if(instance_ == nullptr) {
 			instance_ = new Gap();
 		}
-		return *instance_;
+		return instance_;
 	}
 
 	/**
@@ -1268,6 +1297,11 @@ class Gap : public NonCopyableNonMovable {
 	 * @brief True once setAdvertisingParameters() has been called.
 	 */
 	bool advertising_params_set_ = false;
+
+	/**
+	 * @brief Builder used for assembling legacy advertising payloads.
+	 */
+	AdvertisementDataBuilder advertisement_data_builder_{};
 	/**
 	 * @brief True when at least one connection is active.
 	 */
