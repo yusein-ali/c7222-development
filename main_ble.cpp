@@ -17,10 +17,10 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 		printf("GAP event: ScanRequestReceived (handle=%u)\n", advertising_handle);
 	}
 	void onAdvertisingStart(uint8_t status) const override {
-		printf("GAP event: AdvertisingStart (status=0x%02X)\n", status);
+		// printf("GAP event: AdvertisingStart (status=0x%02X)\n", status);
 	}
 	void onAdvertisingEnd(uint8_t status, c7222::ConnectionHandle connection_handle) const override {
-		printf("GAP event: AdvertisingEnd (status=0x%02X, handle=%u)\n", status, connection_handle);
+		// printf("GAP event: AdvertisingEnd (status=0x%02X, handle=%u)\n", status, connection_handle);
 	}
 	void onAdvertisingReport(const c7222::Gap::AdvertisingReport& report) const override {
 		printf("GAP event: AdvertisingReport (len=%u, rssi=%d)\n",
@@ -248,6 +248,7 @@ void ble_app_task(void* params) {
 
 	printf("CYW43 init complete. Setting up BTstack... here!\n");
 
+	ble->setOnBleStackOnCallback(on_turn_on);
 	ble->turnOn();
 
 	// Enter infinite loop to keep task alive (or perform other app logic)
@@ -258,7 +259,7 @@ void ble_app_task(void* params) {
 		vTaskDelay(pdMS_TO_TICKS(500));
 		cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
 		vTaskDelay(pdMS_TO_TICKS(500));
-		printf("BLE App Task is running...%lu\n", seconds);
+		// printf("BLE App Task is running...%lu\n", seconds);
 		if(gap->isAdvertisingEnabled()) {
 			printf("Updating the manuf specific data to %lu\n", seconds);
 			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific, (uint8_t*)&seconds, sizeof(seconds));
@@ -266,7 +267,7 @@ void ble_app_task(void* params) {
 			adb.push(ad);
 			ble->setAdvertisingData();
 		} else {
-			printf("Not advertising.\n");
+			// printf("Not advertising.\n");
 		}
 	}
 }
