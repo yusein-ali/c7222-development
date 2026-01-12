@@ -197,9 +197,8 @@ using ConnectionHandle = uint16_t;
  * class MyGapEventHandler : public c7222::Gap::EventHandler {
  * public:
  *     void onConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
- *                               const c7222::BleAddress&, uint16_t, uint16_t, uint16_t) const override {
- *         if (status == 0) {
- *             (void)handle;
+ *                               const c7222::BleAddress&, uint16_t, uint16_t, uint16_t) const
+ * override { if (status == 0) { (void)handle;
  *         }
  *     }
  * };
@@ -288,7 +287,8 @@ class Gap : public NonCopyableNonMovable {
 		kLeScanTimeout,
 		/**
 		 * Periodic advertising sync established.
-		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
+		 * BTstack event: HCI_EVENT_LE_META +
+		 * HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
 		 */
 		kLePeriodicAdvertisingSyncEstablished,
 		/**
@@ -632,7 +632,8 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED.
 		 */
-		virtual void onScanRequestReceived(uint8_t advertising_handle, const BleAddress& scanner_address) const {}
+		virtual void onScanRequestReceived(uint8_t advertising_handle,
+										   const BleAddress& scanner_address) const {}
 
 		/**
 		 * Called when advertising enable completes.
@@ -653,7 +654,8 @@ class Gap : public NonCopyableNonMovable {
 		 * - HCI_EVENT_COMMAND_COMPLETE for HCI_LE_SET_ADVERTISING_ENABLE (disable).
 		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_COMPLETE /
 		 *   HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE when advertising ends due to connection.
-		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED for extended advertising.
+		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED for extended
+		 * advertising.
 		 */
 		virtual void onAdvertisingEnd(uint8_t status, ConnectionHandle connection_handle) const {}
 
@@ -690,9 +692,11 @@ class Gap : public NonCopyableNonMovable {
 		 * @param status HCI status (0x00 for success).
 		 * @param sync_handle Sync handle assigned by controller.
 		 *
-		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
+		 * BTstack event: HCI_EVENT_LE_META +
+		 * HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
 		 */
-		virtual void onPeriodicAdvertisingSyncEstablished(uint8_t status, ConnectionHandle sync_handle) const {}
+		virtual void onPeriodicAdvertisingSyncEstablished(uint8_t status,
+														  ConnectionHandle sync_handle) const {}
 
 		/**
 		 * Called when a periodic advertising report is received.
@@ -788,7 +792,9 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_DISCONNECTION_COMPLETE.
 		 */
-		virtual void onDisconnectionComplete(uint8_t status, ConnectionHandle con_handle, uint8_t reason) const {}
+		virtual void onDisconnectionComplete(uint8_t status,
+											 ConnectionHandle con_handle,
+											 uint8_t reason) const {}
 
 		/**
 		 * Called when LE PHYs have been read.
@@ -800,7 +806,8 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_COMMAND_COMPLETE for HCI_LE_READ_PHY.
 		 */
-		virtual void onReadPhy(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
+		virtual void
+		onReadPhy(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
 
 		/**
 		 * Called when the PHY update process completes.
@@ -812,7 +819,10 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE.
 		 */
-		virtual void onPhyUpdateComplete(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
+		virtual void onPhyUpdateComplete(uint8_t status,
+										 ConnectionHandle con_handle,
+										 Phy tx_phy,
+										 Phy rx_phy) const {}
 
 		/**
 		 * Called when data length changes for a connection.
@@ -823,7 +833,9 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE.
 		 */
-		virtual void onDataLengthChange(ConnectionHandle con_handle, uint16_t tx_size, uint16_t rx_size) const {}
+		virtual void onDataLengthChange(ConnectionHandle con_handle,
+										uint16_t tx_size,
+										uint16_t rx_size) const {}
 
 		/**
 		 * Called when privacy becomes enabled and ready.
@@ -907,8 +919,10 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_PAIRING_STARTED.
 		 */
-		virtual void
-		onPairingStarted(ConnectionHandle con_handle, const BleAddress& address, bool ssp, bool initiator) const {}
+		virtual void onPairingStarted(ConnectionHandle con_handle,
+									  const BleAddress& address,
+									  bool ssp,
+									  bool initiator) const {}
 
 		/**
 		 * Called when GAP_EVENT_PAIRING_COMPLETE is received.
@@ -919,7 +933,9 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_PAIRING_COMPLETE.
 		 */
-		virtual void onPairingComplete(ConnectionHandle con_handle, const BleAddress& address, uint8_t status) const {}
+		virtual void onPairingComplete(ConnectionHandle con_handle,
+									   const BleAddress& address,
+									   uint8_t status) const {}
 
 	  protected:
 		/**
@@ -975,9 +991,10 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * Uses ADV_IND with a 100-150 ms interval on all channels and no whitelist.
 		 */
-	AdvertisementParameters()
-			: advertising_type(AdvertisingType::kAdvInd), direct_address_type(DirectAddressType::kPublic),
-			  direct_address{}, min_interval(0x00A0), max_interval(0x00F0),
+		AdvertisementParameters()
+			: advertising_type(AdvertisingType::kAdvInd),
+			  direct_address_type(DirectAddressType::kPublic), direct_address{},
+			  min_interval(0x00A0), max_interval(0x00F0),
 			  channel_map(static_cast<uint8_t>(AdvertisingChannelMap::kAll)),
 			  filter_policy(AdvertisingFilterPolicy::kScanAnyConnectAny) {}
 	};
@@ -1049,8 +1066,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @note The data from the builder is copied.
 	 */
 	void setAdvertisingData(const AdvertisementDataBuilder& data_builder) {
-		auto data = data_builder.data();
-		setAdvertisingData(static_cast<uint8_t>(data.size()), data.data());
+		setAdvertisingData(static_cast<uint8_t>(data_builder.size()), data_builder.bytes());
 	}
 
 	/**
@@ -1060,7 +1076,8 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	void setAdvertisingData() {
 		assert(advertisement_data_builder_.size() > 0 && "AdvertisementDataBuilder is empty");
-		assert(advertisement_data_builder_.validate() && "AdvertisementDataBuilder payload invalid");
+		assert(advertisement_data_builder_.validate() &&
+			   "AdvertisementDataBuilder payload invalid");
 		setAdvertisingData(advertisement_data_builder_);
 	}
 
@@ -1083,12 +1100,14 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Request a connection parameter update (peripheral role).
 	 */
-	BleError requestConnectionParameterUpdate(ConnectionHandle con_handle, const PreferredConnectionParameters& params);
+	BleError requestConnectionParameterUpdate(ConnectionHandle con_handle,
+											  const PreferredConnectionParameters& params);
 
 	/**
 	 * @brief Update connection parameters (central role).
 	 */
-	BleError updateConnectionParameters(ConnectionHandle con_handle, const PreferredConnectionParameters& params);
+	BleError updateConnectionParameters(ConnectionHandle con_handle,
+										const PreferredConnectionParameters& params);
 
 	/**
 	 * @brief Read the RSSI for a connection.
@@ -1121,15 +1140,15 @@ class Gap : public NonCopyableNonMovable {
 	 * @note Removing a handler that was not registered has no effect.
 	 * @note Do not remove handlers while iterating through the handler list (e.g. during event
 	 * dispatch). It is NOT safe to remove handlers from within event callbacks.
-	 * @note The handler instance is not deleted by this method. Therefore, the caller must delete the 
-	 * object if it was dynamically allocated.
+	 * @note The handler instance is not deleted by this method. Therefore, the caller must delete
+	 * the object if it was dynamically allocated.
 	 */
 	bool removeEventHandler(const EventHandler& handler);
 
 	/**
-	 * @brief Clear all registered event handlers. 
-	 * @note The handler instances are not deleted by this method. Therefore, the caller must delete the 
-	 * objects if they were dynamically allocated.
+	 * @brief Clear all registered event handlers.
+	 * @note The handler instances are not deleted by this method. Therefore, the caller must delete
+	 * the objects if they were dynamically allocated.
 	 */
 	void clearEventHandlers();
 
@@ -1289,8 +1308,8 @@ class Gap : public NonCopyableNonMovable {
 	 * @return BLE error status.
 	 */
 	virtual BleError dispatchBleHciPacket(uint8_t packet_type,
-											 const uint8_t* packet_data,
-											 uint16_t packet_data_size);
+										  const uint8_t* packet_data,
+										  uint16_t packet_data_size);
 
   protected:
 	/**
@@ -1301,7 +1320,9 @@ class Gap : public NonCopyableNonMovable {
 	 * @param event_data_size Event length in bytes.
 	 * @return BLE error status.
 	 */
-	virtual BleError dispatch_event(EventId event_id, const uint8_t* event_data, uint16_t event_data_size);
+	virtual BleError dispatch_event(EventId event_id,
+									const uint8_t* event_data,
+									uint16_t event_data_size);
 
   private:
 	Gap() = default;
@@ -1385,7 +1406,8 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::DirectAddressType type);
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingChannelMap map);
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingFilterPolicy policy);
 
-constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs,
+							c7222::Gap::AdvertisingChannelMap rhs) {
 	return static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs);
 }
 constexpr uint8_t operator|(uint8_t lhs, c7222::Gap::AdvertisingChannelMap rhs) {
@@ -1404,7 +1426,8 @@ constexpr uint8_t operator|(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs) 
 	return ret;
 }
 
-constexpr uint8_t operator&(c7222::Gap::AdvertisingChannelMap lhs, c7222::Gap::AdvertisingChannelMap rhs) {
+constexpr uint8_t operator&(c7222::Gap::AdvertisingChannelMap lhs,
+							c7222::Gap::AdvertisingChannelMap rhs) {
 	return static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs);
 }
 
