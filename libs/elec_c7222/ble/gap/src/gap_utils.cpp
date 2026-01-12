@@ -26,15 +26,15 @@ std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad){
     os << "  AD{len=" << length << ", type=";
 
     switch(type) {
-        case AdvertisementDataType::Flags: os << "Flags"; break;
-        case AdvertisementDataType::IncompleteList16BitUUID: os << "IncompleteList16BitUUID"; break;
-        case AdvertisementDataType::CompleteList16BitUUID: os << "CompleteList16BitUUID"; break;
-        case AdvertisementDataType::ShortenedLocalName: os << "ShortenedLocalName"; break;
-        case AdvertisementDataType::CompleteLocalName: os << "CompleteLocalName"; break;
-        case AdvertisementDataType::TxPowerLevel: os << "TxPowerLevel"; break;
-        case AdvertisementDataType::SlaveConnectionIntervalRange: os << "SlaveConnectionIntervalRange"; break;
-        case AdvertisementDataType::ServiceData16BitUUID: os << "ServiceData16BitUUID"; break;
-        case AdvertisementDataType::ManufacturerSpecific: os << "ManufacturerSpecific"; break;
+        case AdvertisementDataType::kFlags: os << "Flags"; break;
+        case AdvertisementDataType::kIncompleteList16BitUuid: os << "IncompleteList16BitUuid"; break;
+        case AdvertisementDataType::kCompleteList16BitUuid: os << "CompleteList16BitUuid"; break;
+        case AdvertisementDataType::kShortenedLocalName: os << "ShortenedLocalName"; break;
+        case AdvertisementDataType::kCompleteLocalName: os << "CompleteLocalName"; break;
+        case AdvertisementDataType::kTxPowerLevel: os << "TxPowerLevel"; break;
+        case AdvertisementDataType::kSlaveConnectionIntervalRange: os << "SlaveConnectionIntervalRange"; break;
+        case AdvertisementDataType::kServiceData16BitUuid: os << "ServiceData16BitUuid"; break;
+        case AdvertisementDataType::kManufacturerSpecific: os << "ManufacturerSpecific"; break;
         default: os << "Unknown(" << static_cast<int>(type) << ")"; break;
     }
 
@@ -51,22 +51,22 @@ std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad){
 
 std::ostream& operator<<(std::ostream& os, const AdvertisementData::Flags& flag){
 	switch(flag){
-		case AdvertisementData::Flags::LE_Limited_Discoverable_Mode:
-			os << "LE_Limited_Discoverable_Mode";
+		case AdvertisementData::Flags::kLeLimitedDiscoverableMode:
+			os << "LeLimitedDiscoverableMode";
 			break;
-		case AdvertisementData::Flags::LE_General_Discoverable_Mode:
-			os << "LE_General_Discoverable_Mode";
+		case AdvertisementData::Flags::kLeGeneralDiscoverableMode:
+			os << "LeGeneralDiscoverableMode";
 			break;
-		case AdvertisementData::Flags::BR_EDR_Not_Supported:
-			os << "BR_EDR_Not_Supported";
+		case AdvertisementData::Flags::kBrEdrNotSupported:
+			os << "BrEdrNotSupported";
 			break;
-		case AdvertisementData::Flags::Simultaneous_LE_and_BR_EDR_Controller:
-			os << "Simultaneous_LE_and_BR_EDR_Controller";
+		case AdvertisementData::Flags::kSimultaneousLeAndBrEdrController:
+			os << "SimultaneousLeAndBrEdrController";
 			break;
-		case AdvertisementData::Flags::Simultaneous_LE_and_BR_EDR_Host:
-			os << "Simultaneous_LE_and_BR_EDR_Host";
+		case AdvertisementData::Flags::kSimultaneousLeAndBrEdrHost:
+			os << "SimultaneousLeAndBrEdrHost";
 			break;
-		case AdvertisementData::Flags::All:
+		case AdvertisementData::Flags::kAll:
 			os << "All";
 			break;
 		default:
@@ -98,25 +98,25 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingEventType type
 		os << name;
 		first = false;
 	};
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::Connectable)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kConnectable)) {
 		append("Connectable");
 	}
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::Scannable)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kScannable)) {
 		append("Scannable");
 	}
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::Directed)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kDirected)) {
 		append("Directed");
 	}
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::HighDutyCycle)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kHighDutyCycle)) {
 		append("HighDutyCycle");
 	}
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::Legacy)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kLegacy)) {
 		append("Legacy");
 	}
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::Anonymous)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kAnonymous)) {
 		append("Anonymous");
 	}
-	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::IncludeTxPower)) {
+	if(bits & static_cast<uint16_t>(c7222::Gap::AdvertisingEventType::kIncludeTxPower)) {
 		append("IncludeTxPower");
 	}
 	return os;
@@ -124,13 +124,13 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingEventType type
 
 std::ostream& operator<<(std::ostream& os, c7222::Gap::Phy phy) {
 	switch(phy) {
-	case c7222::Gap::Phy::None:
+	case c7222::Gap::Phy::kNone:
 		return os << "None";
-	case c7222::Gap::Phy::Le1M:
+	case c7222::Gap::Phy::kLe1M:
 		return os << "Le1M";
-	case c7222::Gap::Phy::Le2M:
+	case c7222::Gap::Phy::kLe2M:
 		return os << "Le2M";
-	case c7222::Gap::Phy::LeCoded:
+	case c7222::Gap::Phy::kLeCoded:
 		return os << "LeCoded";
 	}
 	return os << "Unknown";
@@ -138,13 +138,13 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::Phy phy) {
 
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingType type) {
 	switch(type) {
-	case c7222::Gap::AdvertisingType::AdvInd:
+	case c7222::Gap::AdvertisingType::kAdvInd:
 		return os << "AdvInd";
-	case c7222::Gap::AdvertisingType::AdvDirectInd:
+	case c7222::Gap::AdvertisingType::kAdvDirectInd:
 		return os << "AdvDirectInd";
-	case c7222::Gap::AdvertisingType::AdvScanInd:
+	case c7222::Gap::AdvertisingType::kAdvScanInd:
 		return os << "AdvScanInd";
-	case c7222::Gap::AdvertisingType::AdvNonConnInd:
+	case c7222::Gap::AdvertisingType::kAdvNonConnInd:
 		return os << "AdvNonConnInd";
 	}
 	return os << "Unknown";
@@ -152,9 +152,9 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingType type) {
 
 std::ostream& operator<<(std::ostream& os, c7222::Gap::DirectAddressType type) {
 	switch(type) {
-	case c7222::Gap::DirectAddressType::Public:
+	case c7222::Gap::DirectAddressType::kPublic:
 		return os << "Public";
-	case c7222::Gap::DirectAddressType::Random:
+	case c7222::Gap::DirectAddressType::kRandom:
 		return os << "Random";
 	}
 	return os << "Unknown";
@@ -165,7 +165,7 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingChannelMap map
 	if(bits == 0) {
 		return os << "None";
 	}
-	if(bits == static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::All)) {
+	if(bits == static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::kAll)) {
 		return os << "All";
 	}
 	bool first = true;
@@ -176,13 +176,13 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingChannelMap map
 		os << name;
 		first = false;
 	};
-	if(bits & static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::Channel37)) {
+	if(bits & static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::kChannel37)) {
 		append("Channel37");
 	}
-	if(bits & static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::Channel38)) {
+	if(bits & static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::kChannel38)) {
 		append("Channel38");
 	}
-	if(bits & static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::Channel39)) {
+	if(bits & static_cast<uint8_t>(c7222::Gap::AdvertisingChannelMap::kChannel39)) {
 		append("Channel39");
 	}
 	return os;
@@ -190,13 +190,13 @@ std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingChannelMap map
 
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingFilterPolicy policy) {
 	switch(policy) {
-	case c7222::Gap::AdvertisingFilterPolicy::ScanAnyConnectAny:
+	case c7222::Gap::AdvertisingFilterPolicy::kScanAnyConnectAny:
 		return os << "ScanAnyConnectAny";
-	case c7222::Gap::AdvertisingFilterPolicy::ScanWhitelistConnectAny:
+	case c7222::Gap::AdvertisingFilterPolicy::kScanWhitelistConnectAny:
 		return os << "ScanWhitelistConnectAny";
-	case c7222::Gap::AdvertisingFilterPolicy::ScanAnyConnectWhitelist:
+	case c7222::Gap::AdvertisingFilterPolicy::kScanAnyConnectWhitelist:
 		return os << "ScanAnyConnectWhitelist";
-	case c7222::Gap::AdvertisingFilterPolicy::ScanWhitelistConnectWhitelist:
+	case c7222::Gap::AdvertisingFilterPolicy::kScanWhitelistConnectWhitelist:
 		return os << "ScanWhitelistConnectWhitelist";
 	}
 	return os << "Unknown";

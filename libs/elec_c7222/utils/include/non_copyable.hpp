@@ -5,8 +5,8 @@
  * These types are intended to be used as lightweight base classes to constrain
  * how derived types can be copied or moved.
  */
-#ifndef TEMPLATE_BLE_NON_COPYABLE_HPP
-#define TEMPLATE_BLE_NON_COPYABLE_HPP
+#ifndef BLE_NON_COPYABLE_HPP
+#define BLE_NON_COPYABLE_HPP
 
 /**
  * @namespace c7222
@@ -121,4 +121,4 @@ class CopyableOnly : public NonMovable {
 };
 } // namespace c7222
 
-#endif // TEMPLATE_BLE_NON_COPYABLE_HPP
+#endif // BLE_NON_COPYABLE_HPP

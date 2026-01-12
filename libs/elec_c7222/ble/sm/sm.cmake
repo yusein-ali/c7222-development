@@ -1,0 +1,15 @@
+set(ELEC_C7222_BLE_SM_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+if (DEFINED PICO_SDK_PATH AND NOT PICO_SDK_PATH STREQUAL "")
+    file(GLOB ELEC_C7222_BLE_SM_SOURCES "${ELEC_C7222_BLE_SM_DIR}/platform/rpi_pico/*.cpp")
+else()
+    file(GLOB ELEC_C7222_BLE_SM_SOURCES "${ELEC_C7222_BLE_SM_DIR}/platform/grader/*.cpp")
+endif()
+file(GLOB ELEC_C7222_BLE_SM_SOURCES_COMMON "${ELEC_C7222_BLE_SM_DIR}/src/*.cpp")
+
+add_library(ELEC_C7222_BLE_SM INTERFACE)
+target_sources(ELEC_C7222_BLE_SM INTERFACE 
+                    ${ELEC_C7222_BLE_SM_SOURCES} 
+                    ${ELEC_C7222_BLE_SM_SOURCES_COMMON})
+
+target_include_directories(ELEC_C7222_BLE_SM INTERFACE "${ELEC_C7222_BLE_SM_DIR}/include")

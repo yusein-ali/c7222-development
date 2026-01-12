@@ -6,25 +6,25 @@ namespace c7222 {
 std::ostream& operator<<(std::ostream& os, const BleAddress& addr) {
 	os << "BleAddress(";
 	switch(addr.type()) {
-	case BleAddress::AddressType::LePublic:
+	case BleAddress::AddressType::kLePublic:
 		os << "LE Public) ";
 		break;
-	case BleAddress::AddressType::LeRandom:
+	case BleAddress::AddressType::kLeRandom:
 		os << "LE Random) ";
 		break;
-	case BleAddress::AddressType::LePublicIdentity:
+	case BleAddress::AddressType::kLePublicIdentity:
 		os << "LE Public Identity) ";
 		break;
-	case BleAddress::AddressType::LeRandomIdentity:
+	case BleAddress::AddressType::kLeRandomIdentity:
 		os << "LE Random Identity) ";
 		break;
-	case BleAddress::AddressType::Sco:
+	case BleAddress::AddressType::kSco:
 		os << "SCO) ";
 		break;
-	case BleAddress::AddressType::Acl:
+	case BleAddress::AddressType::kAcl:
 		os << "ACL) ";
 		break;
-	case BleAddress::AddressType::Unknown:
+	case BleAddress::AddressType::kUnknown:
 		os << "Unknown) ";
 		break;
 	default:

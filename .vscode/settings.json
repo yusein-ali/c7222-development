@@ -12,6 +12,17 @@
             "statusBarVisibility": "hidden"
         }
     },
+    "editor.tokenColorCustomizations": {
+        "textMateRules": [
+            {
+                "scope": "meta.preprocessor.inactive",
+                "settings": {
+                    "foreground": "#777777",
+                    "fontStyle": "italic"
+                }
+            }
+        ]
+    },
     "cmake.configureOnEdit": true,
     "cmake.automaticReconfigure": true,
     "cmake.configureOnOpen": true,
@@ -19,6 +30,8 @@
     "cmake.cmakePath": "cmake",
     // "C_Cpp.debugShortcut": false,
     // "C_Cpp.formatting": "Disabled",
+    "C_Cpp.dimInactiveRegions": true,
+    "C_Cpp.inactiveRegionOpacity": 0.35,
     "[c]": {
         "editor.tabSize": 4,
         "editor.insertSpaces": false

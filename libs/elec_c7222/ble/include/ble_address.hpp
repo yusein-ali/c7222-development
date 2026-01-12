@@ -2,8 +2,8 @@
  * @file ble_address.hpp
  * @brief BLE address wrapper.
  */
-#ifndef ELEC_C7222_BLE_GAP_BLE_ADDRESS_HPP
-#define ELEC_C7222_BLE_GAP_BLE_ADDRESS_HPP
+#ifndef ELEC_C7222_BLE_ADDRESS_H_
+#define ELEC_C7222_BLE_ADDRESS_H_
 
 #include <array>
 #include <algorithm>
@@ -24,13 +24,13 @@ class BleAddress {
 	 * @brief Bluetooth address types.
 	 */
 	enum class AddressType : uint8_t {
-		LePublic = 0x00,
-		LeRandom = 0x01,
-		LePublicIdentity = 0x02,
-		LeRandomIdentity = 0x03,
-		Sco = 0x04,
-		Acl = 0x05,
-		Unknown = 0xFF
+		kLePublic = 0x00,
+		kLeRandom = 0x01,
+		kLePublicIdentity = 0x02,
+		kLeRandomIdentity = 0x03,
+		kSco = 0x04,
+		kAcl = 0x05,
+		kUnknown = 0xFF
 	};
 
 	/**
@@ -123,7 +123,7 @@ class BleAddress {
 	friend std::ostream& operator<<(std::ostream& os, const BleAddress& addr);
 	
   private:
-	AddressType type_ = AddressType::Unknown;
+	AddressType type_ = AddressType::kUnknown;
 	RawAddress address_{};
 };
 
@@ -131,4 +131,4 @@ std::ostream& operator<<(std::ostream& os, const BleAddress& addr);
 
 } // namespace c7222
 
-#endif // ELEC_C7222_BLE_GAP_BLE_ADDRESS_HPP
+#endif // ELEC_C7222_BLE_ADDRESS_H_

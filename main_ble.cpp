@@ -2,14 +2,12 @@
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 #include <stdio.h>
+#include "ble.hpp"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include <advertisement_data.hpp>
-#include <gap.hpp>
 
-static c7222::Gap* gap = nullptr;
-static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 class GapEventHandler : public c7222::Gap::EventHandler {
   public:
@@ -103,8 +101,8 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 			   status,
 			   con_handle,
 			   reason);
-		if(gap != nullptr) {
-			gap->startAdvertising();
+		if(gap_ != nullptr) {
+			gap_->startAdvertising();
 		}
 	}
 	void onReadPhy(uint8_t status,
@@ -180,6 +178,9 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 		(void) address;
 		printf("GAP event: PairingComplete (handle=%u, status=0x%02X)\n", con_handle, status);
 	}
+
+	private:
+		c7222::Gap* gap_ = c7222::Gap::getInstance();
 };
 
 static GapEventHandler gap_event_handler;
@@ -188,54 +189,46 @@ static GapEventHandler gap_event_handler;
 // -------------------------------------------------------------------------
 // Packet Handler: Receive events from the BLE Stack
 // -------------------------------------------------------------------------
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size) {
-	UNUSED(channel);
-	UNUSED(size);
+static void on_turn_on(){
+	printf("Bluetooth Turned On\n");
+	auto* ble = c7222::Ble::getInstance();
+	auto* gap = ble->getGap();
+	auto& adb = ble->getAdvertisementDataBuilder();
 
-	if(packet_type != HCI_EVENT_PACKET)
-		return;
+	gap->addEventHandler(gap_event_handler);
+	auto& adv_builder = gap->getAdvertisementDataBuilder();
 
-	switch(hci_event_packet_get_type(packet)) {
+	// Generate the packet using the advertisement data class
+	adv_builder.clear();
+	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::kFlags, (uint8_t) 0x06));
+	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::kCompleteLocalName,
+											 "Pico2_BLE++",
+											 sizeof("Pico2_BLE++")));
+	uint32_t value = 0x12345678;
+	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific,
+											 (uint8_t*) &value,
+											 sizeof(value)));
 
-	// This event fires when the stack state changes (e.g. OFF -> ON)
-	case BTSTACK_EVENT_STATE:
-		assert(gap != nullptr);
-		if(btstack_event_state_get_state(packet) != HCI_STATE_WORKING)
-			return;
-
-		printf("BTstack is up and running.\n");
-
-		// 1. Set Advertisement Data
-		gap->setAdvertisingData();
-		// ------------------------------------------------
-		// generate the advertisement parameters
-		// ------------------------------------------------
-		// note that the default parameters are fine for most use cases
-		{
-			c7222::Gap::AdvertisementParameters adv_params;
-			// Set a custom interval: 200ms to 250ms
-			// Interval is in units of 0.625 ms, so 320 * 0.625 = 200ms, 400 * 0.625 = 250ms
-			adv_params.advertising_type = c7222::Gap::AdvertisingType::AdvInd;
-			adv_params.min_interval = 320;
-			adv_params.max_interval = 400;
-			// 2. Set Advertisement Parameters (Interval: 100ms approx)
-			gap->setAdvertisingParameters(adv_params);
-		}
-
-		// 4. Start Advertising
-		gap->startAdvertising();
-		// note that we could also achieve the same with
-		// by calling enableAdvertising directly:
-		// gap->enableAdvertising(true);
-
-		printf("Advertising started as 'Pico2_BLE'...\n");
-		break;
-
-	default:
-		gap->dispatch_ble_hci_packet(packet_type, packet, size);
-		break;
+	// ------------------------------------------------
+	// generate the advertisement parameters
+	// ------------------------------------------------
+	// note that the default parameters are fine for most use cases
+	{
+		c7222::Gap::AdvertisementParameters adv_params;
+		// Set a custom interval: 200ms to 250ms
+		// Interval is in units of 0.625 ms, so 320 * 0.625 = 200ms, 400 * 0.625 = 250ms
+		adv_params.advertising_type = c7222::Gap::AdvertisingType::kAdvInd;
+		adv_params.min_interval = 320;
+		adv_params.max_interval = 400;
+		// 2. Set Advertisement Parameters (Interval: 100ms approx)
+		gap->setAdvertisingParameters(adv_params);
 	}
+	// Start Advertising
+	gap->startAdvertising();
+	printf("Advertising started as 'Pico2_BLE'...\n");
 }
+
+
 
 // -------------------------------------------------------------------------
 // BLE Application Task
@@ -243,17 +236,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packe
 void ble_app_task(void* params) {
 	(void) params;
 	static uint32_t seconds = 0;
-	gap = c7222::Gap::getInstance();
-	gap->addEventHandler(gap_event_handler);
-	auto& adv_builder = gap->getAdvertisementDataBuilder();
-
-	// Generate the packet using the advertisement data class
-	adv_builder.clear();
-	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::Flags, (uint8_t) 0x06));
-	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::CompleteLocalName,
-											 "Pico2_BLE++",
-											 sizeof("Pico2_BLE++")));
-	adv_builder.add(c7222::AdvertisementData(c7222::AdvertisementDataType::ManufacturerSpecific, (uint8_t*)&seconds, sizeof(seconds)));
+	auto* ble = c7222::Ble::getInstance();
+	auto* gap = ble->getGap();
+	auto& adb = ble->getAdvertisementDataBuilder();
 
 	// Initialize CYW43 Architecture (Starts the SDK background worker)
 	if(cyw43_arch_init()) {
@@ -263,16 +248,7 @@ void ble_app_task(void* params) {
 
 	printf("CYW43 init complete. Setting up BTstack... here!\n");
 
-	// Standard BTstack initialization
-	l2cap_init();
-	sm_init();
-
-	// Register our packet handler to receive system events
-	hci_event_callback_registration.callback = &packet_handler;
-	hci_add_event_handler(&hci_event_callback_registration);
-
-	// Turn on the Bluetooth hardware
-	hci_power_control(HCI_POWER_ON);
+	ble->turnOn();
 
 	// Enter infinite loop to keep task alive (or perform other app logic)
 	while(true) {
@@ -285,10 +261,10 @@ void ble_app_task(void* params) {
 		printf("BLE App Task is running...%lu\n", seconds);
 		if(gap->isAdvertisingEnabled()) {
 			printf("Updating the manuf specific data to %lu\n", seconds);
-			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::ManufacturerSpecific, (uint8_t*)&seconds, sizeof(seconds));
-			adv_builder.pop();
-			adv_builder.push(ad);
-			gap->setAdvertisingData();
+			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific, (uint8_t*)&seconds, sizeof(seconds));
+			adb.pop();
+			adb.push(ad);
+			ble->setAdvertisingData();
 		} else {
 			printf("Not advertising.\n");
 		}

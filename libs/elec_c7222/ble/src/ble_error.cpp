@@ -5,243 +5,243 @@ namespace c7222 {
 
 std::ostream& operator<<(std::ostream& os, BleError error) {
 	switch (error) {
-		case BleError::Success:
+		case BleError::kSuccess:
 			return os << "Success";
-		case BleError::UnknownHciCommand:
+		case BleError::kUnknownHciCommand:
 			return os << "UnknownHciCommand";
-		case BleError::UnknownConnectionIdentifier:
+		case BleError::kUnknownConnectionIdentifier:
 			return os << "UnknownConnectionIdentifier";
-		case BleError::HardwareFailure:
+		case BleError::kHardwareFailure:
 			return os << "HardwareFailure";
-		case BleError::PageTimeout:
+		case BleError::kPageTimeout:
 			return os << "PageTimeout";
-		case BleError::AuthenticationFailure:
+		case BleError::kAuthenticationFailure:
 			return os << "AuthenticationFailure";
-		case BleError::PinOrKeyMissing:
+		case BleError::kPinOrKeyMissing:
 			return os << "PinOrKeyMissing";
-		case BleError::MemoryCapacityExceeded:
+		case BleError::kMemoryCapacityExceeded:
 			return os << "MemoryCapacityExceeded";
-		case BleError::ConnectionTimeout:
+		case BleError::kConnectionTimeout:
 			return os << "ConnectionTimeout";
-		case BleError::ConnectionLimitExceeded:
+		case BleError::kConnectionLimitExceeded:
 			return os << "ConnectionLimitExceeded";
-		case BleError::SynchronousConnectionLimitToADeviceExceeded:
+		case BleError::kSynchronousConnectionLimitToADeviceExceeded:
 			return os << "SynchronousConnectionLimitToADeviceExceeded";
-		case BleError::AclConnectionAlreadyExists:
+		case BleError::kAclConnectionAlreadyExists:
 			return os << "AclConnectionAlreadyExists";
-		case BleError::CommandDisallowed:
+		case BleError::kCommandDisallowed:
 			return os << "CommandDisallowed";
-		case BleError::ConnectionRejectedDueToLimitedResources:
+		case BleError::kConnectionRejectedDueToLimitedResources:
 			return os << "ConnectionRejectedDueToLimitedResources";
-		case BleError::ConnectionRejectedDueToSecurityReasons:
+		case BleError::kConnectionRejectedDueToSecurityReasons:
 			return os << "ConnectionRejectedDueToSecurityReasons";
-		case BleError::ConnectionRejectedDueToUnacceptableBdAddr:
+		case BleError::kConnectionRejectedDueToUnacceptableBdAddr:
 			return os << "ConnectionRejectedDueToUnacceptableBdAddr";
-		case BleError::UnsupportedFeatureOrParameterValue:
+		case BleError::kUnsupportedFeatureOrParameterValue:
 			return os << "UnsupportedFeatureOrParameterValue";
-		case BleError::InvalidHciCommandParameters:
+		case BleError::kInvalidHciCommandParameters:
 			return os << "InvalidHciCommandParameters";
-		case BleError::RemoteUserTerminatedConnection:
+		case BleError::kRemoteUserTerminatedConnection:
 			return os << "RemoteUserTerminatedConnection";
-		case BleError::ConnectionAcceptTimeoutExceeded:
+		case BleError::kConnectionAcceptTimeoutExceeded:
 			return os << "ConnectionAcceptTimeoutExceeded";
-		case BleError::RemoteDeviceTerminatedConnectionDueToLowResources:
+		case BleError::kRemoteDeviceTerminatedConnectionDueToLowResources:
 			return os << "RemoteDeviceTerminatedConnectionDueToLowResources";
-		case BleError::RemoteDeviceTerminatedConnectionDueToPowerOff:
+		case BleError::kRemoteDeviceTerminatedConnectionDueToPowerOff:
 			return os << "RemoteDeviceTerminatedConnectionDueToPowerOff";
-		case BleError::ConnectionTerminatedByLocalHost:
+		case BleError::kConnectionTerminatedByLocalHost:
 			return os << "ConnectionTerminatedByLocalHost";
-		case BleError::RepeatedAttempts:
+		case BleError::kRepeatedAttempts:
 			return os << "RepeatedAttempts";
-		case BleError::PairingNotAllowed:
+		case BleError::kPairingNotAllowed:
 			return os << "PairingNotAllowed";
-		case BleError::UnknownLmpPdu:
+		case BleError::kUnknownLmpPdu:
 			return os << "UnknownLmpPdu";
-		case BleError::UnsupportedRemoteFeatureUnsupportedLmpFeature:
+		case BleError::kUnsupportedRemoteFeatureUnsupportedLmpFeature:
 			return os << "UnsupportedRemoteFeatureUnsupportedLmpFeature";
-		case BleError::ScoOffsetRejected:
+		case BleError::kScoOffsetRejected:
 			return os << "ScoOffsetRejected";
-		case BleError::ScoIntervalRejected:
+		case BleError::kScoIntervalRejected:
 			return os << "ScoIntervalRejected";
-		case BleError::ScoAirModeRejected:
+		case BleError::kScoAirModeRejected:
 			return os << "ScoAirModeRejected";
-		case BleError::InvalidLmpParametersInvalidLlParameters:
+		case BleError::kInvalidLmpParametersInvalidLlParameters:
 			return os << "InvalidLmpParametersInvalidLlParameters";
-		case BleError::UnspecifiedError:
+		case BleError::kUnspecifiedError:
 			return os << "UnspecifiedError";
-		case BleError::UnsupportedLmpParameterValueUnsupportedLlParameterValue:
+		case BleError::kUnsupportedLmpParameterValueUnsupportedLlParameterValue:
 			return os << "UnsupportedLmpParameterValueUnsupportedLlParameterValue";
-		case BleError::RoleChangeNotAllowed:
+		case BleError::kRoleChangeNotAllowed:
 			return os << "RoleChangeNotAllowed";
-		case BleError::LmpResponseTimeoutLlResponseTimeout:
+		case BleError::kLmpResponseTimeoutLlResponseTimeout:
 			return os << "LmpResponseTimeoutLlResponseTimeout";
-		case BleError::LmpErrorTransactionCollision:
+		case BleError::kLmpErrorTransactionCollision:
 			return os << "LmpErrorTransactionCollision";
-		case BleError::LmpPduNotAllowed:
+		case BleError::kLmpPduNotAllowed:
 			return os << "LmpPduNotAllowed";
-		case BleError::EncryptionModeNotAcceptable:
+		case BleError::kEncryptionModeNotAcceptable:
 			return os << "EncryptionModeNotAcceptable";
-		case BleError::LinkKeyCannotBeChanged:
+		case BleError::kLinkKeyCannotBeChanged:
 			return os << "LinkKeyCannotBeChanged";
-		case BleError::RequestedQosNotSupported:
+		case BleError::kRequestedQosNotSupported:
 			return os << "RequestedQosNotSupported";
-		case BleError::InstantPassed:
+		case BleError::kInstantPassed:
 			return os << "InstantPassed";
-		case BleError::PairingWithUnitKeyNotSupported:
+		case BleError::kPairingWithUnitKeyNotSupported:
 			return os << "PairingWithUnitKeyNotSupported";
-		case BleError::DifferentTransactionCollision:
+		case BleError::kDifferentTransactionCollision:
 			return os << "DifferentTransactionCollision";
-		case BleError::Reserved:
+		case BleError::kReserved:
 			return os << "Reserved";
-		case BleError::QosUnacceptableParameter:
+		case BleError::kQosUnacceptableParameter:
 			return os << "QosUnacceptableParameter";
-		case BleError::QosRejected:
+		case BleError::kQosRejected:
 			return os << "QosRejected";
-		case BleError::ChannelClassificationNotSupported:
+		case BleError::kChannelClassificationNotSupported:
 			return os << "ChannelClassificationNotSupported";
-		case BleError::InsufficientSecurity:
+		case BleError::kInsufficientSecurity:
 			return os << "InsufficientSecurity";
-		case BleError::ParameterOutOfMandatoryRange:
+		case BleError::kParameterOutOfMandatoryRange:
 			return os << "ParameterOutOfMandatoryRange";
-		case BleError::RoleSwitchPending:
+		case BleError::kRoleSwitchPending:
 			return os << "RoleSwitchPending";
-		case BleError::ReservedSlotViolation:
+		case BleError::kReservedSlotViolation:
 			return os << "ReservedSlotViolation";
-		case BleError::RoleSwitchFailed:
+		case BleError::kRoleSwitchFailed:
 			return os << "RoleSwitchFailed";
-		case BleError::ExtendedInquiryResponseTooLarge:
+		case BleError::kExtendedInquiryResponseTooLarge:
 			return os << "ExtendedInquiryResponseTooLarge";
-		case BleError::SecureSimplePairingNotSupportedByHost:
+		case BleError::kSecureSimplePairingNotSupportedByHost:
 			return os << "SecureSimplePairingNotSupportedByHost";
-		case BleError::HostBusyPairing:
+		case BleError::kHostBusyPairing:
 			return os << "HostBusyPairing";
-		case BleError::ConnectionRejectedDueToNoSuitableChannelFound:
+		case BleError::kConnectionRejectedDueToNoSuitableChannelFound:
 			return os << "ConnectionRejectedDueToNoSuitableChannelFound";
-		case BleError::ControllerBusy:
+		case BleError::kControllerBusy:
 			return os << "ControllerBusy";
-		case BleError::UnacceptableConnectionParameters:
+		case BleError::kUnacceptableConnectionParameters:
 			return os << "UnacceptableConnectionParameters";
-		case BleError::DirectedAdvertisingTimeout:
+		case BleError::kDirectedAdvertisingTimeout:
 			return os << "DirectedAdvertisingTimeout";
-		case BleError::ConnectionTerminatedDueToMicFailure:
+		case BleError::kConnectionTerminatedDueToMicFailure:
 			return os << "ConnectionTerminatedDueToMicFailure";
-		case BleError::ConnectionFailedToBeEstablished:
+		case BleError::kConnectionFailedToBeEstablished:
 			return os << "ConnectionFailedToBeEstablished";
-		case BleError::MacConnectionFailed:
+		case BleError::kMacConnectionFailed:
 			return os << "MacConnectionFailed";
-		case BleError::CoarseClockAdjustmentRejectedButWillTryToAdjustUsingClockDragging:
+		case BleError::kCoarseClockAdjustmentRejectedButWillTryToAdjustUsingClockDragging:
 			return os << "CoarseClockAdjustmentRejectedButWillTryToAdjustUsingClockDragging";
-		case BleError::BtstackConnectionToBtdaemonFailed:
+		case BleError::kBtstackConnectionToBtdaemonFailed:
 			return os << "BtstackConnectionToBtdaemonFailed";
-		case BleError::BtstackActivationFailedSystemBluetooth:
+		case BleError::kBtstackActivationFailedSystemBluetooth:
 			return os << "BtstackActivationFailedSystemBluetooth";
-		case BleError::BtstackActivationPoweronFailed:
+		case BleError::kBtstackActivationPoweronFailed:
 			return os << "BtstackActivationPoweronFailed";
-		case BleError::BtstackActivationFailedUnknown:
+		case BleError::kBtstackActivationFailedUnknown:
 			return os << "BtstackActivationFailedUnknown";
-		case BleError::BtstackNotActivated:
+		case BleError::kBtstackNotActivated:
 			return os << "BtstackNotActivated";
-		case BleError::BtstackBusy:
+		case BleError::kBtstackBusy:
 			return os << "BtstackBusy";
-		case BleError::BtstackMemoryAllocFailed:
+		case BleError::kBtstackMemoryAllocFailed:
 			return os << "BtstackMemoryAllocFailed";
-		case BleError::BtstackAclBuffersFull:
+		case BleError::kBtstackAclBuffersFull:
 			return os << "BtstackAclBuffersFull";
-		case BleError::L2capCommandRejectReasonCommandNotUnderstood:
+		case BleError::kL2capCommandRejectReasonCommandNotUnderstood:
 			return os << "L2capCommandRejectReasonCommandNotUnderstood";
-		case BleError::L2capCommandRejectReasonSignalingMtuExceeded:
+		case BleError::kL2capCommandRejectReasonSignalingMtuExceeded:
 			return os << "L2capCommandRejectReasonSignalingMtuExceeded";
-		case BleError::L2capCommandRejectReasonInvalidCidInRequest:
+		case BleError::kL2capCommandRejectReasonInvalidCidInRequest:
 			return os << "L2capCommandRejectReasonInvalidCidInRequest";
-		case BleError::L2capConnectionResponseResultSuccessful:
+		case BleError::kL2capConnectionResponseResultSuccessful:
 			return os << "L2capConnectionResponseResultSuccessful";
-		case BleError::L2capConnectionResponseResultPending:
+		case BleError::kL2capConnectionResponseResultPending:
 			return os << "L2capConnectionResponseResultPending";
-		case BleError::L2capConnectionResponseResultRefusedPsm:
+		case BleError::kL2capConnectionResponseResultRefusedPsm:
 			return os << "L2capConnectionResponseResultRefusedPsm";
-		case BleError::L2capConnectionResponseResultRefusedSecurity:
+		case BleError::kL2capConnectionResponseResultRefusedSecurity:
 			return os << "L2capConnectionResponseResultRefusedSecurity";
-		case BleError::L2capConnectionResponseResultRefusedResources:
+		case BleError::kL2capConnectionResponseResultRefusedResources:
 			return os << "L2capConnectionResponseResultRefusedResources";
-		case BleError::L2capConnectionResponseResultErtmNotSupported:
+		case BleError::kL2capConnectionResponseResultErtmNotSupported:
 			return os << "L2capConnectionResponseResultErtmNotSupported";
-		case BleError::L2capConnectionResponseResultRtxTimeout:
+		case BleError::kL2capConnectionResponseResultRtxTimeout:
 			return os << "L2capConnectionResponseResultRtxTimeout";
-		case BleError::L2capConnectionBasebandDisconnect:
+		case BleError::kL2capConnectionBasebandDisconnect:
 			return os << "L2capConnectionBasebandDisconnect";
-		case BleError::L2capServiceAlreadyRegistered:
+		case BleError::kL2capServiceAlreadyRegistered:
 			return os << "L2capServiceAlreadyRegistered";
-		case BleError::L2capDataLenExceedsRemoteMtu:
+		case BleError::kL2capDataLenExceedsRemoteMtu:
 			return os << "L2capDataLenExceedsRemoteMtu";
-		case BleError::L2capServiceDoesNotExist:
+		case BleError::kL2capServiceDoesNotExist:
 			return os << "L2capServiceDoesNotExist";
-		case BleError::L2capLocalCidDoesNotExist:
+		case BleError::kL2capLocalCidDoesNotExist:
 			return os << "L2capLocalCidDoesNotExist";
-		case BleError::L2capConnectionResponseUnknownError:
+		case BleError::kL2capConnectionResponseUnknownError:
 			return os << "L2capConnectionResponseUnknownError";
-		case BleError::RfcommMultiplexerStopped:
+		case BleError::kRfcommMultiplexerStopped:
 			return os << "RfcommMultiplexerStopped";
-		case BleError::RfcommChannelAlreadyRegistered:
+		case BleError::kRfcommChannelAlreadyRegistered:
 			return os << "RfcommChannelAlreadyRegistered";
-		case BleError::RfcommNoOutgoingCredits:
+		case BleError::kRfcommNoOutgoingCredits:
 			return os << "RfcommNoOutgoingCredits";
-		case BleError::RfcommAggregateFlowOff:
+		case BleError::kRfcommAggregateFlowOff:
 			return os << "RfcommAggregateFlowOff";
-		case BleError::RfcommDataLenExceedsMtu:
+		case BleError::kRfcommDataLenExceedsMtu:
 			return os << "RfcommDataLenExceedsMtu";
-		case BleError::HfpRemoteRejectsAudioConnection:
+		case BleError::kHfpRemoteRejectsAudioConnection:
 			return os << "HfpRemoteRejectsAudioConnection";
-		case BleError::SdpHandleAlreadyRegistered:
+		case BleError::kSdpHandleAlreadyRegistered:
 			return os << "SdpHandleAlreadyRegistered";
-		case BleError::SdpQueryIncomplete:
+		case BleError::kSdpQueryIncomplete:
 			return os << "SdpQueryIncomplete";
-		case BleError::SdpServiceNotFound:
+		case BleError::kSdpServiceNotFound:
 			return os << "SdpServiceNotFound";
-		case BleError::SdpHandleInvalid:
+		case BleError::kSdpHandleInvalid:
 			return os << "SdpHandleInvalid";
-		case BleError::SdpQueryBusy:
+		case BleError::kSdpQueryBusy:
 			return os << "SdpQueryBusy";
-		case BleError::AttHandleValueIndicationInProgress:
+		case BleError::kAttHandleValueIndicationInProgress:
 			return os << "AttHandleValueIndicationInProgress";
-		case BleError::AttHandleValueIndicationTimeout:
+		case BleError::kAttHandleValueIndicationTimeout:
 			return os << "AttHandleValueIndicationTimeout";
-		case BleError::AttHandleValueIndicationDisconnect:
+		case BleError::kAttHandleValueIndicationDisconnect:
 			return os << "AttHandleValueIndicationDisconnect";
-		case BleError::GattClientNotConnected:
+		case BleError::kGattClientNotConnected:
 			return os << "GattClientNotConnected";
-		case BleError::GattClientBusy:
+		case BleError::kGattClientBusy:
 			return os << "GattClientBusy";
-		case BleError::GattClientInWrongState:
+		case BleError::kGattClientInWrongState:
 			return os << "GattClientInWrongState";
-		case BleError::GattClientDifferentContextForAddressAlreadyExists:
+		case BleError::kGattClientDifferentContextForAddressAlreadyExists:
 			return os << "GattClientDifferentContextForAddressAlreadyExists";
-		case BleError::GattClientValueTooLong:
+		case BleError::kGattClientValueTooLong:
 			return os << "GattClientValueTooLong";
-		case BleError::GattClientCharacteristicNotificationNotSupported:
+		case BleError::kGattClientCharacteristicNotificationNotSupported:
 			return os << "GattClientCharacteristicNotificationNotSupported";
-		case BleError::GattClientCharacteristicIndicationNotSupported:
+		case BleError::kGattClientCharacteristicIndicationNotSupported:
 			return os << "GattClientCharacteristicIndicationNotSupported";
-		case BleError::BnepServiceAlreadyRegistered:
+		case BleError::kBnepServiceAlreadyRegistered:
 			return os << "BnepServiceAlreadyRegistered";
-		case BleError::BnepChannelNotConnected:
+		case BleError::kBnepChannelNotConnected:
 			return os << "BnepChannelNotConnected";
-		case BleError::BnepDataLenExceedsMtu:
+		case BleError::kBnepDataLenExceedsMtu:
 			return os << "BnepDataLenExceedsMtu";
-		case BleError::BnepSetupConnectionError:
+		case BleError::kBnepSetupConnectionError:
 			return os << "BnepSetupConnectionError";
-		case BleError::ObexUnknownError:
+		case BleError::kObexUnknownError:
 			return os << "ObexUnknownError";
-		case BleError::ObexConnectFailed:
+		case BleError::kObexConnectFailed:
 			return os << "ObexConnectFailed";
-		case BleError::ObexDisconnected:
+		case BleError::kObexDisconnected:
 			return os << "ObexDisconnected";
-		case BleError::ObexNotFound:
+		case BleError::kObexNotFound:
 			return os << "ObexNotFound";
-		case BleError::ObexNotAcceptable:
+		case BleError::kObexNotAcceptable:
 			return os << "ObexNotAcceptable";
-		case BleError::ObexAborted:
+		case BleError::kObexAborted:
 			return os << "ObexAborted";
-		case BleError::MeshErrorAppkeyIndexInvalid:
+		case BleError::kMeshErrorAppkeyIndexInvalid:
 			return os << "MeshErrorAppkeyIndexInvalid";
 	}
 	return os << "BleError(" << static_cast<unsigned int>(error) << ")";

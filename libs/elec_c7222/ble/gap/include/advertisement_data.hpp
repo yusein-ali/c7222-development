@@ -2,8 +2,8 @@
  * @file advertisement_data.hpp
  * @brief BLE GAP advertisement data builder.
  */
-#ifndef TEMPLATE_BLE_GAP_ADVERTISEMENT_DATA_HPP
-#define TEMPLATE_BLE_GAP_ADVERTISEMENT_DATA_HPP
+#ifndef ELEC_C7222_BLE_GAP_ADVERTISEMENT_DATA_H_
+#define ELEC_C7222_BLE_GAP_ADVERTISEMENT_DATA_H_
 
 #include <algorithm>
 #include <cassert>
@@ -19,24 +19,24 @@ namespace c7222 {
 /**
  * @brief Maximum length for legacy advertising data (length + type + value).
  */
-constexpr size_t ADVERTISEMENT_DATA_LEGACY_MAX_SIZE = 31;
+constexpr size_t kAdvertisementDataLegacyMaxSize = 31;
 /**
  * \brief Overhead bytes for an AD structure (length + type).
  */
-constexpr size_t ADVERTISEMENT_DATA_STRUCT_HEADER_OVERHEAD = 2;
+constexpr size_t kAdvertisementDataStructHeaderOverhead = 2;
 /**
  * @brief BLE GAP advertisement data types.
  */
 enum class AdvertisementDataType : uint8_t {
-	Flags = 0x01,
-	IncompleteList16BitUUID = 0x02,
-	CompleteList16BitUUID = 0x03,
-	ShortenedLocalName = 0x08,
-	CompleteLocalName = 0x09,
-	TxPowerLevel = 0x0A,
-	SlaveConnectionIntervalRange = 0x12,
-	ServiceData16BitUUID = 0x16,
-	ManufacturerSpecific = 0xFF
+	kFlags = 0x01,
+	kIncompleteList16BitUuid = 0x02,
+	kCompleteList16BitUuid = 0x03,
+	kShortenedLocalName = 0x08,
+	kCompleteLocalName = 0x09,
+	kTxPowerLevel = 0x0A,
+	kSlaveConnectionIntervalRange = 0x12,
+	kServiceData16BitUuid = 0x16,
+	kManufacturerSpecific = 0xFF
 };
 
 /**
@@ -47,12 +47,12 @@ enum class AdvertisementDataType : uint8_t {
 class AdvertisementData {
   public:
 	enum class Flags : uint8_t {
-		LE_Limited_Discoverable_Mode = 0x01,
-		LE_General_Discoverable_Mode = 0x02,
-		BR_EDR_Not_Supported = 0x04,
-		Simultaneous_LE_and_BR_EDR_Controller = 0x08,
-		Simultaneous_LE_and_BR_EDR_Host = 0x10,
-		All = 0x1f,
+		kLeLimitedDiscoverableMode = 0x01,
+		kLeGeneralDiscoverableMode = 0x02,
+		kBrEdrNotSupported = 0x04,
+		kSimultaneousLeAndBrEdrController = 0x08,
+		kSimultaneousLeAndBrEdrHost = 0x10,
+		kAll = 0x1f,
 	};
 
 	/**
@@ -138,6 +138,17 @@ class AdvertisementData {
 		return data_.size();
 	}
 
+	AdvertisementDataType getType() const {
+		assert(data_.size() >= 2 && "AdvertisementData: data size too small to contain type");
+		return static_cast<AdvertisementDataType>(data_[1]);
+	}
+
+	uint8_t getLength() const {
+		assert(data_.size() >= 1 && "AdvertisementData: data size too small to contain length");
+		return data_[0];
+	}
+
+  private:
 	/**
 	 * @brief Iterator to the beginning of the AD structure bytes.
 	 */
@@ -193,6 +204,8 @@ class AdvertisementData {
 	}
 	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad);
 	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData::Flags& flag);
+
+  public:
 	/**
 	 * @brief Validate the AD length field for a given type.
 	 *
@@ -203,37 +216,37 @@ class AdvertisementData {
 	 * @param length Length field value (type + value bytes).
 	 */
 	static bool validate_length(AdvertisementDataType type, size_t length) {
-		if(length == 0 || (length + 1) > ADVERTISEMENT_DATA_LEGACY_MAX_SIZE) {
+		if(length == 0 || (length + 1) > kAdvertisementDataLegacyMaxSize) {
 			return false;
 		}
 
 		const size_t data_size = length - 1;
 		switch(type) {
-		case AdvertisementDataType::Flags:
-		case AdvertisementDataType::TxPowerLevel:
+		case AdvertisementDataType::kFlags:
+		case AdvertisementDataType::kTxPowerLevel:
 			if(length != 2) {
 				return false;
 			}
 			break;
-		case AdvertisementDataType::SlaveConnectionIntervalRange:
+		case AdvertisementDataType::kSlaveConnectionIntervalRange:
 			if(length != 5) {
 				return false;
 			}
 			break;
-		case AdvertisementDataType::IncompleteList16BitUUID:
-		case AdvertisementDataType::CompleteList16BitUUID:
+		case AdvertisementDataType::kIncompleteList16BitUuid:
+		case AdvertisementDataType::kCompleteList16BitUuid:
 			if(data_size == 0 || (data_size % 2) != 0) {
 				return false;
 			}
 			break;
-		case AdvertisementDataType::ServiceData16BitUUID:
-		case AdvertisementDataType::ManufacturerSpecific:
+		case AdvertisementDataType::kServiceData16BitUuid:
+		case AdvertisementDataType::kManufacturerSpecific:
 			if(length < 3) {
 				return false;
 			}
 			break;
-		case AdvertisementDataType::ShortenedLocalName:
-		case AdvertisementDataType::CompleteLocalName:
+		case AdvertisementDataType::kShortenedLocalName:
+		case AdvertisementDataType::kCompleteLocalName:
 			if(length < 2) {
 				return false;
 			}
@@ -260,7 +273,7 @@ class AdvertisementData {
 		size_t index = 0;
 		size_t data_count = 0;
 		// validate size
-		if(adv_data_size == 0 || adv_data_size > ADVERTISEMENT_DATA_LEGACY_MAX_SIZE) {
+		if(adv_data_size == 0 || adv_data_size > kAdvertisementDataLegacyMaxSize) {
 			return false;
 		}
 		// parse each AD structure
@@ -305,8 +318,8 @@ class AdvertisementData {
 
 		assert(validate_length(type, size + 1) && "Invalid AdvertisementData size for given type");
 
-		const size_t total = size + ADVERTISEMENT_DATA_STRUCT_HEADER_OVERHEAD;
-		if(total > ADVERTISEMENT_DATA_LEGACY_MAX_SIZE) {
+		const size_t total = size + kAdvertisementDataStructHeaderOverhead;
+		if(total > kAdvertisementDataLegacyMaxSize) {
 			__builtin_trap();
 		}
 
@@ -351,7 +364,7 @@ class AdvertisementDataBuilder {
 	 * @brief Create an empty builder.
 	 */
 	AdvertisementDataBuilder() {
-		data_.reserve(ADVERTISEMENT_DATA_LEGACY_MAX_SIZE);
+		data_.reserve(kAdvertisementDataLegacyMaxSize);
 	}
 
 	/**
@@ -385,6 +398,17 @@ class AdvertisementDataBuilder {
 		assert(AdvertisementData::validate_buffer(data_) &&
 			   "Built advertisement data is invalid. check the added AdvertisementData items.");
 		return true;
+	}
+
+	bool set(uint8_t length, const uint8_t* data) {
+		clear();
+		if(data != nullptr && length > 0) {
+			const size_t copy_len = std::min<size_t>(length, kAdvertisementDataLegacyMaxSize);
+			data_.assign(data, data + copy_len);
+		}
+		assert(AdvertisementData::validate_buffer(data_) &&
+			   "Built advertisement data is invalid. check the added AdvertisementData items.");
+			return true;
 	}
 
 	/**
@@ -455,7 +479,7 @@ class AdvertisementDataBuilder {
 	 */
 	bool add(const AdvertisementData& ad) {
 		const auto& ad_data = ad.data();
-		if((data_.size() + ad_data.size()) > ADVERTISEMENT_DATA_LEGACY_MAX_SIZE) {
+		if((data_.size() + ad_data.size()) > kAdvertisementDataLegacyMaxSize) {
 			return false;
 		}
 		data_.insert(data_.end(), ad_data.cbegin(), ad_data.cend());
@@ -670,17 +694,17 @@ constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs, c7222::Advertis
 }
 constexpr uint8_t operator|(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
 	uint8_t ret = lhs | static_cast<uint8_t>(rhs);
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 constexpr uint8_t operator|=(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
 	uint8_t ret = lhs | static_cast<uint8_t>(rhs);
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
 	uint8_t ret = static_cast<uint8_t>(lhs) | rhs;
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 
@@ -690,36 +714,36 @@ constexpr uint8_t operator&(c7222::AdvertisementData::Flags lhs, c7222::Advertis
 
 constexpr uint8_t operator&(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
 	uint8_t ret = lhs & static_cast<uint8_t>(rhs);
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 
 constexpr uint8_t operator&=(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
 	uint8_t ret = lhs & static_cast<uint8_t>(rhs);
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 
 constexpr uint8_t operator&(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
 	uint8_t ret = static_cast<uint8_t>(lhs) & rhs;
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 
 constexpr uint8_t operator^(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
 	uint8_t ret = lhs ^ static_cast<uint8_t>(rhs);
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 constexpr uint8_t operator^=(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
 	uint8_t ret = lhs ^ static_cast<uint8_t>(rhs);
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 constexpr uint8_t operator^(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
 	uint8_t ret = static_cast<uint8_t>(lhs) & rhs;
-	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::All));
+	assert(ret <= static_cast<uint8_t>(c7222::AdvertisementData::Flags::kAll));
 	return ret;
 }
 
-#endif // TEMPLATE_BLE_GAP_ADVERTISEMENT_DATA_HPP
+#endif // ELEC_C7222_BLE_GAP_ADVERTISEMENT_DATA_H_
