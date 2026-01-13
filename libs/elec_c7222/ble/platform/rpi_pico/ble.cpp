@@ -6,7 +6,7 @@ namespace c7222 {
 namespace {
 
 void ble_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size) {
-	(void)Ble::getInstance()->dispatchBleHciPacket(packet_type, channel, packet, size);
+	(void)Ble::GetInstance()->DispatchBleHciPacket(packet_type, channel, packet, size);
 }
 
 } // namespace
@@ -16,7 +16,7 @@ struct BleContext : public btstack_packet_callback_registration_t {
 	bool sm_initialized = false;
 };
 
-BleError Ble::turnOn() {
+BleError Ble::TurnOn() {
 	if(turned_on_) {
 		return BleError::kSuccess;
 	}
@@ -40,7 +40,7 @@ BleError Ble::turnOn() {
 	if(err != 0) {
 		if(err > 0) {
 			BleError mapped = BleError::kUnspecifiedError;
-			if(btstack_map::from_btstack_error(static_cast<uint8_t>(err), mapped)) {
+			if(btstack_map::FromBtStackError(static_cast<uint8_t>(err), mapped)) {
 				return mapped;
 			}
 		}
@@ -51,7 +51,7 @@ BleError Ble::turnOn() {
 	return BleError::kSuccess;
 }
 
-void Ble::turnOff() {
+void Ble::TurnOff() {
 	if(!turned_on_) {
 		return;
 	}
@@ -60,7 +60,7 @@ void Ble::turnOff() {
 	turned_on_ = false;
 }
 
-BleError Ble::dispatchBleHciPacket(uint8_t packet_type,
+BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 									uint8_t channel,
 								   const uint8_t* packet_data,
 								   uint16_t packet_data_size) {
@@ -84,11 +84,11 @@ BleError Ble::dispatchBleHciPacket(uint8_t packet_type,
 		}
 		return BleError::kSuccess;
 	default:
-		return gap_->dispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+		return gap_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
 	}
 }
 
-Ble::Ble() : gap_(Gap::getInstance()) {
+Ble::Ble() : gap_(Gap::GetInstance()) {
 	auto context = new BleContext();
 	context->callback = &ble_packet_handler;
 	context_ = context;

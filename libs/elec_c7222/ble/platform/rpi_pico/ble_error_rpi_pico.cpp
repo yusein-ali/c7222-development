@@ -157,7 +157,7 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 
 } // namespace
 
-bool to_btstack(BleError error, uint8_t& out) {
+bool ToBtStack(BleError error, uint8_t& out) {
 	for (const auto& entry : kBleErrorMap) {
 		if (entry.error == error) {
 			out = entry.btstack;
@@ -167,7 +167,7 @@ bool to_btstack(BleError error, uint8_t& out) {
 	return false;
 }
 
-bool from_btstack_error(uint8_t code, BleError& out) {
+bool FromBtStackError(uint8_t code, BleError& out) {
 	for (const auto& entry : kBleErrorMap) {
 		if (entry.btstack == code) {
 			out = entry.error;

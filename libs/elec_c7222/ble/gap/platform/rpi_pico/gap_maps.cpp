@@ -162,7 +162,7 @@ bool from_btstack_event(uint8_t event_code, uint8_t subevent_code, Gap::EventId&
 	return false;
 }
 
-uint16_t to_btstack(Gap::AdvertisingEventType type) {
+uint16_t ToBtStack(Gap::AdvertisingEventType type) {
 	const uint16_t bits = static_cast<uint16_t>(type);
 	uint16_t result = 0;
 	for (const auto& entry : kAdvertisingEventTypeMap) {
@@ -183,7 +183,7 @@ Gap::AdvertisingEventType from_btstack_advertising_event_type(uint16_t bits) {
 	return static_cast<Gap::AdvertisingEventType>(result);
 }
 
-uint8_t to_btstack(Gap::AdvertisingType type) {
+uint8_t ToBtStack(Gap::AdvertisingType type) {
 	uint8_t out = 0;
 	if (map_enum_value(static_cast<uint8_t>(type),
 					   kAdvertisingTypeMap,
@@ -206,7 +206,7 @@ bool from_btstack_advertising_type(uint8_t value, Gap::AdvertisingType& out) {
 	return true;
 }
 
-uint8_t to_btstack(Gap::DirectAddressType type) {
+uint8_t ToBtStack(Gap::DirectAddressType type) {
 	uint8_t out = 0;
 	if (map_enum_value(static_cast<uint8_t>(type),
 					   kDirectAddressTypeMap,
@@ -229,7 +229,7 @@ bool from_btstack_direct_address_type(uint8_t value, Gap::DirectAddressType& out
 	return true;
 }
 
-uint8_t to_btstack(Gap::AdvertisingFilterPolicy policy) {
+uint8_t ToBtStack(Gap::AdvertisingFilterPolicy policy) {
 	uint8_t out = 0;
 	if (map_enum_value(static_cast<uint8_t>(policy),
 					   kAdvertisingFilterPolicyMap,
@@ -252,7 +252,7 @@ bool from_btstack_advertising_filter_policy(uint8_t value, Gap::AdvertisingFilte
 	return true;
 }
 
-uint8_t to_btstack(Gap::Phy phy) {
+uint8_t ToBtStack(Gap::Phy phy) {
 	uint8_t out = 0;
 	if (map_enum_value(static_cast<uint8_t>(phy),
 					   kPhyMap,
@@ -275,7 +275,7 @@ bool from_btstack_phy(uint8_t value, Gap::Phy& out) {
 	return true;
 }
 
-uint8_t to_btstack(BleAddress::AddressType type) {
+uint8_t ToBtStack(BleAddress::AddressType type) {
 	uint8_t out = 0;
 	if (map_enum_value(static_cast<uint8_t>(type),
 					   kAddressTypeMap,
@@ -324,7 +324,7 @@ BleError map_btstack_status(int status) {
 	}
 	if(status > 0) {
 		BleError mapped;
-		if(btstack_map::from_btstack_error(static_cast<uint8_t>(status), mapped)) {
+		if(btstack_map::FromBtStackError(static_cast<uint8_t>(status), mapped)) {
 			return mapped;
 		}
 	}

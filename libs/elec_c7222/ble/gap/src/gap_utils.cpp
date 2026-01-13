@@ -7,11 +7,10 @@ namespace c7222 {
 
 std::ostream& operator<<(std::ostream& os, const AdvertisementDataBuilder& adb){
     os << "AdvertisementDataBuilder{\n";
-    auto ad_list = adb.to_advertisement_data_list();
-    for (const auto& ad : ad_list) {
-        os << ad << "\n";
-    }
-    os << "}";
+	for(const auto& ad: adb.advertisement_data_list()) {
+		os << ad << "\n";
+	}
+	os << "}";
     return os;
 }
 std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad){

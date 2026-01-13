@@ -150,8 +150,8 @@ std::ostream& operator<<(std::ostream& os, BleError error);
 
 namespace btstack_map {
 
-bool to_btstack(BleError error, uint8_t& out);
-bool from_btstack_error(uint8_t code, BleError& out);
+bool ToBtStack(BleError error, uint8_t& out);
+bool FromBtStackError(uint8_t code, BleError& out);
 
 } // namespace btstack_map
 

@@ -19,25 +19,25 @@ constexpr size_t kLegacyAdvertisingDataMaxSize = 31;
 
 using namespace btstack_map;
 
-void Gap::setRandomAddress(const BleAddress& address) {
+void Gap::SetRandomAddress(const BleAddress& address) {
 	random_address_ = address;
 	random_address_set_ = true;
 
 	bd_addr_t addr{};
-	address.copy_to(addr);
+	address.CopyTo(addr);
 	gap_random_address_set(addr);
 }
 
-void Gap::setAdvertisingParameters(const AdvertisementParameters& params) {
+void Gap::SetAdvertisingParameters(const AdvertisementParameters& params) {
 	advertising_params_ = params;
 	advertising_params_set_ = true;
 
-	const uint8_t adv_type = btstack_map::to_btstack(params.advertising_type);
-	const uint8_t direct_type = btstack_map::to_btstack(params.direct_address_type);
+	const uint8_t adv_type = btstack_map::ToBtStack(params.advertising_type);
+	const uint8_t direct_type = btstack_map::ToBtStack(params.direct_address_type);
 	bd_addr_t direct_address{};
-	params.direct_address.copy_to(direct_address);
+	params.direct_address.CopyTo(direct_address);
 	const uint8_t channel_map = btstack_map::to_btstack_advertising_channel_map(params.channel_map);
-	const uint8_t filter_policy = btstack_map::to_btstack(params.filter_policy);
+	const uint8_t filter_policy = btstack_map::ToBtStack(params.filter_policy);
 
 	gap_advertisements_set_params(params.min_interval,
 								  params.max_interval,
@@ -48,20 +48,20 @@ void Gap::setAdvertisingParameters(const AdvertisementParameters& params) {
 								  filter_policy);
 }
 
-void Gap::setAdvertisingData(uint8_t length, const uint8_t* data) {
-	const bool was_advertising = isAdvertisingEnabled();
+void Gap::SetAdvertisingData(const uint8_t* data, size_t size) {
+	const bool was_advertising = IsAdvertisingEnabled();
 	if(was_advertising) {
-		stopAdvertising();
+		StopAdvertising();
 	}
 	// generate a local copy of the data to retain it
 	if(data != advertisement_data_builder_.bytes()){
-		advertisement_data_builder_.set(length, data);
+		advertisement_data_builder_.Set(data, size);
 	}
 	advertising_data_set_ = true;
 	advertising_data_.clear();
 
-	if(data != nullptr && length > 0) {
-		const size_t copy_len = std::min<size_t>(length, kLegacyAdvertisingDataMaxSize);
+	if(data != nullptr && size > 0) {
+		const size_t copy_len = std::min<size_t>(size, kLegacyAdvertisingDataMaxSize);
 		advertising_data_.assign(data, data + copy_len);
 	}
 
@@ -70,14 +70,14 @@ void Gap::setAdvertisingData(uint8_t length, const uint8_t* data) {
 								const_cast<uint8_t*>(payload));
 
 	if(was_advertising) {
-		startAdvertising();
+		StartAdvertising();
 	}
 }
 
-void Gap::setScanResponseData(uint8_t length, const uint8_t* data) {
-	const bool was_advertising = isAdvertisingEnabled();
+void Gap::SetScanResponseData(uint8_t length, const uint8_t* data) {
+	const bool was_advertising = IsAdvertisingEnabled();
 	if(was_advertising) {
-		stopAdvertising();
+		StopAdvertising();
 	}
 
 	scan_response_data_set_ = true;
@@ -93,24 +93,24 @@ void Gap::setScanResponseData(uint8_t length, const uint8_t* data) {
 							   const_cast<uint8_t*>(payload));
 
 	if(was_advertising) {
-		startAdvertising();
+		StartAdvertising();
 	}
 }
 
-void Gap::enableAdvertising(bool enabled) {
+void Gap::EnableAdvertising(bool enabled) {
 	advertisement_enabled_ = enabled;
 	gap_advertisements_enable(enabled ? 1 : 0);
 }
 
-void Gap::startAdvertising() {
-	enableAdvertising(true);
+void Gap::StartAdvertising() {
+	EnableAdvertising(true);
 }
 
-void Gap::stopAdvertising() {
-	enableAdvertising(false);
+void Gap::StopAdvertising() {
+	EnableAdvertising(false);
 }
 
-BleError Gap::requestConnectionParameterUpdate(ConnectionHandle con_handle,
+BleError Gap::RequestConnectionParameterUpdate(ConnectionHandle con_handle,
 											   const PreferredConnectionParameters& params) {
 	return map_btstack_status(gap_request_connection_parameter_update(con_handle,
 																	  params.min_interval,
@@ -119,7 +119,7 @@ BleError Gap::requestConnectionParameterUpdate(ConnectionHandle con_handle,
 																	  params.supervision_timeout));
 }
 
-BleError Gap::updateConnectionParameters(ConnectionHandle con_handle,
+BleError Gap::UpdateConnectionParameters(ConnectionHandle con_handle,
 										 const PreferredConnectionParameters& params) {
 	return map_btstack_status(gap_update_connection_parameters(con_handle,
 															   params.min_interval,
@@ -128,26 +128,26 @@ BleError Gap::updateConnectionParameters(ConnectionHandle con_handle,
 															   params.supervision_timeout));
 }
 
-BleError Gap::readRssi(ConnectionHandle con_handle) {
+BleError Gap::ReadRssi(ConnectionHandle con_handle) {
 	return map_btstack_status(gap_read_rssi(con_handle));
 }
 
-BleError Gap::disconnect(ConnectionHandle con_handle) {
+BleError Gap::Disconnect(ConnectionHandle con_handle) {
 	return map_btstack_status(gap_disconnect(con_handle));
 }
 
-void Gap::getLocalAddress(BleAddress& address) {
+void Gap::SetLocalAddress(BleAddress& address) {
 	uint8_t addr_type = BD_ADDR_TYPE_UNKNOWN;
 	bd_addr_t addr{};
 	gap_le_get_own_address(&addr_type, addr);
 	address = BleAddress(map_address_type(addr_type), addr);
 }
 
-void Gap::addEventHandler(const EventHandler& handler) {
+void Gap::AddEventHandler(const EventHandler& handler) {
 	event_handlers_.push_back(&handler);
 }
 
-bool Gap::removeEventHandler(const EventHandler& handler) {
+bool Gap::RemoveEventHandler(const EventHandler& handler) {
 	auto it = std::find(event_handlers_.begin(), event_handlers_.end(), &handler);
 	if(it != event_handlers_.end()) {
 		event_handlers_.erase(it);
@@ -156,11 +156,11 @@ bool Gap::removeEventHandler(const EventHandler& handler) {
 	return false;
 }
 
-void Gap::clearEventHandlers() {
+void Gap::ClearEventHandlers() {
 	event_handlers_.clear();
 }
 
-BleError Gap::dispatchBleHciPacket(uint8_t packet_type,
+BleError Gap::DispatchBleHciPacket(uint8_t packet_type,
 									  const uint8_t* packet_data,
 									  uint16_t packet_data_size) {
 	if(packet_type != HCI_EVENT_PACKET || packet_data == nullptr || packet_data_size == 0) {
@@ -178,10 +178,10 @@ BleError Gap::dispatchBleHciPacket(uint8_t packet_type,
 		return BleError::kSuccess;
 	}
 
-	return dispatch_event(event_id, packet_data, packet_data_size);
+	return DispatchEvent(event_id, packet_data, packet_data_size);
 }
 
-BleError Gap::dispatch_event(EventId event_id,
+BleError Gap::DispatchEvent(EventId event_id,
 							 const uint8_t* event_data,
 							 uint16_t event_data_size) {
 	switch(event_id) {
@@ -190,7 +190,7 @@ BleError Gap::dispatch_event(EventId event_id,
 			static_cast<ConnectionHandle>(gap_event_security_level_get_handle(event_data));
 		const uint8_t security_level = gap_event_security_level_get_security_level(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onSecurityLevel(con_handle, security_level);
+			handler->OnSecurityLevel(con_handle, security_level);
 		}
 		break;
 	}
@@ -200,7 +200,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		gap_event_dedicated_bonding_completed_get_address(event_data, addr);
 		const BleAddress address = make_unknown_address(addr);
 		for(const auto* handler: event_handlers_) {
-			handler->onDedicatedBondingCompleted(status, address);
+			handler->OnDedicatedBondingCompleted(status, address);
 		}
 		break;
 	}
@@ -217,7 +217,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		report.data_length = gap_event_advertising_report_get_data_length(event_data);
 		report.data = gap_event_advertising_report_get_data(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onAdvertisingReport(report);
+			handler->OnAdvertisingReport(report);
 		}
 		break;
 	}
@@ -252,7 +252,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		report.data_length = gap_event_extended_advertising_report_get_data_length(event_data);
 		report.data = gap_event_extended_advertising_report_get_data(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onExtendedAdvertisingReport(report);
+			handler->OnExtendedAdvertisingReport(report);
 		}
 		break;
 	}
@@ -278,14 +278,14 @@ BleError Gap::dispatch_event(EventId event_id,
 		result.name_len = gap_event_inquiry_result_get_name_len(event_data);
 		result.name = gap_event_inquiry_result_get_name(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onInquiryResult(result);
+			handler->OnInquiryResult(result);
 		}
 		break;
 	}
 	case EventId::kInquiryComplete: {
 		const uint8_t status = gap_event_inquiry_complete_get_status(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onInquiryComplete(status);
+			handler->OnInquiryComplete(status);
 		}
 		break;
 	}
@@ -294,7 +294,7 @@ BleError Gap::dispatch_event(EventId event_id,
 			static_cast<ConnectionHandle>(gap_event_rssi_measurement_get_con_handle(event_data));
 		const int8_t rssi = static_cast<int8_t>(gap_event_rssi_measurement_get_rssi(event_data));
 		for(const auto* handler: event_handlers_) {
-			handler->onRssiMeasurement(con_handle, rssi);
+			handler->OnRssiMeasurement(con_handle, rssi);
 		}
 		break;
 	}
@@ -309,7 +309,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		gap_event_local_oob_data_get_c_256(event_data, c_256);
 		gap_event_local_oob_data_get_r_256(event_data, r_256);
 		for(const auto* handler: event_handlers_) {
-			handler->onLocalOobData(present, c_192, r_192, c_256, r_256);
+			handler->OnLocalOobData(present, c_192, r_192, c_256, r_256);
 		}
 		break;
 	}
@@ -322,7 +322,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const bool ssp = gap_event_pairing_started_get_ssp(event_data) != 0;
 		const bool initiator = gap_event_pairing_started_get_initiator(event_data) != 0;
 		for(const auto* handler: event_handlers_) {
-			handler->onPairingStarted(con_handle, address, ssp, initiator);
+			handler->OnPairingStarted(con_handle, address, ssp, initiator);
 		}
 		break;
 	}
@@ -334,7 +334,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const BleAddress address = make_unknown_address(addr);
 		const uint8_t status = gap_event_pairing_complete_get_status(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onPairingComplete(con_handle, address, status);
+			handler->OnPairingComplete(con_handle, address, status);
 		}
 		break;
 	}
@@ -346,7 +346,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		connection_parameters_.erase(con_handle);
 		connected_ = !connection_parameters_.empty();
 		for(const auto* handler: event_handlers_) {
-			handler->onDisconnectionComplete(status, con_handle, reason);
+			handler->OnDisconnectionComplete(status, con_handle, reason);
 		}
 		break;
 	}
@@ -363,11 +363,11 @@ BleError Gap::dispatch_event(EventId event_id,
 					advertisement_enabled_ = false;
 				}
 				for(const auto* handler: event_handlers_) {
-					handler->onAdvertisingStart(status);
+					handler->OnAdvertisingStart(status);
 				}
 			} else {
 				for(const auto* handler: event_handlers_) {
-					handler->onAdvertisingEnd(status, 0);
+					handler->OnAdvertisingEnd(status, 0);
 				}
 			}
 			break;
@@ -381,7 +381,7 @@ BleError Gap::dispatch_event(EventId event_id,
 				const Gap::Phy tx_phy = map_phy(return_params[3]);
 				const Gap::Phy rx_phy = map_phy(return_params[4]);
 				for(const auto* handler: event_handlers_) {
-					handler->onReadPhy(status, con_handle, tx_phy, rx_phy);
+					handler->OnReadPhy(status, con_handle, tx_phy, rx_phy);
 				}
 			}
 		}
@@ -396,14 +396,14 @@ BleError Gap::dispatch_event(EventId event_id,
 		hci_subevent_le_scan_request_received_get_scanner_address(event_data, addr);
 		const BleAddress address = make_address(addr_type, addr);
 		for(const auto* handler: event_handlers_) {
-			handler->onScanRequestReceived(adv_handle, address);
+			handler->OnScanRequestReceived(adv_handle, address);
 		}
 		break;
 	}
 	case EventId::kLeScanTimeout: {
 		const uint8_t status = event_data_size > 3 ? event_data[3] : ERROR_CODE_UNSPECIFIED_ERROR;
 		for(const auto* handler: event_handlers_) {
-			handler->onScanTimeout(status);
+			handler->OnScanTimeout(status);
 		}
 		break;
 	}
@@ -413,7 +413,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const auto sync_handle = static_cast<ConnectionHandle>(
 			hci_subevent_le_periodic_advertising_sync_establishment_get_sync_handle(event_data));
 		for(const auto* handler: event_handlers_) {
-			handler->onPeriodicAdvertisingSyncEstablished(status, sync_handle);
+			handler->OnPeriodicAdvertisingSyncEstablished(status, sync_handle);
 		}
 		break;
 	}
@@ -430,7 +430,7 @@ BleError Gap::dispatch_event(EventId event_id,
 			hci_subevent_le_periodic_advertising_report_get_data_length(event_data);
 		const uint8_t* data = hci_subevent_le_periodic_advertising_report_get_data(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onPeriodicAdvertisingReport(sync_handle,
+			handler->OnPeriodicAdvertisingReport(sync_handle,
 												 tx_power,
 												 rssi,
 												 data_status,
@@ -443,7 +443,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const auto sync_handle = static_cast<ConnectionHandle>(
 			hci_subevent_le_periodic_advertising_sync_lost_get_sync_handle(event_data));
 		for(const auto* handler: event_handlers_) {
-			handler->onPeriodicAdvertisingSyncLoss(sync_handle);
+			handler->OnPeriodicAdvertisingSyncLoss(sync_handle);
 		}
 		break;
 	}
@@ -469,13 +469,13 @@ BleError Gap::dispatch_event(EventId event_id,
 			if(advertisement_enabled_) {
 				advertisement_enabled_ = false;
 				for(const auto* handler: event_handlers_) {
-					handler->onAdvertisingEnd(status, con_handle);
+					handler->OnAdvertisingEnd(status, con_handle);
 				}
 			}
 		}
 
 		for(const auto* handler: event_handlers_) {
-			handler->onConnectionComplete(status,
+			handler->OnConnectionComplete(status,
 										  con_handle,
 										  address,
 										  conn_interval,
@@ -508,13 +508,13 @@ BleError Gap::dispatch_event(EventId event_id,
 			if(advertisement_enabled_) {
 				advertisement_enabled_ = false;
 				for(const auto* handler: event_handlers_) {
-					handler->onAdvertisingEnd(status, con_handle);
+					handler->OnAdvertisingEnd(status, con_handle);
 				}
 			}
 		}
 
 		for(const auto* handler: event_handlers_) {
-			handler->onConnectionComplete(status,
+			handler->OnConnectionComplete(status,
 										  con_handle,
 										  address,
 										  conn_interval,
@@ -536,7 +536,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const uint16_t timeout =
 			hci_subevent_le_remote_connection_parameter_request_get_timeout(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onUpdateConnectionParametersRequest(con_handle,
+			handler->OnUpdateConnectionParametersRequest(con_handle,
 														 min_interval,
 														 max_interval,
 														 latency,
@@ -560,7 +560,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		}
 
 		for(const auto* handler: event_handlers_) {
-			handler->onConnectionParametersUpdateComplete(status,
+			handler->OnConnectionParametersUpdateComplete(status,
 														  con_handle,
 														  conn_interval,
 														  conn_latency,
@@ -576,7 +576,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const uint8_t rx_phy_raw = event_data_size > 7 ? event_data[7] : 0x00;
 		const Gap::Phy rx_phy = map_phy(rx_phy_raw);
 		for(const auto* handler: event_handlers_) {
-			handler->onPhyUpdateComplete(status, con_handle, tx_phy, rx_phy);
+			handler->OnPhyUpdateComplete(status, con_handle, tx_phy, rx_phy);
 		}
 		break;
 	}
@@ -586,7 +586,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const uint16_t tx_size = hci_subevent_le_data_length_change_get_max_tx_octets(event_data);
 		const uint16_t rx_size = hci_subevent_le_data_length_change_get_max_rx_octets(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onDataLengthChange(con_handle, tx_size, rx_size);
+			handler->OnDataLengthChange(con_handle, tx_size, rx_size);
 		}
 		break;
 	}
@@ -596,7 +596,7 @@ BleError Gap::dispatch_event(EventId event_id,
 			hci_subevent_le_advertising_set_terminated_get_connection_handle(event_data));
 		advertisement_enabled_ = false;
 		for(const auto* handler: event_handlers_) {
-			handler->onAdvertisingEnd(status, con_handle);
+			handler->OnAdvertisingEnd(status, con_handle);
 		}
 		break;
 	}
@@ -612,7 +612,7 @@ BleError Gap::dispatch_event(EventId event_id,
 		const uint16_t timeout =
 			l2cap_event_connection_parameter_update_request_get_timeout_multiplier(event_data);
 		for(const auto* handler: event_handlers_) {
-			handler->onUpdateConnectionParametersRequest(con_handle,
+			handler->OnUpdateConnectionParametersRequest(con_handle,
 														 min_interval,
 														 max_interval,
 														 latency,
@@ -622,7 +622,7 @@ BleError Gap::dispatch_event(EventId event_id,
 	}
 	case EventId::kPrivacyEnabled: {
 		for(const auto* handler: event_handlers_) {
-			handler->onPrivacyEnabled();
+			handler->OnPrivacyEnabled();
 		}
 		break;
 	}

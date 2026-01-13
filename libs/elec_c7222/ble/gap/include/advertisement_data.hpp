@@ -45,7 +45,7 @@ enum class AdvertisementDataType : uint8_t {
  * Stores a single AD structure (length + type + value) in a vector.
  */
 class AdvertisementData {
-  public:
+   public:
 	enum class Flags : uint8_t {
 		kLeLimitedDiscoverableMode = 0x01,
 		kLeGeneralDiscoverableMode = 0x02,
@@ -79,13 +79,25 @@ class AdvertisementData {
 	 * @param type Advertisement data type.
 	 * @param object_ptr Pointer to a concrete object.
 	 */
-	template <typename T> AdvertisementData(AdvertisementDataType type, const T* object_ptr) {
+	template <typename T>
+	AdvertisementData(AdvertisementDataType type, const T* object_ptr) {
 		static_assert(!std::is_pointer<T>::value, "object_ptr must point to a concrete type");
 		// static_assert(!std::is_array<T>::value, "object_ptr must not be an array type");
 		build(type, reinterpret_cast<const std::uint8_t*>(object_ptr), sizeof(T));
 	}
 
-	template <typename T> AdvertisementData(AdvertisementDataType type, const T* object_ptr, size_t elem_count) {
+	/**
+	 * @brief Build an AD structure from an array of typed objects.
+	 *
+	 * Copies elem_count items of type T into the payload.
+	 *
+	 * @tparam T Concrete (non-pointer) type.
+	 * @param type Advertisement data type.
+	 * @param object_ptr Pointer to the first element.
+	 * @param elem_count Number of elements to copy.
+	 */
+	template <typename T>
+	AdvertisementData(AdvertisementDataType type, const T* object_ptr, size_t elem_count) {
 		static_assert(!std::is_pointer<T>::value, "object_ptr must point to a concrete type");
 		// static_assert(std::is_array<T>::value, "object_ptr must be an array type");
 		build(type, reinterpret_cast<const std::uint8_t*>(object_ptr), sizeof(T) * elem_count);
@@ -103,8 +115,10 @@ class AdvertisementData {
 	 * @param type Advertisement data type.
 	 * @param object_ref Reference to a concrete object.
 	 */
-	template <typename T> AdvertisementData(AdvertisementDataType type, const T& object_ref) {
-		static_assert(!std::is_pointer<T>::value, "object_ref must refer to a concrete type, not a pointer type");
+	template <typename T>
+	AdvertisementData(AdvertisementDataType type, const T& object_ref) {
+		static_assert(!std::is_pointer<T>::value,
+					  "object_ref must refer to a concrete type, not a pointer type");
 		if(std::is_object<T>::value)
 			build(type, reinterpret_cast<const std::uint8_t*>(&object_ref), sizeof(T));
 		else {
@@ -138,17 +152,56 @@ class AdvertisementData {
 		return data_.size();
 	}
 
-	AdvertisementDataType getType() const {
+	/**
+	 * @brief Return the AD structure type.
+	 */
+	AdvertisementDataType type() const {
 		assert(data_.size() >= 2 && "AdvertisementData: data size too small to contain type");
 		return static_cast<AdvertisementDataType>(data_[1]);
 	}
 
-	uint8_t getLength() const {
+	/**
+	 * @brief Return the length field (type + value bytes).
+	 */
+	uint8_t length() const {
 		assert(data_.size() >= 1 && "AdvertisementData: data size too small to contain length");
 		return data_[0];
 	}
 
-  private:
+	/**
+	 * @brief Concatenate two AD structures into a raw byte vector.
+	 *
+	 * Use this when you want to build a single advertising payload from
+	 * multiple AD structures.
+	 *
+	 * @param other AD structure to append.
+	 * @return Combined byte vector (no re-validation of 31-byte limit).
+	 */
+	std::vector<uint8_t> operator+=(const AdvertisementData& other) const {
+		std::vector<uint8_t> new_data;
+		new_data.reserve(data_.size() + other.size());
+		new_data.insert(new_data.end(), data_.cbegin(), data_.cend());
+		new_data.insert(new_data.end(), other.data().cbegin(), other.data().cend());
+		return new_data;
+	}
+
+	/**
+	 * @brief Compare AD structure bytes for equality.
+	 */
+	bool operator==(const AdvertisementData& other) const {
+		return data_ == other.data_;
+	}
+
+	/**
+	 * @brief Stream an AD structure for logging/debugging.
+	 */
+	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad);
+	/**
+	 * @brief Stream AD Flags for logging/debugging.
+	 */
+	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData::Flags& flag);
+
+   private:
 	/**
 	 * @brief Iterator to the beginning of the AD structure bytes.
 	 */
@@ -186,26 +239,7 @@ class AdvertisementData {
 		return data_.cend();
 	}
 
-	/**
-	 * @brief Concatenate two AD structures into a raw byte vector.
-	 *
-	 * Use this when you want to build a single advertising payload from
-	 * multiple AD structures.
-	 *
-	 * @param other AD structure to append.
-	 * @return Combined byte vector (no re-validation of 31-byte limit).
-	 */
-	std::vector<uint8_t> operator+=(const AdvertisementData& other) const {
-		std::vector<uint8_t> new_data;
-		new_data.reserve(data_.size() + other.size());
-		new_data.insert(new_data.end(), data_.cbegin(), data_.cend());
-		new_data.insert(new_data.end(), other.data().cbegin(), other.data().cend());
-		return new_data;
-	}
-	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData& ad);
-	friend std::ostream& operator<<(std::ostream& os, const AdvertisementData::Flags& flag);
-
-  public:
+   public:
 	/**
 	 * @brief Validate the AD length field for a given type.
 	 *
@@ -215,45 +249,45 @@ class AdvertisementData {
 	 * @param type Advertisement data type.
 	 * @param length Length field value (type + value bytes).
 	 */
-	static bool validate_length(AdvertisementDataType type, size_t length) {
+	static bool ValidateLength(AdvertisementDataType type, size_t length) {
 		if(length == 0 || (length + 1) > kAdvertisementDataLegacyMaxSize) {
 			return false;
 		}
 
 		const size_t data_size = length - 1;
 		switch(type) {
-		case AdvertisementDataType::kFlags:
-		case AdvertisementDataType::kTxPowerLevel:
-			if(length != 2) {
+			case AdvertisementDataType::kFlags:
+			case AdvertisementDataType::kTxPowerLevel:
+				if(length != 2) {
+					return false;
+				}
+				break;
+			case AdvertisementDataType::kSlaveConnectionIntervalRange:
+				if(length != 5) {
+					return false;
+				}
+				break;
+			case AdvertisementDataType::kIncompleteList16BitUuid:
+			case AdvertisementDataType::kCompleteList16BitUuid:
+				if(data_size == 0 || (data_size % 2) != 0) {
+					return false;
+				}
+				break;
+			case AdvertisementDataType::kServiceData16BitUuid:
+			case AdvertisementDataType::kManufacturerSpecific:
+				if(length < 3) {
+					return false;
+				}
+				break;
+			case AdvertisementDataType::kShortenedLocalName:
+			case AdvertisementDataType::kCompleteLocalName:
+				if(length < 2) {
+					return false;
+				}
+				break;
+			default:
+				assert(false && "Unknown AdvertisementDataType");
 				return false;
-			}
-			break;
-		case AdvertisementDataType::kSlaveConnectionIntervalRange:
-			if(length != 5) {
-				return false;
-			}
-			break;
-		case AdvertisementDataType::kIncompleteList16BitUuid:
-		case AdvertisementDataType::kCompleteList16BitUuid:
-			if(data_size == 0 || (data_size % 2) != 0) {
-				return false;
-			}
-			break;
-		case AdvertisementDataType::kServiceData16BitUuid:
-		case AdvertisementDataType::kManufacturerSpecific:
-			if(length < 3) {
-				return false;
-			}
-			break;
-		case AdvertisementDataType::kShortenedLocalName:
-		case AdvertisementDataType::kCompleteLocalName:
-			if(length < 2) {
-				return false;
-			}
-			break;
-		default:
-			assert(false && "Unknown AdvertisementDataType");
-			return false;
 		}
 		return true;
 	}
@@ -269,7 +303,7 @@ class AdvertisementData {
 	 * @param adv_data_size Total buffer size in bytes.
 	 * @return true if the buffer is well-formed, false otherwise.
 	 */
-	static bool validate_buffer(const uint8_t* adv_data, size_t adv_data_size) {
+	static bool ValidateBuffer(const uint8_t* adv_data, size_t adv_data_size) {
 		size_t index = 0;
 		size_t data_count = 0;
 		// validate size
@@ -280,7 +314,7 @@ class AdvertisementData {
 		while(index < adv_data_size) {
 			uint8_t length = adv_data[index];
 			AdvertisementDataType type = static_cast<AdvertisementDataType>(adv_data[index + 1]);
-			bool check = validate_length(type, length);
+			bool check = ValidateLength(type, length);
 			if(!check) {
 				return false;
 			}
@@ -296,11 +330,11 @@ class AdvertisementData {
 	 * @param adv_data Raw advertising payload bytes.
 	 * @return true if the buffer is well-formed, false otherwise.
 	 */
-	static bool validate_buffer(const std::vector<uint8_t>& adv_data) {
-		return validate_buffer(adv_data.data(), adv_data.size());
+	static bool ValidateBuffer(const std::vector<uint8_t>& adv_data) {
+		return ValidateBuffer(adv_data.data(), adv_data.size());
 	}
 
-  private:
+   private:
 	/**
 	 * @brief Build and store the AD structure bytes.
 	 *
@@ -316,7 +350,7 @@ class AdvertisementData {
 			__builtin_trap();
 		}
 
-		assert(validate_length(type, size + 1) && "Invalid AdvertisementData size for given type");
+		assert(ValidateLength(type, size + 1) && "Invalid AdvertisementData size for given type");
 
 		const size_t total = size + kAdvertisementDataStructHeaderOverhead;
 		if(total > kAdvertisementDataLegacyMaxSize) {
@@ -359,12 +393,13 @@ inline std::vector<uint8_t> operator+(const AdvertisementData& lhs, const Advert
  * legacy advertising payload. The builder enforces the 31-byte limit on insert.
  */
 class AdvertisementDataBuilder {
-  public:
+   public:
 	/**
 	 * @brief Create an empty builder.
 	 */
 	AdvertisementDataBuilder() {
 		data_.reserve(kAdvertisementDataLegacyMaxSize);
+		built_ = false;
 	}
 
 	/**
@@ -374,12 +409,10 @@ class AdvertisementDataBuilder {
 	 *
 	 * @param ads List of AD structures to add.
 	 */
-	AdvertisementDataBuilder(const std::list<AdvertisementData>& ads) {
-		for(const auto& ad: ads) {
-			add(ad);
-		}
-		assert(AdvertisementData::validate_buffer(data_) &&
-			   "Built advertisement data is invalid. check the added AdvertisementData items.");
+	explicit AdvertisementDataBuilder(const std::list<AdvertisementData>& ads) {
+		built_ = false;
+		Set(ads);
+		Build();
 	}
 
 	/**
@@ -388,27 +421,24 @@ class AdvertisementDataBuilder {
 	 * @param ads List of AD structures to set.
 	 * @return true if all structures were added, false if a structure would overflow.
 	 */
-	bool set(const std::list<AdvertisementData>& ads) {
-		clear();
-		for(const auto& ad: ads) {
-			if(!add(ad)) {
-				return false;
-			}
-		}
-		assert(AdvertisementData::validate_buffer(data_) &&
-			   "Built advertisement data is invalid. check the added AdvertisementData items.");
-		return true;
+	bool Set(const std::list<AdvertisementData>& ads) {
+		Clear();
+		advertisements_ = ads;
+		return Build();
 	}
 
-	bool set(uint8_t length, const uint8_t* data) {
-		clear();
-		if(data != nullptr && length > 0) {
-			const size_t copy_len = std::min<size_t>(length, kAdvertisementDataLegacyMaxSize);
-			data_.assign(data, data + copy_len);
-		}
-		assert(AdvertisementData::validate_buffer(data_) &&
-			   "Built advertisement data is invalid. check the added AdvertisementData items.");
-			return true;
+	/**
+	 * @brief Replace the payload from a raw advertising buffer.
+	 *
+	 * @param data Raw advertising bytes.
+	 * @param size Total buffer size in bytes.
+	 * @return true if decoded and built successfully, false otherwise.
+	 */
+	bool Set(const uint8_t* data, size_t size) {
+		const auto& ads =
+			AdvertisementDataBuilder::DecodeBufferToAdvertisementDataList(data, size);
+		Clear();
+		return Set(ads);
 	}
 
 	/**
@@ -416,30 +446,12 @@ class AdvertisementDataBuilder {
 	 *
 	 * @return true if an AD structure was removed, false if the payload is empty or invalid.
 	 */
-	bool pop() {
-		if(data_.empty()) {
+	bool Pop() {
+		if(advertisements_.empty()) {
 			return false;
 		}
-
-		size_t index = 0;
-		size_t last_start = 0;
-
-		while(index < data_.size()) {
-			uint8_t length = data_[index];
-			if(length == 0) {
-				return false;
-			}
-
-			size_t next = index + static_cast<size_t>(length) + 1;
-			if(next > data_.size()) {
-				return false;
-			}
-
-			last_start = index;
-			index = next;
-		}
-
-		data_.erase(data_.begin() + static_cast<std::ptrdiff_t>(last_start), data_.end());
+		advertisements_.pop_back();
+		built_ = false;
 		return true;
 	}
 
@@ -449,8 +461,28 @@ class AdvertisementDataBuilder {
 	 * @param ad AD structure to add.
 	 * @return true if added, false if the payload would overflow.
 	 */
-	bool push(const AdvertisementData& ad) {
-		return add(ad);
+	bool Push(const AdvertisementData& ad) {
+		return Add(ad);
+	}
+
+	/**
+	 * @brief Replace the AD structure with the same type.
+	 *
+	 * @param ad AD structure to replace in the list.
+	 * @return true if replaced, false if no matching type exists.
+	 */
+	bool Replace(const AdvertisementData& ad){
+		auto it = std::find_if(advertisements_.begin(),
+							   advertisements_.end(),
+							   [&ad](const AdvertisementData& existing_ad) {
+								   return existing_ad.type() == ad.type();
+							   });
+		if(it != advertisements_.end()) {
+			*it = ad;
+			built_ = false;
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -459,14 +491,13 @@ class AdvertisementDataBuilder {
 	 * @param ads List of AD structures to add.
 	 * @return true if all structures were added, false if a structure would overflow.
 	 */
-	bool add(const std::list<AdvertisementData>& ads) {
+	bool Add(const std::list<AdvertisementData>& ads) {
 		for(const auto& ad: ads) {
-			if(!add(ad)) {
+			bool ok = Add(ad);
+			if(!ok) {
 				return false;
 			}
 		}
-		assert(AdvertisementData::validate_buffer(data_) &&
-			   "Built advertisement data is invalid. check the added AdvertisementData items.");
 		return true;
 	}
 	/**
@@ -477,71 +508,29 @@ class AdvertisementDataBuilder {
 	 * @param ad AD structure to add.
 	 * @return true if added, false if the payload would overflow.
 	 */
-	bool add(const AdvertisementData& ad) {
-		const auto& ad_data = ad.data();
-		if((data_.size() + ad_data.size()) > kAdvertisementDataLegacyMaxSize) {
+	bool Add(const AdvertisementData& ad) {
+		assert(ad.ValidateLength(ad.type(), ad.size()) && "AdvertisementData to add is not valid");
+		auto it = std::find_if(advertisements_.cbegin(),
+							   advertisements_.cend(),
+							   [&ad](const AdvertisementData& existing_ad) {
+								   return existing_ad.type() == ad.type();
+							   });
+		if(it != advertisements_.cend()) {
+			// already exists, so we must not add
 			return false;
 		}
-		data_.insert(data_.end(), ad_data.cbegin(), ad_data.cend());
+		// push to the end of the list
+		advertisements_.push_back(ad);
+		built_ = false;
 		return true;
 	}
-
-	/**
-	 * @brief Build and add an AD structure from raw bytes.
-	 *
-	 * @param type Advertisement data type.
-	 * @param data Payload bytes.
-	 * @param size Payload length.
-	 * @return true if added, false if the payload would overflow.
-	 */
-	bool add(AdvertisementDataType type, const uint8_t* data, size_t size) {
-		AdvertisementData ad(type, data, size);
-		return add(ad);
-	}
-
-	/**
-	 * @brief Build and add an AD structure from a vector.
-	 *
-	 * @param type Advertisement data type.
-	 * @param data Payload bytes.
-	 * @return true if added, false if the payload would overflow.
-	 */
-	bool add(AdvertisementDataType type, const std::vector<uint8_t>& data) {
-		AdvertisementData ad(type, data);
-		return add(ad);
-	}
-
-	/**
-	 * @brief Build and add an AD structure from a typed object pointer.
-	 *
-	 * @tparam T Concrete (non-pointer) type.
-	 * @param type Advertisement data type.
-	 * @param object_ptr Pointer to a concrete object.
-	 * @return true if added, false if the payload would overflow.
-	 */
-	template <typename T> bool add(AdvertisementDataType type, const T* object_ptr) {
-		AdvertisementData ad(type, object_ptr);
-		return add(ad);
-	}
-
-	/**
-	 * @brief Build and add an AD structure from a typed object reference.
-	 *
-	 * @tparam T Concrete type.
-	 * @param type Advertisement data type.
-	 * @param object_ref Reference to a concrete object.
-	 * @return true if added, false if the payload would overflow.
-	 */
-	template <typename T> bool add(AdvertisementDataType type, const T& object_ref) {
-		AdvertisementData ad(type, object_ref);
-		return add(ad);
-	}
-
 
 	/**
 	 * @brief Return the raw advertising payload bytes.
 	 */
 	const std::vector<uint8_t>& data() const {
+		// return data if it is already built
+		assert(built_ && "AdvertisementDataBuilder: data not built yet, call build() first!");
 		return data_;
 	}
 
@@ -549,6 +538,8 @@ class AdvertisementDataBuilder {
 	 * @brief Return a raw pointer to the advertising payload bytes.
 	 */
 	const uint8_t* bytes() const {
+		// return data if it is already built
+		assert(built_ && "AdvertisementDataBuilder: data not built yet, call build() first!");
 		return data_.data();
 	}
 
@@ -556,14 +547,24 @@ class AdvertisementDataBuilder {
 	 * @brief Return the total payload size in bytes.
 	 */
 	size_t size() const {
-		return data_.size();
+		if(built_) {
+			return data_.size();
+		} else {
+			size_t total = 0;
+			for(const auto& ad: advertisements_) {
+				total += ad.size();
+			}
+			return total;
+		}
 	}
 
 	/**
 	 * @brief Clear all stored AD structures.
 	 */
-	void clear() {
+	void Clear() {
+		advertisements_.clear();
 		data_.clear();
+		built_ = false;
 	}
 
 	/**
@@ -575,16 +576,7 @@ class AdvertisementDataBuilder {
 	 * @return Reference to this builder.
 	 */
 	AdvertisementDataBuilder& operator+=(const AdvertisementData& ad) {
-		std::list<AdvertisementData> my_ads = to_advertisement_data_list();
-		auto it = std::find_if(my_ads.cbegin(), my_ads.cend(), [&ad](const AdvertisementData& existing_ad) {
-			return existing_ad.data() == ad.data();
-		});
-		if(it == my_ads.cend()) {
-			add(ad);
-		} else {
-			// already exists, so we must hard-assert
-			assert(false && "AdvertisementData already exists in the builder");
-		}
+		Add(ad);
 		return *this;
 	}
 
@@ -605,16 +597,15 @@ class AdvertisementDataBuilder {
 	 * @param ad Builder to merge in.
 	 * @return Reference to this builder.
 	 */
-	AdvertisementDataBuilder& operator+=(const AdvertisementDataBuilder& ad) {
-		std::list<AdvertisementData> ads = ad.to_advertisement_data_list();
-		std::list<AdvertisementData> my_ads = to_advertisement_data_list();
-
-		for(const auto& a: ads) {
-			auto it = std::find_if(my_ads.cbegin(), my_ads.cend(), [&a](const AdvertisementData& existing_ad) {
-				return existing_ad.data() == a.data();
-			});
-			if(it == my_ads.cend()) {
-				add(a);
+	AdvertisementDataBuilder& operator+=(const AdvertisementDataBuilder& adb) {
+		for(const auto& a: adb.advertisements_) {
+			auto it = std::find_if(advertisements_.cbegin(),
+								   advertisements_.cend(),
+								   [&a](const AdvertisementData& existing_ad) {
+									   return existing_ad.data() == a.data();
+								   });
+			if(it == advertisements_.cend()) {
+				Add(a);
 			} else {
 				// already exists, so we must hard-assert
 				assert(false && "AdvertisementData already exists in the builder");
@@ -634,26 +625,59 @@ class AdvertisementDataBuilder {
 	}
 
 	/**
+	 * @brief Compare two builders by payload or list contents.
+	 */
+	bool operator==(const AdvertisementDataBuilder& other) const {
+		if(built_ && other.built_) {
+			return data_ == other.data_;
+		} else {
+			return advertisements_ == other.advertisements_;
+		}
+		return true;
+	}
+	/**
 	 * @brief Validate the assembled payload.
 	 */
-	bool validate() const {
-		return AdvertisementData::validate_buffer(data_);
+	bool Validate() const {
+		for(const auto& ad: advertisements_) {
+			if(!ad.ValidateLength(ad.type(), ad.size())) {
+				return false;
+			}
+		}
+		if(size() > kAdvertisementDataLegacyMaxSize) {
+			// exceeding the size limit
+			return false;
+		}
+		return true;
 	}
 
 	/**
+	 * @brief Build the raw payload from stored AD structures.
+	 *
+	 * Sorts by type, assembles the payload, and validates the result.
+	 *
+	 * @return true if the payload is valid, false otherwise.
+	 */
+	bool Build() {
+		if(built_) {
+			return Validate();
+		}
+		data_.clear();
+		advertisements_.sort([](const AdvertisementData& a, const AdvertisementData& b) {
+			return static_cast<uint8_t>(a.type()) < static_cast<uint8_t>(b.type());
+		});
+		for(auto& ad: advertisements_) {
+			const auto& ad_data = ad.data();
+			data_.insert(data_.end(), ad_data.cbegin(), ad_data.cend());
+		}
+		built_ = true;
+		return Validate();
+	}
+	/**
 	 * @brief Decode the payload into a list of AD structures.
 	 */
-	std::list<AdvertisementData> to_advertisement_data_list() const {
-		std::list<AdvertisementData> ads;
-		size_t index = 0;
-		while(index < data_.size()) {
-			uint8_t length = data_[index];
-			AdvertisementDataType type = static_cast<AdvertisementDataType>(data_[index + 1]);
-			size_t value_size = length - 1;
-			ads.emplace_back(type, &data_[index + 2], value_size);
-			index += length + 1;
-		}
-		return ads;
+	const std::list<AdvertisementData>& advertisement_data_list() const {
+		return advertisements_;
 	}
 
 	/**
@@ -664,8 +688,8 @@ class AdvertisementDataBuilder {
 	 * @return List of decoded AD structures.
 	 */
 
-	static std::list<AdvertisementData> decode_buffer_to_advertisement_data_list(const uint8_t* adv_data,
-																				 size_t adv_data_size) {
+	static std::list<AdvertisementData>
+	DecodeBufferToAdvertisementDataList(const uint8_t* adv_data, size_t adv_data_size) {
 		std::list<AdvertisementData> ads;
 		size_t index = 0;
 		while(index < adv_data_size) {
@@ -678,18 +702,30 @@ class AdvertisementDataBuilder {
 		return ads;
 	}
 
+	/**
+	 * @brief Stream the builder payload for logging/debugging.
+	 */
 	friend std::ostream& operator<<(std::ostream& os, const AdvertisementDataBuilder& adb);
 
-  private:
+   private:
 	/**
 	 * @brief Stored raw advertising payload bytes.
 	 */
+	std::list<AdvertisementData> advertisements_;
+	/**
+	 * @brief Cached raw payload bytes (valid when built_ is true).
+	 */
 	std::vector<uint8_t> data_;
+	/**
+	 * @brief True if data_ matches the current advertisements_ list.
+	 */
+	bool built_ = false;
 };
 
-} // namespace c7222
+}  // namespace c7222
 
-constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs, c7222::AdvertisementData::Flags rhs) {
+constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs,
+							c7222::AdvertisementData::Flags rhs) {
 	return static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs);
 }
 constexpr uint8_t operator|(uint8_t lhs, c7222::AdvertisementData::Flags rhs) {
@@ -708,7 +744,8 @@ constexpr uint8_t operator|(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
 	return ret;
 }
 
-constexpr uint8_t operator&(c7222::AdvertisementData::Flags lhs, c7222::AdvertisementData::Flags rhs) {
+constexpr uint8_t operator&(c7222::AdvertisementData::Flags lhs,
+							c7222::AdvertisementData::Flags rhs) {
 	return static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs);
 }
 
@@ -746,4 +783,4 @@ constexpr uint8_t operator^(c7222::AdvertisementData::Flags lhs, uint8_t rhs) {
 	return ret;
 }
 
-#endif // ELEC_C7222_BLE_GAP_ADVERTISEMENT_DATA_H_
+#endif	// ELEC_C7222_BLE_GAP_ADVERTISEMENT_DATA_H_

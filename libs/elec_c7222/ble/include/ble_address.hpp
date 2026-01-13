@@ -65,7 +65,7 @@ class BleAddress {
 	 *
 	 * @param type New address type.
 	 */
-	void set_type(AddressType type) {
+	void type(AddressType type) {
 		type_ = type;
 	}
 
@@ -83,7 +83,7 @@ class BleAddress {
 		return address_;
 	}
 
-	static const RawAddress& null_addr() {
+	static const RawAddress& NullAddress() {
 		static const RawAddress addr = {};
 		return addr;
 	}
@@ -93,7 +93,7 @@ class BleAddress {
 	 *
 	 * @param out Destination address buffer.
 	 */
-	void copy_to(RawAddress& out) const {
+	void CopyTo(RawAddress& out) const {
 		out = address_;
 	}
 
@@ -102,7 +102,7 @@ class BleAddress {
 	 *
 	 * @param out Destination address buffer.
 	 */
-	void copy_to(uint8_t (&out)[kLength]) const {
+	void CopyTo(uint8_t (&out)[kLength]) const {
 		std::copy(address_.begin(), address_.end(), out);
 	}
 

@@ -20,8 +20,6 @@
 
 namespace c7222 {
 
-enum class BleError : uint8_t;
-
 using ConnectionHandle = uint16_t;
 
 /**
@@ -35,7 +33,7 @@ using ConnectionHandle = uint16_t;
  * management by maintaining state and handling HCI event dispatching. Scanning
  * is currently exposed only via events, not via public start/stop APIs.
  *
- * The `Gap` class is implemented as a singleton, accessible via `getInstance()`,
+ * The `Gap` class is implemented as a singleton, accessible via `GetInstance()`,
  * ensuring a single point of control for the device's GAP layer.
  *
  * ---
@@ -44,12 +42,12 @@ using ConnectionHandle = uint16_t;
  * The class abstracts away the low-level details of the BTstack. It works by:
  * 1.  **Configuration Caching:** Storing advertising parameters, data, and other
  *     settings within the class.
- * 2.  **State Management:** Tracking the advertising state (`isAdvertisingEnabled()`)
- *     and connection status (`isConnected()`).
+ * 2.  **State Management:** Tracking the advertising state (`IsAdvertisingEnabled()`)
+ *     and connection status (`IsConnected()`).
  * 3.  **Event-Driven Callbacks:** Using the `EventHandler` interface, which users
  *     can implement to react to BLE events (e.g., connection, disconnection,
  *     advertising reports) in a clean, C++ idiomatic way.
- * 4.  **HCI Event Dispatching:** The `dispatch_ble_hci_packet` method is the entry
+ * 4.  **HCI Event Dispatching:** The `DispatchBleHciPacket` method is the entry
  *     point for raw HCI events from the BTstack, which are then parsed and
  *     forwarded to the appropriate `EventHandler` methods. Your application
  *     must call this for events to reach the handlers.
@@ -62,35 +60,35 @@ using ConnectionHandle = uint16_t;
  *     - **Type:** Connectable, scannable, non-connectable, etc.
  *     - **Interval:** The frequency of advertising packets.
  *     - **Channels:** Which BLE channels to advertise on.
- *     This is configured using `setAdvertisingParameters()`.
+ *     This is configured using `SetAdvertisingParameters()`.
  *
  * 2.  **Advertising Data:** The main payload (up to 31 bytes) that is broadcast
  *     to all listening devices. This typically includes flags and the device name.
- *     This is configured using `setAdvertisingData()`.
+ *     This is configured using `SetAdvertisingData()`.
  *
  * 3.  **Scan Response Data (Optional):** An additional 31-byte payload that a
  *     central device can request after seeing the initial advertisement. This is
  *     often used for supplementary information that doesn't fit in the main payload.
- *     This is configured using `setScanResponseData()`.
+ *     This is configured using `SetScanResponseData()`.
  *
  * ### Applying Configurations and Utilities
  *
- * - **`setAdvertisingParameters(const AdvertisementParameters& params)`:** Takes a struct
+ * - **`SetAdvertisingParameters(const AdvertisementParameters& params)`:** Takes a struct
  *   that defines the advertising behavior. A default-constructed `AdvertisementParameters`
  *   provides standard connectable, undirected advertising settings.
  *
- * - **`setAdvertisingData(...)` / `setScanResponseData(...)`:** These methods accept
- *   a raw pointer and length. For convenience, `setAdvertisingData` is overloaded to
+ * - **`SetAdvertisingData(...)` / `SetScanResponseData(...)`:** These methods accept
+ *   a raw pointer and length. For convenience, `SetAdvertisingData` is overloaded to
  *   accept a `std::vector<uint8_t>` or an `AdvertisementDataBuilder` instance, which
  *   is the recommended utility for safely constructing valid advertising payloads.
  *
- * - **`startAdvertising()` / `stopAdvertising()`:** Simple methods to enable or
+ * - **`StartAdvertising()` / `StopAdvertising()`:** Simple methods to enable or
  *   disable advertising.
  *
  * ### Dynamic Data Updates
  *
  * You can update advertising or scan response data at any time, even while
- * advertising is active. The `setAdvertisingData` and `setScanResponseData` methods
+ * advertising is active. The `SetAdvertisingData` and `SetScanResponseData` methods
  * will automatically handle the underlying requirements of the RPi Pico BLE stack:
  * they temporarily stop advertising, apply the new data, and restart advertising
  * if it was previously enabled. This ensures a seamless update without manual
@@ -119,7 +117,7 @@ using ConnectionHandle = uint16_t;
  * // --- 1. Implement an event handler ---
  * class MyGapEventHandler : public c7222::Gap::EventHandler {
  * public:
- *     void onAdvertisingStart(uint8_t status) const override {
+ *     void OnAdvertisingStart(uint8_t status) const override {
  *         if (status == 0) {
  *             std::cout << "Advertising started successfully." << std::endl;
  *         } else {
@@ -127,7 +125,7 @@ using ConnectionHandle = uint16_t;
  *         }
  *     }
  *
- *     void onConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
+ *     void OnConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
  *                               const c7222::BleAddress& address,
  *                               uint16_t, uint16_t, uint16_t) const override {
  *         if (status == 0) {
@@ -135,11 +133,11 @@ using ConnectionHandle = uint16_t;
  *         }
  *     }
  *
- *     void onDisconnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
+ *     void OnDisconnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
  *                                  uint8_t reason) const override {
  *         std::cout << "Device disconnected, reason: " << (int)reason << std::endl;
  *         // After disconnection, we can restart advertising.
- *         c7222::Gap::getInstance().startAdvertising();
+ *         c7222::Gap::GetInstance().StartAdvertising();
  *         std::cout << "Advertising restarted." << std::endl;
  *     }
  * };
@@ -147,12 +145,12 @@ using ConnectionHandle = uint16_t;
  * // --- Main application logic ---
  * void setup_ble_advertising() {
  *     // Get the singleton instance of the Gap class.
- *     auto& gap = c7222::Gap::getInstance();
+ *     auto& gap = c7222::Gap::GetInstance();
  *
  *     // --- 2. Register the event handler ---
  *     // Note: The handler instance must exist for the lifetime of the application.
  *     static MyGapEventHandler my_handler;
- *     gap.addEventHandler(my_handler);
+ *     gap.AddEventHandler(my_handler);
  *
  *     // --- 3. Configure advertising parameters ---
  *     // We can use the default parameters for standard connectable advertising.
@@ -161,7 +159,7 @@ using ConnectionHandle = uint16_t;
  *     // Interval is in units of 0.625 ms, so 320 * 0.625 = 200ms, 400 * 0.625 = 250ms
  *     params.min_interval = 320;
  *     params.max_interval = 400;
- *     gap.setAdvertisingParameters(params);
+ *     gap.SetAdvertisingParameters(params);
  *
  *     // --- 4. Build and set advertising data ---
  *     c7222::AdvertisementDataBuilder ad_builder;
@@ -169,15 +167,15 @@ using ConnectionHandle = uint16_t;
  *                    c7222::AdvertisementData::Flags::kLeGeneralDiscoverableMode |
  *                    c7222::AdvertisementData::Flags::kBrEdrNotSupported);
  *     ad_builder.add(c7222::AdvertisementDataType::kCompleteLocalName, "PicoW-BLE");
- *     gap.setAdvertisingData(ad_builder);
+ *     gap.SetAdvertisingData(ad_builder);
  *
  *     // --- 5. Start advertising ---
- *     gap.startAdvertising();
+ *     gap.StartAdvertising();
  * }
  *
  * // Forward BTstack HCI events to Gap. Call this from your BTstack callback.
  * void on_btstack_event(uint8_t packet_type, const uint8_t* packet, uint16_t size) {
- *     c7222::Gap::getInstance().dispatch_ble_hci_packet(packet_type, packet, size);
+ *     c7222::Gap::GetInstance().DispatchBleHciPacket(packet_type, packet, size);
  * }
  *
  * // In your main function, call setup_ble_advertising() and then
@@ -196,7 +194,7 @@ using ConnectionHandle = uint16_t;
  *
  * class MyGapEventHandler : public c7222::Gap::EventHandler {
  * public:
- *     void onConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
+ *     void OnConnectionComplete(uint8_t status, c7222::ConnectionHandle handle,
  *                               const c7222::BleAddress&, uint16_t, uint16_t, uint16_t) const
  * override { if (status == 0) { (void)handle;
  *         }
@@ -205,12 +203,12 @@ using ConnectionHandle = uint16_t;
  *
  * void init_gap_events() {
  *     static MyGapEventHandler handler;
- *     c7222::Gap::getInstance().addEventHandler(handler);
+ *     c7222::Gap::GetInstance().AddEventHandler(handler);
  * }
  * ```
  */
 class Gap : public NonCopyableNonMovable {
-  public:
+   public:
 	/**
 	 * @brief Event IDs used by Gap::EventHandler.
 	 */
@@ -632,7 +630,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_REQUEST_RECEIVED.
 		 */
-		virtual void onScanRequestReceived(uint8_t advertising_handle,
+		virtual void OnScanRequestReceived(uint8_t advertising_handle,
 										   const BleAddress& scanner_address) const {}
 
 		/**
@@ -642,7 +640,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_COMMAND_COMPLETE for HCI_LE_SET_ADVERTISING_ENABLE.
 		 */
-		virtual void onAdvertisingStart(uint8_t status) const {}
+		virtual void OnAdvertisingStart(uint8_t status) const {}
 
 		/**
 		 * Called when advertising is disabled or terminated by a connection.
@@ -657,7 +655,7 @@ class Gap : public NonCopyableNonMovable {
 		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ADVERTISING_SET_TERMINATED for extended
 		 * advertising.
 		 */
-		virtual void onAdvertisingEnd(uint8_t status, ConnectionHandle connection_handle) const {}
+		virtual void OnAdvertisingEnd(uint8_t status, ConnectionHandle connection_handle) const {}
 
 		/**
 		 * Called when GAP_EVENT_ADVERTISING_REPORT is received.
@@ -666,7 +664,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_ADVERTISING_REPORT.
 		 */
-		virtual void onAdvertisingReport(const AdvertisingReport& report) const {}
+		virtual void OnAdvertisingReport(const AdvertisingReport& report) const {}
 
 		/**
 		 * Called when GAP_EVENT_EXTENDED_ADVERTISING_REPORT is received.
@@ -675,7 +673,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_EXTENDED_ADVERTISING_REPORT.
 		 */
-		virtual void onExtendedAdvertisingReport(const ExtendedAdvertisingReport& report) const {}
+		virtual void OnExtendedAdvertisingReport(const ExtendedAdvertisingReport& report) const {}
 
 		/**
 		 * Called when a scan timeout is reported.
@@ -684,7 +682,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_SCAN_TIMEOUT.
 		 */
-		virtual void onScanTimeout(uint8_t status) const {}
+		virtual void OnScanTimeout(uint8_t status) const {}
 
 		/**
 		 * Called when periodic advertising sync is established.
@@ -695,7 +693,7 @@ class Gap : public NonCopyableNonMovable {
 		 * BTstack event: HCI_EVENT_LE_META +
 		 * HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_ESTABLISHMENT.
 		 */
-		virtual void onPeriodicAdvertisingSyncEstablished(uint8_t status,
+		virtual void OnPeriodicAdvertisingSyncEstablished(uint8_t status,
 														  ConnectionHandle sync_handle) const {}
 
 		/**
@@ -710,7 +708,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_REPORT.
 		 */
-		virtual void onPeriodicAdvertisingReport(ConnectionHandle sync_handle,
+		virtual void OnPeriodicAdvertisingReport(ConnectionHandle sync_handle,
 												 int8_t tx_power,
 												 int8_t rssi,
 												 uint8_t data_status,
@@ -724,7 +722,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PERIODIC_ADVERTISING_SYNC_LOST.
 		 */
-		virtual void onPeriodicAdvertisingSyncLoss(ConnectionHandle sync_handle) const {}
+		virtual void OnPeriodicAdvertisingSyncLoss(ConnectionHandle sync_handle) const {}
 
 		/**
 		 * Called when a LE connection completes.
@@ -740,7 +738,7 @@ class Gap : public NonCopyableNonMovable {
 		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_COMPLETE
 		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_ENHANCED_CONNECTION_COMPLETE
 		 */
-		virtual void onConnectionComplete(uint8_t status,
+		virtual void OnConnectionComplete(uint8_t status,
 										  ConnectionHandle con_handle,
 										  const BleAddress& address,
 										  uint16_t conn_interval,
@@ -760,7 +758,7 @@ class Gap : public NonCopyableNonMovable {
 		 * - HCI_EVENT_LE_META + HCI_SUBEVENT_LE_REMOTE_CONNECTION_PARAMETER_REQUEST
 		 * - L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST (if using L2CAP events).
 		 */
-		virtual void onUpdateConnectionParametersRequest(ConnectionHandle con_handle,
+		virtual void OnUpdateConnectionParametersRequest(ConnectionHandle con_handle,
 														 uint16_t min_interval,
 														 uint16_t max_interval,
 														 uint16_t latency,
@@ -777,7 +775,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE.
 		 */
-		virtual void onConnectionParametersUpdateComplete(uint8_t status,
+		virtual void OnConnectionParametersUpdateComplete(uint8_t status,
 														  ConnectionHandle con_handle,
 														  uint16_t conn_interval,
 														  uint16_t conn_latency,
@@ -788,11 +786,11 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * @param status HCI status (0x00 for success).
 		 * @param con_handle Connection handle.
-		 * @param reason HCI disconnect reason.
+		 * @param reason HCI Disconnect reason.
 		 *
 		 * BTstack event: HCI_EVENT_DISCONNECTION_COMPLETE.
 		 */
-		virtual void onDisconnectionComplete(uint8_t status,
+		virtual void OnDisconnectionComplete(uint8_t status,
 											 ConnectionHandle con_handle,
 											 uint8_t reason) const {}
 
@@ -807,7 +805,7 @@ class Gap : public NonCopyableNonMovable {
 		 * BTstack event: HCI_EVENT_COMMAND_COMPLETE for HCI_LE_READ_PHY.
 		 */
 		virtual void
-		onReadPhy(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
+		OnReadPhy(uint8_t status, ConnectionHandle con_handle, Phy tx_phy, Phy rx_phy) const {}
 
 		/**
 		 * Called when the PHY update process completes.
@@ -819,7 +817,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_PHY_UPDATE_COMPLETE.
 		 */
-		virtual void onPhyUpdateComplete(uint8_t status,
+		virtual void OnPhyUpdateComplete(uint8_t status,
 										 ConnectionHandle con_handle,
 										 Phy tx_phy,
 										 Phy rx_phy) const {}
@@ -833,7 +831,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: HCI_EVENT_LE_META + HCI_SUBEVENT_LE_DATA_LENGTH_CHANGE.
 		 */
-		virtual void onDataLengthChange(ConnectionHandle con_handle,
+		virtual void OnDataLengthChange(ConnectionHandle con_handle,
 										uint16_t tx_size,
 										uint16_t rx_size) const {}
 
@@ -842,7 +840,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack: no dedicated event; call after successful privacy configuration.
 		 */
-		virtual void onPrivacyEnabled() const {}
+		virtual void OnPrivacyEnabled() const {}
 
 		/**
 		 * Called when GAP_EVENT_SECURITY_LEVEL is received.
@@ -852,7 +850,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_SECURITY_LEVEL.
 		 */
-		virtual void onSecurityLevel(ConnectionHandle con_handle, uint8_t security_level) const {}
+		virtual void OnSecurityLevel(ConnectionHandle con_handle, uint8_t security_level) const {}
 
 		/**
 		 * Called when GAP_EVENT_DEDICATED_BONDING_COMPLETED is received.
@@ -862,7 +860,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_DEDICATED_BONDING_COMPLETED.
 		 */
-		virtual void onDedicatedBondingCompleted(uint8_t status, const BleAddress& address) const {}
+		virtual void OnDedicatedBondingCompleted(uint8_t status, const BleAddress& address) const {}
 
 		/**
 		 * Called when GAP_EVENT_INQUIRY_RESULT is received.
@@ -871,7 +869,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_INQUIRY_RESULT.
 		 */
-		virtual void onInquiryResult(const InquiryResult& result) const {}
+		virtual void OnInquiryResult(const InquiryResult& result) const {}
 
 		/**
 		 * Called when GAP_EVENT_INQUIRY_COMPLETE is received.
@@ -880,7 +878,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_INQUIRY_COMPLETE.
 		 */
-		virtual void onInquiryComplete(uint8_t status) const {}
+		virtual void OnInquiryComplete(uint8_t status) const {}
 
 		/**
 		 * Called when GAP_EVENT_RSSI_MEASUREMENT is received.
@@ -890,7 +888,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_RSSI_MEASUREMENT.
 		 */
-		virtual void onRssiMeasurement(ConnectionHandle con_handle, int8_t rssi) const {}
+		virtual void OnRssiMeasurement(ConnectionHandle con_handle, int8_t rssi) const {}
 
 		/**
 		 * Called when GAP_EVENT_LOCAL_OOB_DATA is received.
@@ -903,7 +901,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_LOCAL_OOB_DATA.
 		 */
-		virtual void onLocalOobData(bool oob_data_present,
+		virtual void OnLocalOobData(bool oob_data_present,
 									const uint8_t* c_192,
 									const uint8_t* r_192,
 									const uint8_t* c_256,
@@ -919,7 +917,7 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_PAIRING_STARTED.
 		 */
-		virtual void onPairingStarted(ConnectionHandle con_handle,
+		virtual void OnPairingStarted(ConnectionHandle con_handle,
 									  const BleAddress& address,
 									  bool ssp,
 									  bool initiator) const {}
@@ -933,11 +931,11 @@ class Gap : public NonCopyableNonMovable {
 		 *
 		 * BTstack event: GAP_EVENT_PAIRING_COMPLETE.
 		 */
-		virtual void onPairingComplete(ConnectionHandle con_handle,
+		virtual void OnPairingComplete(ConnectionHandle con_handle,
 									   const BleAddress& address,
 									   uint8_t status) const {}
 
-	  protected:
+	   protected:
 		/**
 		 * Prevent polymorphic deletion and avoid unnecessary virtual destructor
 		 * as the Gap class will never delete the instance it contains.
@@ -993,8 +991,10 @@ class Gap : public NonCopyableNonMovable {
 		 */
 		AdvertisementParameters()
 			: advertising_type(AdvertisingType::kAdvInd),
-			  direct_address_type(DirectAddressType::kPublic), direct_address{},
-			  min_interval(0x00A0), max_interval(0x00F0),
+			  direct_address_type(DirectAddressType::kPublic),
+			  direct_address(),
+			  min_interval(0x00A0),
+			  max_interval(0x00F0),
 			  channel_map(static_cast<uint8_t>(AdvertisingChannelMap::kAll)),
 			  filter_policy(AdvertisingFilterPolicy::kScanAnyConnectAny) {}
 	};
@@ -1038,25 +1038,25 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Set a fixed random address for advertising.
 	 */
-	void setRandomAddress(const BleAddress& address);
+	void SetRandomAddress(const BleAddress& address);
 
 	/**
 	 * @brief Configure legacy advertising parameters.
 	 */
-	void setAdvertisingParameters(const AdvertisementParameters& params);
+	void SetAdvertisingParameters(const AdvertisementParameters& params);
 
 	/**
 	 * @brief Set legacy advertising data payload.
 	 */
-	void setAdvertisingData(uint8_t length, const uint8_t* data);
+	void SetAdvertisingData(const uint8_t* data, size_t size);
 
 	/**
 	 * @brief Set legacy advertising data payload from a vector.
 	 *
 	 * @param data Advertising data payload.
 	 */
-	void setAdvertisingData(const std::vector<uint8_t>& data) {
-		setAdvertisingData(static_cast<uint8_t>(data.size()), data.data());
+	void SetAdvertisingData(const std::vector<uint8_t>& data) {
+		SetAdvertisingData(data.data(), data.size());
 	}
 
 	/**
@@ -1065,8 +1065,16 @@ class Gap : public NonCopyableNonMovable {
 	 * @param data_builder AdvertisementDataBuilder instance containing the payload.
 	 * @note The data from the builder is copied.
 	 */
-	void setAdvertisingData(const AdvertisementDataBuilder& data_builder) {
-		setAdvertisingData(static_cast<uint8_t>(data_builder.size()), data_builder.bytes());
+	void SetAdvertisingData(const AdvertisementDataBuilder& data_builder) {
+		if(&data_builder == &advertisement_data_builder_) {
+			// Avoid copying from self
+			advertisement_data_builder_.Build();
+			return;
+		}
+		advertisement_data_builder_ = data_builder;
+		bool ok = advertisement_data_builder_.Build();
+		assert(ok && "AdvertisementDataBuilder contains invalid data or is empty");
+		SetAdvertisingData(advertisement_data_builder_.data());
 	}
 
 	/**
@@ -1074,62 +1082,61 @@ class Gap : public NonCopyableNonMovable {
 	 *
 	 * Asserts that the builder contains at least one AD structure and validates.
 	 */
-	void setAdvertisingData() {
-		assert(advertisement_data_builder_.size() > 0 && "AdvertisementDataBuilder is empty");
-		assert(advertisement_data_builder_.validate() &&
-			   "AdvertisementDataBuilder payload invalid");
-		setAdvertisingData(advertisement_data_builder_);
+	void SetAdvertisingData() {
+		bool ok = advertisement_data_builder_.Build();
+		assert(ok && "AdvertisementDataBuilder contains invalid data or is empty");
+		SetAdvertisingData(advertisement_data_builder_.data());
 	}
 
 	/**
 	 * @brief Set scan response data payload (ADV_SCAN_IND).
 	 */
-	void setScanResponseData(uint8_t length, const uint8_t* data);
+	void SetScanResponseData(uint8_t length, const uint8_t* data);
 
 	/**
 	 * @brief Enable or disable advertising.
 	 */
-	void enableAdvertising(bool enabled);
+	void EnableAdvertising(bool enabled);
 
 	/**
 	 * @brief Convenience helpers for starting/stopping advertising.
 	 */
-	void startAdvertising();
-	void stopAdvertising();
+	void StartAdvertising();
+	void StopAdvertising();
 
 	/**
 	 * @brief Request a connection parameter update (peripheral role).
 	 */
-	BleError requestConnectionParameterUpdate(ConnectionHandle con_handle,
+	BleError RequestConnectionParameterUpdate(ConnectionHandle con_handle,
 											  const PreferredConnectionParameters& params);
 
 	/**
 	 * @brief Update connection parameters (central role).
 	 */
-	BleError updateConnectionParameters(ConnectionHandle con_handle,
+	BleError UpdateConnectionParameters(ConnectionHandle con_handle,
 										const PreferredConnectionParameters& params);
 
 	/**
 	 * @brief Read the RSSI for a connection.
 	 */
-	BleError readRssi(ConnectionHandle con_handle);
+	BleError ReadRssi(ConnectionHandle con_handle);
 
 	/**
 	 * @brief Disconnect a connection by handle.
 	 */
-	BleError disconnect(ConnectionHandle con_handle);
+	BleError Disconnect(ConnectionHandle con_handle);
 
 	/**
 	 * @brief Read the local device address.
 	 */
-	void getLocalAddress(BleAddress& address);
+	void SetLocalAddress(BleAddress& address);
 
 	/**
 	 * @brief Register an event handler.
 	 *
 	 * The handler is stored as a pointer; it must outlive the Gap instance.
 	 */
-	void addEventHandler(const EventHandler& handler);
+	void AddEventHandler(const EventHandler& handler);
 	/**
 	 * @brief Unregister an event handler.
 	 *
@@ -1143,19 +1150,19 @@ class Gap : public NonCopyableNonMovable {
 	 * @note The handler instance is not deleted by this method. Therefore, the caller must delete
 	 * the object if it was dynamically allocated.
 	 */
-	bool removeEventHandler(const EventHandler& handler);
+	bool RemoveEventHandler(const EventHandler& handler);
 
 	/**
 	 * @brief Clear all registered event handlers.
 	 * @note The handler instances are not deleted by this method. Therefore, the caller must delete
 	 * the objects if they were dynamically allocated.
 	 */
-	void clearEventHandlers();
+	void ClearEventHandlers();
 
 	/**
 	 * @brief Get the list of registered event handlers.
 	 */
-	std::list<const EventHandler*> getEventHandlers() const {
+	std::list<const EventHandler*> event_handlers() const {
 		return event_handlers_;
 	}
 
@@ -1166,7 +1173,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param out Parameters output.
 	 * @return true if parameters are known for the handle.
 	 */
-	bool getConnectionParameters(ConnectionHandle con_handle, ConnectionParameters& out) const {
+	bool GetConnectionParameters(ConnectionHandle con_handle, ConnectionParameters& out) const {
 		const auto it = connection_parameters_.find(con_handle);
 		if(it == connection_parameters_.end()) {
 			return false;
@@ -1178,21 +1185,21 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Check if advertising is currently enabled.
 	 */
-	bool isAdvertisingEnabled() const {
+	bool IsAdvertisingEnabled() const {
 		return advertisement_enabled_;
 	}
 
 	/**
 	 * @brief Check if advertising parameters have been set.
 	 */
-	bool isAdvertisingParametersSet() const {
+	bool IsAdvertisingParametersSet() const {
 		return advertising_params_set_;
 	}
 
 	/**
 	 * @brief Check if a connection is active.
 	 */
-	bool isConnected() const {
+	bool IsConnected() const {
 		return connected_;
 	}
 
@@ -1202,7 +1209,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param address Output address.
 	 * @return true if a random address has been set.
 	 */
-	bool getRandomAddress(BleAddress& address) const {
+	bool GetRandomAddress(BleAddress& address) const {
 		if(!random_address_set_) {
 			return false;
 		}
@@ -1213,7 +1220,7 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Check if a random address has been set.
 	 */
-	bool isRandomAddressSet() const {
+	bool IsRandomAddressSet() const {
 		return random_address_set_;
 	}
 
@@ -1223,7 +1230,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param params Output parameters.
 	 * @return true if advertising parameters have been set.
 	 */
-	bool getAdvertisingParameters(AdvertisementParameters& params) const {
+	bool GetAdvertisingParameters(AdvertisementParameters& params) const {
 		if(!advertising_params_set_) {
 			return false;
 		}
@@ -1236,7 +1243,7 @@ class Gap : public NonCopyableNonMovable {
 	 *
 	 * @return Pointer to advertising data, or nullptr if not set.
 	 */
-	const std::vector<uint8_t>& getAdvertisingData() const {
+	const std::vector<uint8_t>& GetAdvertisingData() const {
 		return advertising_data_;
 	}
 
@@ -1244,23 +1251,23 @@ class Gap : public NonCopyableNonMovable {
 	 * @brief Access the internal advertisement data builder.
 	 *
 	 * Use this to assemble the legacy advertising payload before applying it
-	 * with setAdvertisingDataFromBuilder().
+	 * with SetAdvertisingData().
 	 */
-	AdvertisementDataBuilder& getAdvertisementDataBuilder() {
+	AdvertisementDataBuilder& GetAdvertisementDataBuilder() {
 		return advertisement_data_builder_;
 	}
 
 	/**
 	 * @brief Access the internal advertisement data builder (const).
 	 */
-	const AdvertisementDataBuilder& getAdvertisementDataBuilder() const {
+	const AdvertisementDataBuilder& GetAdvertisementDataBuilder() const {
 		return advertisement_data_builder_;
 	}
 
 	/**
 	 * @brief Check if advertising data has been set.
 	 */
-	bool isAdvertisingDataSet() const {
+	bool IsAdvertisingDataSet() const {
 		return advertising_data_set_;
 	}
 
@@ -1269,14 +1276,14 @@ class Gap : public NonCopyableNonMovable {
 	 *
 	 * @return Pointer to scan response data, or nullptr if not set.
 	 */
-	const std::vector<uint8_t>& getScanResponseData() const {
+	const std::vector<uint8_t>& scan_response_data() const {
 		return scan_response_data_;
 	}
 
 	/**
 	 * @brief Check if scan response data has been set.
 	 */
-	bool isScanResponseDataSet() const {
+	bool IsScanResponseDataSet() const {
 		return scan_response_data_set_;
 	}
 
@@ -1285,14 +1292,14 @@ class Gap : public NonCopyableNonMovable {
 	 *
 	 * The map is populated from connection-related events.
 	 */
-	const std::map<ConnectionHandle, ConnectionParameters>& connectionParameters() const {
+	const std::map<ConnectionHandle, ConnectionParameters>& GetConnectionParameters() const {
 		return connection_parameters_;
 	}
 
 	/**
 	 * @brief Get the singleton instance.
 	 */
-	static Gap* getInstance() {
+	static Gap* GetInstance() {
 		if(instance_ == nullptr) {
 			instance_ = new Gap();
 		}
@@ -1307,11 +1314,11 @@ class Gap : public NonCopyableNonMovable {
 	 * @param packet_data_size Packet length in bytes.
 	 * @return BLE error status.
 	 */
-	virtual BleError dispatchBleHciPacket(uint8_t packet_type,
+	virtual BleError DispatchBleHciPacket(uint8_t packet_type,
 										  const uint8_t* packet_data,
 										  uint16_t packet_data_size);
 
-  protected:
+   protected:
 	/**
 	 * @brief Dispatch a mapped GAP event to registered handlers.
 	 *
@@ -1320,11 +1327,11 @@ class Gap : public NonCopyableNonMovable {
 	 * @param event_data_size Event length in bytes.
 	 * @return BLE error status.
 	 */
-	virtual BleError dispatch_event(EventId event_id,
-									const uint8_t* event_data,
-									uint16_t event_data_size);
+	virtual BleError DispatchEvent(EventId event_id,
+								   const uint8_t* event_data,
+								   uint16_t event_data_size);
 
-  private:
+   private:
 	Gap() = default;
 	Gap(const Gap&) = delete;
 	Gap& operator=(const Gap&) = delete;
@@ -1334,7 +1341,7 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Singleton instance pointer.
 	 *
-	 * Lazily allocated by getInstance() and never freed.
+	 * Lazily allocated by GetInstance() and never freed.
 	 */
 	inline static Gap* instance_ = nullptr;
 
@@ -1343,7 +1350,7 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	bool advertisement_enabled_ = false;
 	/**
-	 * @brief True once setAdvertisingParameters() has been called.
+	 * @brief True once SetAdvertisingParameters() has been called.
 	 */
 	bool advertising_params_set_ = false;
 
@@ -1361,7 +1368,7 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	BleAddress random_address_{};
 	/**
-	 * @brief True once setRandomAddress() has been called.
+	 * @brief True once SetRandomAddress() has been called.
 	 */
 	bool random_address_set_ = false;
 
@@ -1374,7 +1381,7 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	std::vector<uint8_t> advertising_data_{};
 	/**
-	 * @brief True once setAdvertisingData() has been called.
+	 * @brief True once SetAdvertisingData() has been called.
 	 */
 	bool advertising_data_set_ = false;
 
@@ -1383,7 +1390,7 @@ class Gap : public NonCopyableNonMovable {
 	 */
 	std::vector<uint8_t> scan_response_data_{};
 	/**
-	 * @brief True once setScanResponseData() has been called.
+	 * @brief True once SetScanResponseData() has been called.
 	 */
 	bool scan_response_data_set_ = false;
 
@@ -1397,7 +1404,7 @@ class Gap : public NonCopyableNonMovable {
 	std::list<const EventHandler*> event_handlers_;
 };
 
-} // namespace c7222
+}  // namespace c7222
 
 std::ostream& operator<<(std::ostream& os, c7222::Gap::AdvertisingEventType type);
 std::ostream& operator<<(std::ostream& os, c7222::Gap::Phy phy);
@@ -1465,4 +1472,4 @@ constexpr uint8_t operator^(c7222::Gap::AdvertisingChannelMap lhs, uint8_t rhs) 
 	return ret;
 }
 
-#endif // ELEC_C7222_BLE_GAP_H_
+#endif	// ELEC_C7222_BLE_GAP_H_

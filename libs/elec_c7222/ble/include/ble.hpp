@@ -22,11 +22,11 @@ namespace c7222 {
  * @brief Singleton entry point for BLE configuration and events.
  */
 class Ble : public NonCopyableNonMovable {
-  public:
+   public:
 	/**
 	 * @brief Get the singleton instance.
 	 */
-	static Ble* getInstance() {
+	static Ble* GetInstance() {
 		if(instance_ == nullptr) {
 			instance_ = new Ble();
 		}
@@ -36,31 +36,31 @@ class Ble : public NonCopyableNonMovable {
 	/**
 	 * @brief Access the underlying GAP instance.
 	 */
-	Gap* getGap() {
+	Gap* GetGap() {
 		return gap_;
 	}
 
 	/**
 	 * @brief Access the underlying GAP instance (const).
 	 */
-	const Gap* getGap() const {
+	const Gap* GetGap() const {
 		return gap_;
 	}
 
 	/**
 	 * @brief Register BLE stack-on callback (HCI_STATE_WORKING).
-	 * 
+	 *
 	 * @note The callback is invoked when the BLE stack transitions to
 	 *       the working state, indicating that BLE operations can proceed.
 	 */
-	void setOnBleStackOnCallback(std::function<void()> handler) {
+	void SetOnBleStackOnCallback(std::function<void()> handler) {
 		callback_on_ble_stack_on_ = std::move(handler);
 	}
 
 	/**
 	 * @brief Register BLE stack-on callback from a function pointer.
 	 */
-	void setOnBleStackOnCallback(void (*handler)()) {
+	void SetOnBleStackOnCallback(void (*handler)()) {
 		callback_on_ble_stack_on_ = handler;
 	}
 
@@ -68,7 +68,7 @@ class Ble : public NonCopyableNonMovable {
 	 * @brief Register BLE stack-on callback from an object/member function.
 	 */
 	template <typename T>
-	void setOnBleStackOnCallback(T* object, void (T::*method)()) {
+	void SetOnBleStackOnCallback(T* object, void (T::*method)()) {
 		callback_on_ble_stack_on_ = std::function<void()>(std::bind(method, object));
 	}
 
@@ -76,21 +76,21 @@ class Ble : public NonCopyableNonMovable {
 	 * @brief Register BLE stack-on callback from a const object/member function.
 	 */
 	template <typename T>
-	void setOnBleStackOnCallback(const T* object, void (T::*method)() const) {
+	void SetOnBleStackOnCallback(const T* object, void (T::*method)() const) {
 		callback_on_ble_stack_on_ = std::function<void()>(std::bind(method, object));
 	}
 
 	/**
 	 * @brief Register BLE stack-off callback (non-working state).
 	 */
-	void setOnBleStackOffCallback(std::function<void()> handler) {
+	void SetOnBleStackOffCallback(std::function<void()> handler) {
 		callback_on_ble_stack_off_ = std::move(handler);
 	}
 
 	/**
 	 * @brief Register BLE stack-off callback from a function pointer.
 	 */
-	void setOnBleStackOffCallback(void (*handler)()) {
+	void SetOnBleStackOffCallback(void (*handler)()) {
 		callback_on_ble_stack_off_ = handler;
 	}
 
@@ -98,7 +98,7 @@ class Ble : public NonCopyableNonMovable {
 	 * @brief Register BLE stack-off callback from an object/member function.
 	 */
 	template <typename T>
-	void setOnBleStackOffCallback(T* object, void (T::*method)()) {
+	void SetOnBleStackOffCallback(T* object, void (T::*method)()) {
 		callback_on_ble_stack_off_ = std::function<void()>(std::bind(method, object));
 	}
 
@@ -106,69 +106,48 @@ class Ble : public NonCopyableNonMovable {
 	 * @brief Register BLE stack-off callback from a const object/member function.
 	 */
 	template <typename T>
-	void setOnBleStackOffCallback(const T* object, void (T::*method)() const) {
+	void SetOnBleStackOffCallback(const T* object, void (T::*method)() const) {
 		callback_on_ble_stack_off_ = std::function<void()>(std::bind(method, object));
 	}
 
 	/**
 	 * @brief Update BLE stack state and notify callbacks on change.
 	 */
-	BleError turnOn();
+	BleError TurnOn();
 
-	void turnOff();
+	void TurnOff();
 
 	/**
 	 * @brief Check whether BLE stack is marked as working.
 	 */
-	bool isTurnedOn() const {
+	bool IsTurnedOn() const {
 		return turned_on_;
 	}
 
-	void setDeviceName(const std::string& name) {
+	void SetDeviceName(const std::string& name) {
 		if(gap_ == nullptr) {
 			return;
 		}
-		auto& builder = gap_->getAdvertisementDataBuilder();
-		auto ad_list = builder.to_advertisement_data_list();
-		for(auto it = ad_list.begin(); it != ad_list.end(); ) {
-			if(it->getType() == AdvertisementDataType::kCompleteLocalName) {
-				it = ad_list.erase(it);
-				break;
-			} else {
-				++it;
-			}
-		}
-		ad_list.emplace_back(AdvertisementDataType::kCompleteLocalName, name.data(), name.size());
-		ad_list.sort([](const AdvertisementData& a, const AdvertisementData& b) {
-			return static_cast<uint8_t>(a.getType()) < static_cast<uint8_t>(b.getType());
-		});
-
-		builder.set(ad_list);
-		assert(builder.validate() && "AdvertisementDataBuilder contains invalid data after setting device name.");	
+		auto& builder = gap_->GetAdvertisementDataBuilder();
+		builder.Replace(AdvertisementData(AdvertisementDataType::kCompleteLocalName,
+										  name.c_str(),
+										  name.size()));
+										  bool ok = builder.Build();
+		assert(ok &&
+			   "AdvertisementDataBuilder contains invalid data after setting device name.");
 		device_name_ = name;
 	}
 
-	void setAdvertisementFlags(uint8_t flags) {
+	void SetAdvertisementFlags(uint8_t flags) {
 		if(gap_ == nullptr) {
 			return;
 		}
-		auto& builder = gap_->getAdvertisementDataBuilder();
-		auto ad_list = builder.to_advertisement_data_list();
-		for(auto it = ad_list.begin(); it != ad_list.end();) {
-			if(it->getType() == AdvertisementDataType::kFlags) {
-				it = ad_list.erase(it);
-				break;
-			} else {
-				++it;
-			}
-		}
-		ad_list.emplace_back(AdvertisementDataType::kFlags, &flags, sizeof(flags));
-		ad_list.sort([](const AdvertisementData& a, const AdvertisementData& b) {
-			return static_cast<uint8_t>(a.getType()) < static_cast<uint8_t>(b.getType());
-		});
-
-		builder.set(ad_list);
-		assert(builder.validate() &&
+		auto& builder = gap_->GetAdvertisementDataBuilder();
+		builder.Replace(AdvertisementData(AdvertisementDataType::kFlags,
+										  &flags,
+										  sizeof(flags)));
+		bool ok = builder.Build();
+		assert(ok &&
 			   "AdvertisementDataBuilder contains invalid data after setting flags.");
 		advertisement_flags_ = flags;
 	}
@@ -177,79 +156,79 @@ class Ble : public NonCopyableNonMovable {
 	// GAP convenience wrappers
 	// ---------------------------------------------------------------------
 
-	void addGapEventHandler(const Gap::EventHandler& handler) {
-		gap_->addEventHandler(handler);
+	void AddGapEventHandler(const Gap::EventHandler& handler) {
+		gap_->AddEventHandler(handler);
 	}
-	void removeGapEventHandler(const Gap::EventHandler& handler) {
-		gap_->removeEventHandler(handler);
+	void RemoveGapEventHandler(const Gap::EventHandler& handler) {
+		gap_->RemoveEventHandler(handler);
 	}
-	void clearGapEventHandlers() {
-		gap_->clearEventHandlers();
+	void ClearGapEventHandlers() {
+		gap_->ClearEventHandlers();
 	}
 
-	void setRandomAddress(const BleAddress& address) {
-		gap_->setRandomAddress(address);
+	void SetRandomAddress(const BleAddress& address) {
+		gap_->SetRandomAddress(address);
 	}
-	void setAdvertisingParameters(const Gap::AdvertisementParameters& params) {
-		gap_->setAdvertisingParameters(params);
+	void SetAdvertisingParameters(const Gap::AdvertisementParameters& params) {
+		gap_->SetAdvertisingParameters(params);
 	}
-	void setAdvertisingData(uint8_t length, const uint8_t* data) {
-		gap_->setAdvertisingData(length, data);
+	void SetAdvertisingData(const uint8_t* data, size_t size) {
+		gap_->SetAdvertisingData(data, size);
 	}
-	void setAdvertisingData(const std::vector<uint8_t>& data) {
-		gap_->setAdvertisingData(data);
+	void SetAdvertisingData(const std::vector<uint8_t>& data) {
+		gap_->SetAdvertisingData(data);
 	}
-	void setAdvertisingData(const AdvertisementDataBuilder& data_builder) {
-		gap_->setAdvertisingData(data_builder);
+	void SetAdvertisingData(const AdvertisementDataBuilder& data_builder) {
+		gap_->SetAdvertisingData(data_builder);
 	}
-	void setAdvertisingData() {
-		gap_->setAdvertisingData();
+	void SetAdvertisingData() {
+		gap_->SetAdvertisingData();
 	}
-	void setScanResponseData(uint8_t length, const uint8_t* data) {
-		gap_->setScanResponseData(length, data);
+	void SetScanResponseData(uint8_t length, const uint8_t* data) {
+		gap_->SetScanResponseData(length, data);
 	}
-	void enableAdvertising(bool enabled) {
-		gap_->enableAdvertising(enabled);
+	void EnableAdvertising(bool enabled) {
+		gap_->EnableAdvertising(enabled);
 	}
-	void startAdvertising() {
-		gap_->startAdvertising();
+	void StartAdvertising() {
+		gap_->StartAdvertising();
 	}
-	void stopAdvertising() {
-		gap_->stopAdvertising();
+	void StopAdvertising() {
+		gap_->StopAdvertising();
 	}
-	bool isAdvertisingEnabled() const {
-		return gap_->isAdvertisingEnabled();
+	bool IsAdvertisingEnabled() const {
+		return gap_->IsAdvertisingEnabled();
 	}
-	bool isConnected() const {
-		return gap_->isConnected();
+	bool IsConnected() const {
+		return gap_->IsConnected();
 	}
-	BleError requestConnectionParameterUpdate(ConnectionHandle con_handle,
+	BleError RequestConnectionParameterUpdate(ConnectionHandle con_handle,
 											  const Gap::PreferredConnectionParameters& params) {
-		return gap_->requestConnectionParameterUpdate(con_handle, params);
+		return gap_->RequestConnectionParameterUpdate(con_handle, params);
 	}
-	BleError updateConnectionParameters(ConnectionHandle con_handle,
+	BleError UpdateConnectionParameters(ConnectionHandle con_handle,
 										const Gap::PreferredConnectionParameters& params) {
-		return gap_->updateConnectionParameters(con_handle, params);
+		return gap_->UpdateConnectionParameters(con_handle, params);
 	}
-	BleError readRssi(ConnectionHandle con_handle) {
-		return gap_->readRssi(con_handle);
+	BleError ReadRssi(ConnectionHandle con_handle) {
+		return gap_->ReadRssi(con_handle);
 	}
-	BleError disconnect(ConnectionHandle con_handle) {
-		return gap_->disconnect(con_handle);
+	BleError Disconnect(ConnectionHandle con_handle) {
+		return gap_->Disconnect(con_handle);
 	}
-	AdvertisementDataBuilder& getAdvertisementDataBuilder() {
-		return gap_->getAdvertisementDataBuilder();
+	AdvertisementDataBuilder& GetAdvertisementDataBuilder() {
+		return gap_->GetAdvertisementDataBuilder();
 	}
-	const AdvertisementDataBuilder& getAdvertisementDataBuilder() const {
-		return gap_->getAdvertisementDataBuilder();
+	const AdvertisementDataBuilder& GetAdvertisementDataBuilder() const {
+		return gap_->GetAdvertisementDataBuilder();
 	}
 
-	virtual BleError dispatchBleHciPacket(uint8_t packet_type,
-								  uint8_t channel,
-								  const uint8_t* packet_data,
-								  uint16_t packet_data_size);
+	virtual BleError DispatchBleHciPacket(uint8_t packet_type,
+										  uint8_t channel,
+										  const uint8_t* packet_data,
+										  uint16_t packet_data_size);
 
-  private:
+   private:
 	Ble();
 	virtual ~Ble();
 
@@ -273,6 +252,6 @@ class Ble : public NonCopyableNonMovable {
 	void* context_ = nullptr;
 };
 
-} // namespace c7222
+}  // namespace c7222
 
-#endif // ELEC_C7222_BLE_H_
+#endif	// ELEC_C7222_BLE_H_
