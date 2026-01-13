@@ -1244,7 +1244,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @return Pointer to advertising data, or nullptr if not set.
 	 */
 	const std::vector<uint8_t>& GetAdvertisingData() const {
-		return advertising_data_;
+		return advertisement_data_builder_.data();
 	}
 
 	/**
@@ -1376,10 +1376,6 @@ class Gap : public NonCopyableNonMovable {
 	 * @brief Cached legacy advertising parameters.
 	 */
 	AdvertisementParameters advertising_params_{};
-	/**
-	 * @brief Cached legacy advertising payload bytes.
-	 */
-	std::vector<uint8_t> advertising_data_{};
 	/**
 	 * @brief True once SetAdvertisingData() has been called.
 	 */

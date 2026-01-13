@@ -416,7 +416,7 @@ class AdvertisementDataBuilder {
 	}
 
 	/**
-	 * @brief Replace the payload with a list of AD structures.
+	 * @brief ReplaceOrAdd the payload with a list of AD structures.
 	 *
 	 * @param ads List of AD structures to set.
 	 * @return true if all structures were added, false if a structure would overflow.
@@ -428,15 +428,21 @@ class AdvertisementDataBuilder {
 	}
 
 	/**
-	 * @brief Replace the payload from a raw advertising buffer.
+	 * @brief ReplaceOrAdd the payload from a raw advertising buffer.
 	 *
 	 * @param data Raw advertising bytes.
 	 * @param size Total buffer size in bytes.
 	 * @return true if decoded and built successfully, false otherwise.
 	 */
 	bool Set(const uint8_t* data, size_t size) {
-		const auto& ads =
-			AdvertisementDataBuilder::DecodeBufferToAdvertisementDataList(data, size);
+		if(data == data_.data()){
+			// avoid copying from self if already built and the data are equal
+			if(built_) {
+				// already built, the data is valid
+				return true;
+			}
+		}
+		const auto& ads = AdvertisementDataBuilder::DecodeBufferToAdvertisementDataList(data, size);
 		Clear();
 		return Set(ads);
 	}
@@ -466,12 +472,11 @@ class AdvertisementDataBuilder {
 	}
 
 	/**
-	 * @brief Replace the AD structure with the same type.
+	 * @brief ReplaceOrAdd the AD structure with the same type.
 	 *
 	 * @param ad AD structure to replace in the list.
-	 * @return true if replaced, false if no matching type exists.
 	 */
-	bool Replace(const AdvertisementData& ad){
+	void ReplaceOrAdd(const AdvertisementData& ad){
 		auto it = std::find_if(advertisements_.begin(),
 							   advertisements_.end(),
 							   [&ad](const AdvertisementData& existing_ad) {
@@ -480,9 +485,10 @@ class AdvertisementDataBuilder {
 		if(it != advertisements_.end()) {
 			*it = ad;
 			built_ = false;
-			return true;
+		} else {
+			advertisements_.push_back(ad);
+			built_ = false;
 		}
-		return false;
 	}
 
 	/**

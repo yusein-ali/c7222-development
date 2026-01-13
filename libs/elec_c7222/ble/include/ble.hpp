@@ -114,7 +114,6 @@ class Ble : public NonCopyableNonMovable {
 	 * @brief Update BLE stack state and notify callbacks on change.
 	 */
 	BleError TurnOn();
-
 	void TurnOff();
 
 	/**
@@ -129,7 +128,7 @@ class Ble : public NonCopyableNonMovable {
 			return;
 		}
 		auto& builder = gap_->GetAdvertisementDataBuilder();
-		builder.Replace(AdvertisementData(AdvertisementDataType::kCompleteLocalName,
+		builder.ReplaceOrAdd(AdvertisementData(AdvertisementDataType::kCompleteLocalName,
 										  name.c_str(),
 										  name.size()));
 										  bool ok = builder.Build();
@@ -143,7 +142,7 @@ class Ble : public NonCopyableNonMovable {
 			return;
 		}
 		auto& builder = gap_->GetAdvertisementDataBuilder();
-		builder.Replace(AdvertisementData(AdvertisementDataType::kFlags,
+		builder.ReplaceOrAdd(AdvertisementData(AdvertisementDataType::kFlags,
 										  &flags,
 										  sizeof(flags)));
 		bool ok = builder.Build();

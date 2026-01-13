@@ -199,11 +199,10 @@ static void on_turn_on(){
 	auto& adv_builder = gap->GetAdvertisementDataBuilder();
 
 	// Generate the packet using the advertisement data class
-	adv_builder.Clear();
-	adv_builder.Add(c7222::AdvertisementData(c7222::AdvertisementDataType::kFlags, (uint8_t) 0x06));
-	adv_builder.Add(c7222::AdvertisementData(c7222::AdvertisementDataType::kCompleteLocalName,
-											 "Pico2_BLE++",
-											 sizeof("Pico2_BLE++")));
+	ble->SetAdvertisementFlags(c7222::AdvertisementData::Flags::kLeGeneralDiscoverableMode |
+									c7222::AdvertisementData::Flags::kBrEdrNotSupported);
+	ble->SetDeviceName("Pico2_BLE++");
+
 	uint32_t value = 0x12345678;
 	adv_builder.Add(c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific,
 											 (uint8_t*) &value,

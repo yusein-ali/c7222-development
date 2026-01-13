@@ -17,7 +17,16 @@ constexpr size_t kLegacyAdvertisingDataMaxSize = 31;
 
 } // namespace
 
-using namespace btstack_map;
+using btstack_map::ToBtStack;
+using btstack_map::to_btstack_advertising_channel_map;
+using btstack_map::from_btstack_event;
+using btstack_map::from_btstack_advertising_event_type;
+using btstack_map::map_btstack_status;
+using btstack_map::map_legacy_advertising_event_type;
+using btstack_map::map_address_type;
+using btstack_map::make_unknown_address;
+using btstack_map::make_address;
+using btstack_map::map_phy;
 
 void Gap::SetRandomAddress(const BleAddress& address) {
 	random_address_ = address;
@@ -54,19 +63,13 @@ void Gap::SetAdvertisingData(const uint8_t* data, size_t size) {
 		StopAdvertising();
 	}
 	// generate a local copy of the data to retain it
-	if(data != advertisement_data_builder_.bytes()){
-		advertisement_data_builder_.Set(data, size);
-	}
+	advertisement_data_builder_.Set(data, size);
 	advertising_data_set_ = true;
-	advertising_data_.clear();
 
-	if(data != nullptr && size > 0) {
-		const size_t copy_len = std::min<size_t>(size, kLegacyAdvertisingDataMaxSize);
-		advertising_data_.assign(data, data + copy_len);
-	}
 
-	auto* payload = advertising_data_.empty() ? nullptr : advertising_data_.data();
-	gap_advertisements_set_data(static_cast<uint8_t>(advertising_data_.size()),
+	const auto& adv_data = advertisement_data_builder_.data();
+	auto* payload = adv_data.empty() ? nullptr : adv_data.data();
+	gap_advertisements_set_data(static_cast<uint8_t>(adv_data.size()),
 								const_cast<uint8_t*>(payload));
 
 	if(was_advertising) {
