@@ -40,6 +40,12 @@
         "editor.tabSize": 4,
         "editor.insertSpaces": false
     },
+    "files.associations": {
+        "*.c": "c",
+        "*.h": "c",
+        "*.cpp": "cpp",
+        "*.hpp": "cpp"
+    },
     "terminal.integrated.env.windows": {
         "PICO_SDK_PATH": "${env:USERPROFILE}/.pico-sdk/sdk/2.2.0",
         "PICO_TOOLCHAIN_PATH": "${env:USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1",

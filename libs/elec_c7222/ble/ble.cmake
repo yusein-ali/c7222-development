@@ -23,5 +23,7 @@ target_include_directories(ELEC_C7222_BLE INTERFACE "${ELEC_C7222_BLE_DIR}/inclu
 # Submodules (only GAP for now)
 include(${ELEC_C7222_BLE_DIR}/gap/gap.cmake)
 target_link_libraries(ELEC_C7222_BLE INTERFACE ELEC_C7222_BLE_GAP)
+include(${ELEC_C7222_BLE_DIR}/gatt/gatt.cmake)
+target_link_libraries(ELEC_C7222_BLE INTERFACE ELEC_C7222_BLE_GATT)
 include(${ELEC_C7222_BLE_DIR}/sm/sm.cmake)
 target_link_libraries(ELEC_C7222_BLE INTERFACE ELEC_C7222_BLE_SM)

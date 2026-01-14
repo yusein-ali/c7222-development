@@ -1,13 +1,15 @@
+#include <stdio.h>
+
+#include <advertisement_data.hpp>
+
+#include "FreeRTOS.h"
+#include "att_db.h"
+#include "attribute.hpp"
+#include "ble.hpp"
 #include "btstack.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
-#include <stdio.h>
-#include "ble.hpp"
-
-#include "FreeRTOS.h"
 #include "task.h"
-#include <advertisement_data.hpp>
-
 
 class GapEventHandler : public c7222::Gap::EventHandler {
   public:
