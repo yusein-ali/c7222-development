@@ -1162,7 +1162,7 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Get the list of registered event handlers.
 	 */
-	std::list<const EventHandler*> event_handlers() const {
+	std::list<const EventHandler*> GetEventHandlers() const {
 		return event_handlers_;
 	}
 

@@ -130,6 +130,10 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	{BleError::kAttHandleValueIndicationTimeout, ATT_HANDLE_VALUE_INDICATION_TIMEOUT},
 	{BleError::kAttHandleValueIndicationDisconnect, ATT_HANDLE_VALUE_INDICATION_DISCONNECT},
 
+	{BleError::kAttErrorReadNotPermitted, ATT_ERROR_READ_NOT_PERMITTED},
+	{BleError::kAttErrorWriteNotPermitted, ATT_ERROR_WRITE_NOT_PERMITTED},
+	{BleError::kAttErrorInvalidAttrValueLength, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH},
+
 	{BleError::kGattClientNotConnected, GATT_CLIENT_NOT_CONNECTED},
 	{BleError::kGattClientBusy, GATT_CLIENT_BUSY},
 	{BleError::kGattClientInWrongState, GATT_CLIENT_IN_WRONG_STATE},

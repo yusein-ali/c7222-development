@@ -1,0 +1,1181 @@
+#ifndef ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_
+#define ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_
+
+#include "attribute.hpp"
+#include "uuid.hpp"
+#include "ble_error.hpp"
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iosfwd>
+#include <list>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace c7222 {
+
+/**
+ * @class Characteristic
+ * @brief Represents a GATT Characteristic with its declaration, value, and descriptors.
+ *
+ * A GATT Characteristic consists of:
+ * 1. Characteristic Declaration attribute (mandatory)
+ * 2. Characteristic Value attribute (mandatory)
+ * 3. Client Characteristic Configuration Descriptor - CCCD (optional, for notifications/indications)
+ * 4. Characteristic User Description (optional)
+ * 5. Additional descriptors (optional)
+ *
+ * The Characteristic Declaration contains:
+ * - 1 byte: Properties (Read, Write, Notify, Indicate, etc.)
+ * - 2 bytes: Value handle (little-endian, points to the Value attribute)
+ * - 2 or 16 bytes: Characteristic UUID (16-bit or 128-bit)
+ *
+ * Characteristics are identified by their UUID and are the primary data containers
+ * in a GATT Service.
+ *
+ * @note Only one of Notify or Indicate should be set; both require CCCD descriptor.
+ * @note Read callbacks are required for dynamic read attributes.
+ * @note Write callbacks are required for write-enabled attributes.
+ */
+class Characteristic {
+public:
+	/**
+	 * @brief GATT Characteristic Properties as defined in Bluetooth Core Spec.
+	 * 
+	 * These properties appear in the first byte of the Characteristic Declaration.
+	 * They define which operations are permitted on the characteristic value.
+	 * 
+	 * @note As per Bluetooth Core Specification Vol 3, Part G, Section 3.3.1.1
+	 */
+	enum class Properties : uint8_t {
+		/** @brief No properties set. */
+		kNone = 0x00,
+		/** @brief Characteristic supports broadcast. */
+		kBroadcast = 0x01,
+		/** @brief Characteristic value can be read. */
+		kRead = 0x02,
+		/** @brief Characteristic value can be written without response. */
+		kWriteWithoutResponse = 0x04,
+		/** @brief Characteristic value can be written with response. */
+		kWrite = 0x08,
+		/** @brief Characteristic supports notifications. */
+		kNotify = 0x10,
+		/** @brief Characteristic supports indications. */
+		kIndicate = 0x20,
+		/** @brief Characteristic supports authenticated signed writes. */
+		kAuthenticatedSignedWrites = 0x40,
+		/** @brief Characteristic has extended properties descriptor. */
+		kExtendedProperties = 0x80
+	};
+
+	/**
+	 * @brief Client Characteristic Configuration Descriptor (CCCD) bit values.
+	 * 
+	 * CCCD allows clients to configure notifications and indications for a characteristic.
+	 * 
+	 * @note As per Bluetooth Core Spec Vol 3, Part G, Section 3.3.3.3
+	 */
+	enum class CCCDProperties : uint16_t {
+		/** @brief Neither notifications nor indications enabled. */
+		kNone = 0x0000,
+		/** @brief Notifications enabled. */
+		kNotifications = 0x0001,
+		/** @brief Indications enabled. */
+		kIndications = 0x0002
+	};
+
+	/**
+	 * @brief Server Characteristic Configuration Descriptor (SCCD) bit values.
+	 * 
+	 * SCCD allows clients to configure broadcasts for a characteristic.
+	 * 
+	 * @note As per Bluetooth Core Spec Vol 3, Part G, Section 3.3.3.4
+	 */
+	enum class SCCDProperties : uint16_t {
+		/** @brief Broadcasts disabled. */
+		kNone = 0x0000,
+		/** @brief Broadcasts enabled. */
+		kBroadcasts = 0x0001
+	};
+
+	/**
+	 * @brief Characteristic Extended Properties bit values.
+	 * 
+	 * Extended Properties descriptor defines additional characteristic properties.
+	 * 
+	 * @note As per Bluetooth Core Spec Vol 3, Part G, Section 3.3.3.1
+	 */
+	enum class ExtendedProperties : uint16_t {
+		/** @brief No extended properties. */
+		kNone = 0x0000,
+		/** @brief Reliable Write enabled. */
+		kReliableWrite = 0x0001,
+		/** @brief Writable Auxiliaries enabled. */
+		kWritableAuxiliaries = 0x0002
+	};
+
+	/**
+	 * @brief Security level requirements for read/write operations.
+	 * 
+	 * These levels define encryption and authentication requirements for accessing
+	 * the characteristic value. The 2-bit encoding (Bit0 and Bit1) maps to
+	 * BTstack's ATT_PROPERTY_READ/WRITE_PERMISSION_BIT_0 and BIT_1.
+	 * 
+	 * Security levels are enforced by the BLE stack and determine when a client
+	 * can successfully read or write the characteristic.
+	 * 
+	 * @note As per Bluetooth Core Specification and BTstack att_db.h
+	 */
+	enum class SecurityLevel : uint8_t {
+		/**
+		 * @brief No security required (open access).
+		 * Anyone can read/write without pairing or encryption.
+		 * Bit pattern: 00b
+		 */
+		kNone = 0,
+		
+		/**
+		 * @brief Unauthenticated pairing with encryption required.
+		 * Client must pair and establish encrypted link (Just Works or Numeric Comparison).
+		 * No MITM protection required.
+		 * Bit pattern: 01b
+		 */
+		kEncryptionRequired = 1,
+		
+		/**
+		 * @brief Authenticated pairing with encryption required.
+		 * Client must pair using authenticated method with MITM protection
+		 * (Passkey Entry, Out of Band) and establish encrypted link.
+		 * Bit pattern: 10b
+		 */
+		kAuthenticationRequired = 2,
+		
+		/**
+		 * @brief Authenticated pairing with encryption AND authorization required.
+		 * Highest security level: authenticated pairing plus application-level
+		 * authorization check. Application must approve access even after successful
+		 * authentication and encryption.
+		 * Bit pattern: 11b
+		 */
+		kAuthorizationRequired = 3
+	};
+
+	/**
+	 * @brief Event IDs for Characteristic-related ATT events.
+	 */
+	enum class EventId : uint8_t {
+		/** @brief ATT Handle Value Indication Complete (confirmation received or timeout). */
+		kHandleValueIndicationComplete,
+		/** @brief Generic ATT event (extensible for future events). */
+		kAttEventEnd
+	};
+
+	/**
+	 * @brief Characteristic event handler structure.
+	 * 
+	 * This structure contains callback functions for various characteristic events
+	 * related to client configuration changes and confirmations.
+	 */
+	struct EventHandlers {
+		/**
+		 * @brief Called when notifications or indications are enabled by a client.
+		 * 
+		 * This callback is invoked when a client writes to the CCCD to enable
+		 * updates for this characteristic.
+		 * 
+		 * @param is_indication true if indications are enabled, false if notifications are enabled
+		 */
+		std::function<void(bool is_indication)> OnUpdatesEnabled;
+
+		/**
+		 * @brief Called when notifications or indications are disabled by a client.
+		 * 
+		 * This callback is invoked when a client writes to the CCCD to disable
+		 * updates for this characteristic (or writes 0x0000).
+		 */
+		std::function<void()> OnUpdatesDisabled;
+
+		/**
+		 * @brief Called when an indication transaction completes.
+		 * 
+		 * This callback is invoked when the indication process finishes, regardless of outcome.
+		 * The status parameter indicates whether the confirmation was successfully received,
+		 * timed out, or the connection was lost.
+		 * 
+		 * @param status 0 for success, non-zero for error (timeout, disconnect, etc.)
+		 * @note Only applicable for characteristics with Indication property.
+		 * @note This provides additional status information beyond OnConfirmationReceived.
+		 */
+		std::function<void(uint8_t status)> OnConfirmationComplete;
+
+		/**
+		 * @brief Called when broadcasts are enabled by a client.
+		 * 
+		 * This callback is invoked when a client writes to the SCCD to enable
+		 * broadcasts for this characteristic.
+		 */
+		std::function<void()> OnBroadcastEnabled;
+
+		/**
+		 * @brief Called when broadcasts are disabled by a client.
+		 * 
+		 * This callback is invoked when a client writes to the SCCD to disable
+		 * broadcasts for this characteristic (or writes 0x0000).
+		 */
+		std::function<void()> OnBroadcastDisabled;
+
+		/**
+		 * @brief Called when a read operation is performed on this characteristic.
+		 * 
+		 * This callback is invoked when a client attempts to read the characteristic value.
+		 * This is a notification callback - the actual data is served from the stored value attribute.
+		 * Use this to update the characteristic value before it is sent to the client.
+		 */
+		std::function<void()> OnRead;
+
+		/**
+		 * @brief Called when a write operation is performed on this characteristic.
+		 * 
+		 * This callback is invoked when a client writes data to the characteristic value.
+		 * This is a notification callback with the written data provided for information.
+		 * The data has already been stored in the value attribute.
+		 * 
+		 * @param data The data written by the client
+		 */
+		std::function<void(const std::vector<uint8_t>& data)> OnWrite;
+	};
+
+	/**
+	 * @brief Construct a new Characteristic with declaration data.
+	 * Creates the characteristic with proper declaration attribute.
+	 * The value handle is typically declaration_handle + 1.
+	 * @param uuid The UUID identifying this characteristic
+	 * @param properties Characteristic properties bitfield (combination of Properties enum flags)
+	 * @param value_handle Handle of the Value attribute (typically declaration_handle + 1)
+	 * @param declaration_handle Optional handle for the Declaration attribute (used in DB)
+	 */
+	explicit Characteristic(const Uuid& uuid, uint8_t properties,
+		uint16_t value_handle, uint16_t declaration_handle = 0);
+
+	/**
+	 * @brief Move constructor.
+	 * Transfers ownership of all internal attributes and descriptors.
+	 */
+	Characteristic(Characteristic&& other) noexcept = default;
+
+	/**
+	 * @brief Move assignment operator.
+	 * Transfers ownership of all internal attributes and descriptors.
+	 */
+	Characteristic& operator=(Characteristic&& other) noexcept = default;
+
+	/// Copy constructor deleted - characteristics are move-only.
+	Characteristic(const Characteristic&) = delete;
+
+	/// Copy assignment deleted - characteristics are move-only.
+	Characteristic& operator=(const Characteristic&) = delete;
+
+	/**
+	 * @brief Destructor.
+	 * Cleans up all managed attributes and descriptors.
+	 */
+	~Characteristic() = default;
+
+	/**
+	 * @brief Parse a list of attributes and create Characteristic objects.
+	 * 
+	 * This function scans through the attribute list looking for Characteristic
+	 * Declaration attributes, then groups the following attributes (value and
+	 * descriptors) into complete Characteristic objects.
+	 * 
+	 * @param attributes Vector of attributes to parse
+	 * @return Vector of parsed Characteristic objects
+	 * 
+	 * @note Attributes must be in proper order: Declaration, Value, Descriptors
+	 * @note Stops parsing a characteristic when the next declaration is found
+	 */
+	static std::vector<Characteristic> ParseFromAttributes(const std::vector<Attribute>& attributes);
+
+	// ========== Accessors ==========
+
+	/**
+	 * @brief Get the UUID of this characteristic.
+	 * @return Reference to the characteristic's UUID
+	 */
+	const Uuid& GetUuid() const { return uuid_; }
+
+	/**
+	 * @brief Get the properties of this characteristic.
+	 * @return Bitmask of characteristic properties (Read, Write, Notify, etc.)
+	 */
+	Properties GetProperties() const { return properties_; }
+
+	/**
+	 * @brief Get the handle of the Value attribute.
+	 * @return Value attribute handle (typically declaration_handle + 1)
+	 */
+	uint16_t GetValueHandle() const { return value_attr_.GetHandle(); }
+
+	/**
+	 * @brief Get the handle of the Declaration attribute.
+	 * @return Declaration attribute handle
+	 */
+	uint16_t GetDeclarationHandle() const { return declaration_attr_.GetHandle(); }
+
+	/**
+	 * @brief Check if this characteristic is valid.
+	 * @return true if UUID is valid and handles are non-zero
+	 */
+	bool IsValid() const;
+
+	/**
+	 * @brief Check if this characteristic matches the given UUID and handle.
+	 * @param uuid UUID to compare
+	 * @param handle Attribute handle (declaration or value)
+	 * @return true if both UUID matches and handle matches declaration or value
+	 */
+	bool IsThisCharacteristic(const Uuid& uuid, uint16_t handle) const;
+
+	/**
+	 * @brief Check if this characteristic matches the given UUID.
+	 * @param uuid UUID to compare
+	 * @return true if UUID matches
+	 */
+	bool IsThisCharacteristic(const Uuid& uuid) const;
+
+	/**
+	 * @brief Check if this characteristic matches the given handle.
+	 * @param handle Attribute handle (declaration or value)
+	 * @return true if handle matches declaration or value
+	 */
+	bool IsThisCharacteristic(uint16_t handle) const;
+
+	// ========== Capability Checkers ==========
+
+	/**
+	 * @brief Check if characteristic supports broadcasts.
+	 * @return true if kBroadcast property is set
+	 */
+	bool HasBroadcast() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kBroadcast)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic supports read operations.
+	 * @return true if kRead property is set
+	 */
+	bool CanRead() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kRead)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic supports write without response.
+	 * @return true if kWriteWithoutResponse property is set
+	 */
+	bool CanWriteWithoutResponse() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kWriteWithoutResponse)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic supports write operations (with response).
+	 * @return true if kWrite property is set
+	 */
+	bool CanWrite() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kWrite)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic supports notifications.
+	 * @return true if kNotify property is set
+	 */
+	bool HasNotifications() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kNotify)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic supports indications.
+	 * @return true if kIndicate property is set
+	 */
+	bool HasIndications() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kIndicate)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic supports authenticated signed writes.
+	 * @return true if kAuthenticatedSignedWrites property is set
+	 */
+	bool CanSignedWrite() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kAuthenticatedSignedWrites)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic properties flag has extended properties capability.
+	 * @return true if kExtendedProperties property bit is set
+	 */
+	bool HasExtendedPropertiesCapability() const {
+		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kExtendedProperties)) != 0;
+	}
+
+	// ========== Authorization & Authentication Checkers ==========
+
+	/**
+	 * @brief Check if characteristic has read permission bits set (requires authorization).
+	 * Read permission bits 0 and 1 indicate security level requirements.
+	 * @return true if read permission bits (kReadPermissionBit0/1) are set
+	 */
+	bool ReadHasSecurityRequirement() const {
+		uint16_t props = value_attr_.GetProperties();
+		return (props & static_cast<uint16_t>(Attribute::Properties::kReadPermissionBit0)) != 0 ||
+		       (props & static_cast<uint16_t>(Attribute::Properties::kReadPermissionBit1)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic has write permission bits set (requires authorization).
+	 * Write permission bits 0 and 1 indicate security level requirements.
+	 * @return true if write permission bits (kWritePermissionBit0/1) are set
+	 */
+	bool WriteHasSecurityRequirement() const {
+		uint16_t props = value_attr_.GetProperties();
+		return (props & static_cast<uint16_t>(Attribute::Properties::kWritePermissionBit0)) != 0 ||
+		       (props & static_cast<uint16_t>(Attribute::Properties::kWritePermissionBit1)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic read requires Secure Connections (SC).
+	 * @return true if kReadPermissionSc is set
+	 */
+	bool ReadRequiresSC() const {
+		return (value_attr_.GetProperties() & static_cast<uint16_t>(Attribute::Properties::kReadPermissionSc)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic write requires Secure Connections (SC).
+	 * @return true if kWritePermissionSc is set
+	 */
+	bool WriteRequiresSC() const {
+		return (value_attr_.GetProperties() & static_cast<uint16_t>(Attribute::Properties::kWritePermissionSc)) != 0;
+	}
+
+	/**
+	 * @brief Get the required encryption key size for this characteristic.
+	 * Returns the encryption key size requirement encoded in bits 12-15.
+	 * @return Encryption key size (0-16 bytes), or 0 if no requirement
+	 */
+	uint16_t GetEncryptionKeySize() const {
+		return (value_attr_.GetProperties() & static_cast<uint16_t>(Attribute::Properties::kEncryptionKeySizeMask)) >> 12;
+	}
+
+	// ========== Security Level Setters ==========
+
+	/**
+	 * @brief Set read security level requirement for this characteristic.
+	 * 
+	 * Configures the security level that clients must meet to read this characteristic.
+	 * This sets the appropriate ATT_PROPERTY_READ_PERMISSION_BIT_0 and BIT_1 flags
+	 * on the value attribute.
+	 * 
+	 * @param level Security level (None, Encryption, Authentication, or Authorization)
+	 * 
+	 * @example
+	 * // Require authenticated pairing for reads
+	 * characteristic.SetReadSecurityLevel(Characteristic::SecurityLevel::kAuthenticationRequired);
+	 */
+	void SetReadSecurityLevel(SecurityLevel level);
+
+	/**
+	 * @brief Set write security level requirement for this characteristic.
+	 * 
+	 * Configures the security level that clients must meet to write this characteristic.
+	 * This sets the appropriate ATT_PROPERTY_WRITE_PERMISSION_BIT_0 and BIT_1 flags
+	 * on the value attribute.
+	 * 
+	 * @param level Security level (None, Encryption, Authentication, or Authorization)
+	 * 
+	 * @example
+	 * // Require encryption for writes
+	 * characteristic.SetWriteSecurityLevel(Characteristic::SecurityLevel::kEncryptionRequired);
+	 */
+	void SetWriteSecurityLevel(SecurityLevel level);
+
+	/**
+	 * @brief Set Secure Connections requirement for reads.
+	 * 
+	 * When enabled, reads require LE Secure Connections pairing (Bluetooth 4.2+).
+	 * This provides enhanced security with ECDH key agreement.
+	 * Sets ATT_PROPERTY_READ_PERMISSION_SC flag.
+	 * 
+	 * @param required true to require Secure Connections, false to allow legacy pairing
+	 */
+	void SetReadRequiresSecureConnections(bool required);
+
+	/**
+	 * @brief Set Secure Connections requirement for writes.
+	 * 
+	 * When enabled, writes require LE Secure Connections pairing (Bluetooth 4.2+).
+	 * This provides enhanced security with ECDH key agreement.
+	 * Sets ATT_PROPERTY_WRITE_PERMISSION_SC flag.
+	 * 
+	 * @param required true to require Secure Connections, false to allow legacy pairing
+	 */
+	void SetWriteRequiresSecureConnections(bool required);
+
+	/**
+	 * @brief Set minimum encryption key size requirement.
+	 * 
+	 * Configures the minimum encryption key size (in bytes) that clients must use.
+	 * Valid range is 7-16 bytes per Bluetooth specification.
+	 * Sets bits 12-15 of the attribute properties (ATT_PROPERTY_ENCRYPTION_KEY_SIZE_MASK).
+	 * 
+	 * @param key_size Minimum key size in bytes (7-16), or 0 for no requirement
+	 * @note Most implementations use 16 bytes (128-bit) for maximum security
+	 */
+	void SetEncryptionKeySize(uint8_t key_size);
+
+	/**
+	 * @brief Get current read security level.
+	 * @return SecurityLevel extracted from read permission bits
+	 */
+	SecurityLevel GetReadSecurityLevel() const;
+
+	/**
+	 * @brief Get current write security level.
+	 * @return SecurityLevel extracted from write permission bits
+	 */
+	SecurityLevel GetWriteSecurityLevel() const;
+
+	// ========== Permission Checking Functions ==========
+
+	/**
+	 * @brief Check if read is permitted given the connection security state.
+	 * 
+	 * Evaluates whether a client with the given security state is allowed to read
+	 * this characteristic based on the configured read security level and
+	 * Secure Connections requirement.
+	 * 
+	 * @param authorized true if client is authorized (passed app-level authorization)
+	 * @param authenticated true if client has authenticated pairing
+	 * @return true if read is permitted, false if security requirements not met
+	 * 
+	 * @note Secure Connections requirement is checked separately and not included
+	 *       in this logic (caller must verify SC separately if needed)
+	 * 
+	 * @example
+	 * if (characteristic.IsReadPermitted(user_authorized, is_authenticated)) {
+	 *     // Allow read operation
+	 * }
+	 */
+	bool IsReadPermitted(bool authorized, bool authenticated) const;
+
+	/**
+	 * @brief Check if write is permitted given the connection security state.
+	 * 
+	 * Evaluates whether a client with the given security state is allowed to write
+	 * this characteristic based on the configured write security level and
+	 * Secure Connections requirement.
+	 * 
+	 * @param authorized true if client is authorized (passed app-level authorization)
+	 * @param authenticated true if client has authenticated pairing
+	 * @return true if write is permitted, false if security requirements not met
+	 * 
+	 * @note Secure Connections requirement is checked separately and not included
+	 *       in this logic (caller must verify SC separately if needed)
+	 * 
+	 * @example
+	 * if (characteristic.IsWritePermitted(user_authorized, is_authenticated)) {
+	 *     // Allow write operation
+	 * }
+	 */
+	bool IsWritePermitted(bool authorized, bool authenticated) const;
+
+	/**
+	 * @brief Check if characteristic has 128-bit UUID.
+	 * @return true if kUuid128 is set in value attribute
+	 */
+	bool Uses128BitUuid() const {
+		return (value_attr_.GetProperties() & static_cast<uint16_t>(Attribute::Properties::kUuid128)) != 0;
+	}
+
+	/**
+	 * @brief Check if characteristic value is dynamic (can change).
+	 * @return true if kDynamic property is set
+	 */
+	bool IsDynamic() const {
+		return (value_attr_.GetProperties() & static_cast<uint16_t>(Attribute::Properties::kDynamic)) != 0;
+	}
+
+	// ========== Value Accessors ==========
+
+	/**
+	 * @brief Get the current value data pointer.
+	 * For dynamic values, this may change after SetValue() calls.
+	 * @return Pointer to value data, or nullptr if no value set
+	 */
+	const uint8_t* GetValueData() const;
+
+	/**
+	 * @brief Get the size of the current value.
+	 * @return Size in bytes of the characteristic value
+	 */
+	size_t GetValueSize() const;
+
+	/**
+	 * @brief Get the complete value as a vector.
+	 * @return Vector copy of the characteristic value
+	 */
+	std::vector<uint8_t> GetValueAsVector() const;
+
+	// ========== Value Setters ==========
+
+	/**
+	 * @brief Set the characteristic value from raw bytes (pointer + size).
+	 * Only allowed for dynamic characteristics.
+	 * @param data Pointer to value data (copied into storage)
+	 * @param size Size of the data in bytes
+	 * @return true if value was set, false if rejected (e.g., static characteristic)
+	 */
+	bool SetValue(const uint8_t* data, size_t size);
+
+	/**
+	 * @brief Set the characteristic value from an rvalue vector (move semantics).
+	 * Only allowed for dynamic characteristics.
+	 * @param data Rvalue reference to vector (moved into storage)
+	 * @return true if value was set, false if rejected (e.g., static characteristic)
+	 */
+	bool SetValue(std::vector<uint8_t>&& data);
+
+	/**
+	 * @brief Set the characteristic value from an lvalue vector (copy semantics).
+	 * Only allowed for dynamic characteristics.
+	 * @param data Const reference to vector (copied into storage)
+	 * @return true if value was set, false if rejected (e.g., static characteristic)
+	 */
+	bool SetValue(const std::vector<uint8_t>& data);
+
+	/**
+	 * @brief Set the characteristic value from a typed value (generic template).
+	 * Converts any trivial type to bytes and stores as the value.
+	 * Only allowed for dynamic characteristics.
+	 * @tparam T Must be a trivial type (primitive types, arrays, small structs)
+	 * @param value The value to store
+	 * @return true if value was set, false if rejected (e.g., static characteristic)
+	 * @note Uses binary representation; for endian-sensitive types, ensure consistency
+	 * @example SetValue<uint16_t>(0x1234) stores as bytes {0x34, 0x12} (little-endian)
+	 */
+	template<typename T>
+	bool SetValue(const T& value) {
+		static_assert(std::is_trivial<T>::value,
+			"T must be a trivial type for binary conversion");
+		return SetValue(reinterpret_cast<const uint8_t*>(&value), sizeof(T));
+	}
+
+	// ========== Callbacks ==========
+
+	/**
+	 * @brief Set the read callback for the value attribute.
+	 * Called when a remote client reads this characteristic's value.
+	 * @param callback Function to handle reads
+	 */
+	void SetReadCallback(Attribute::ReadCallback callback);
+
+	/**
+	 * @brief Set the write callback for the value attribute.
+	 * Called when a remote client writes to this characteristic's value.
+	 * @param callback Function to handle writes
+	 */
+	void SetWriteCallback(Attribute::WriteCallback callback);
+
+	/**
+	 * @brief Check if a read callback is registered.
+	 * @return true if read callback is set
+	 */
+	bool HasReadCallback() const;
+
+	/**
+	 * @brief Check if a write callback is registered.
+	 * @return true if write callback is set
+	 */
+	bool HasWriteCallback() const;
+
+	// ========== Descriptors ==========
+
+	/**
+	 * @brief Enable Client Characteristic Configuration Descriptor (CCCD).
+	 * Required for characteristics with Notify or Indicate properties.
+	 * Initializes CCCD with value {0x00, 0x00} (notifications and indications disabled).
+	 * @return Reference to the CCCD Attribute for further configuration
+	 */
+	Attribute& EnableCCCD();
+
+	/**
+	 * @brief Check if CCCD descriptor is present.
+	 * @return true if CCCD has been enabled
+	 */
+	bool HasCCCD() const { return cccd_ != nullptr; }
+
+	/**
+	 * @brief Get the CCCD descriptor.
+	 * @return Pointer to CCCD Attribute, or nullptr if not enabled
+	 */
+	Attribute* GetCCCD() { return cccd_.get(); }
+
+	/**
+	 * @brief Get the CCCD descriptor (const version).
+	 * @return Const pointer to CCCD Attribute, or nullptr if not enabled
+	 */
+	const Attribute* GetCCCD() const { return cccd_.get(); }
+
+	/**
+	 * @brief Set CCCD configuration value.
+	 * Enables or configures notifications and/or indications.
+	 * Automatically creates CCCD descriptor if not present.
+	 * @param config CCCD configuration flags
+	 * @return Reference to the CCCD Attribute
+	 */
+	Attribute& SetCCCDValue(CCCDProperties config);
+
+	/**
+	 * @brief Enable Server Characteristic Configuration Descriptor (SCCD).
+	 * Required for characteristics with Broadcast property.
+	 * Initializes SCCD with value {0x00, 0x00} (broadcasts disabled).
+	 * @return Reference to the SCCD Attribute for further configuration
+	 */
+	Attribute& EnableSCCD();
+
+	/**
+	 * @brief Check if SCCD descriptor is present.
+	 * @return true if SCCD has been enabled
+	 */
+	bool HasSCCD() const { return sccd_ != nullptr; }
+
+	/**
+	 * @brief Get the SCCD descriptor.
+	 * @return Pointer to SCCD Attribute, or nullptr if not enabled
+	 */
+	Attribute* GetSCCD() { return sccd_.get(); }
+
+	/**
+	 * @brief Get the SCCD descriptor (const version).
+	 * @return Const pointer to SCCD Attribute, or nullptr if not enabled
+	 */
+	const Attribute* GetSCCD() const { return sccd_.get(); }
+
+	/**
+	 * @brief Set SCCD configuration value.
+	 * Enables or disables broadcasts.
+	 * Automatically creates SCCD descriptor if not present.
+	 * @param config SCCD configuration flags
+	 * @return Reference to the SCCD Attribute
+	 */
+	Attribute& SetSCCDValue(SCCDProperties config);
+
+	/**
+	 * @brief Enable Characteristic Extended Properties Descriptor.
+	 * Defines additional characteristic properties beyond the standard properties byte.
+	 * Initializes with value {0x00, 0x00} (no extended properties).
+	 * @return Reference to the Extended Properties Attribute for further configuration
+	 */
+	Attribute& EnableExtendedProperties();
+
+	/**
+	 * @brief Check if Extended Properties descriptor is present.
+	 * @return true if Extended Properties has been enabled
+	 */
+	bool HasExtendedProperties() const { return extended_properties_ != nullptr; }
+
+	/**
+	 * @brief Get the Extended Properties descriptor.
+	 * @return Pointer to Extended Properties Attribute, or nullptr if not enabled
+	 */
+	Attribute* GetExtendedProperties() { return extended_properties_.get(); }
+
+	/**
+	 * @brief Get the Extended Properties descriptor (const version).
+	 * @return Const pointer to Extended Properties Attribute, or nullptr if not enabled
+	 */
+	const Attribute* GetExtendedProperties() const { return extended_properties_.get(); }
+
+	/**
+	 * @brief Set Extended Properties configuration value.
+	 * Configures reliable write and writable auxiliaries.
+	 * Automatically creates Extended Properties descriptor if not present.
+	 * @param config Extended properties flags
+	 * @return Reference to the Extended Properties Attribute
+	 */
+	Attribute& SetExtendedPropertiesValue(ExtendedProperties config);
+
+	/**
+	 * @brief Set the Characteristic User Description.
+	 * Creates or updates the user-readable description of this characteristic.
+	 * @param description Human-readable description string
+	 * @return Reference to the User Description Attribute for further configuration
+	 */
+	Attribute& SetUserDescription(const std::string& description);
+
+	/**
+	 * @brief Check if User Description descriptor is present.
+	 * @return true if user description has been set
+	 */
+	bool HasUserDescription() const { return user_description_ != nullptr; }
+
+	/**
+	 * @brief Get the User Description descriptor.
+	 * @return Pointer to User Description Attribute, or nullptr if not set
+	 */
+	Attribute* GetUserDescription() { return user_description_.get(); }
+
+	/**
+	 * @brief Get the User Description descriptor (const version).
+	 * @return Const pointer to User Description Attribute, or nullptr if not set
+	 */
+	const Attribute* GetUserDescription() const { return user_description_.get(); }
+
+	/**
+	 * @brief Add a custom descriptor to this characteristic.
+	 * Allows extension with application-specific descriptors beyond CCCD and User Description.
+	 * @param uuid UUID of the descriptor
+	 * @param properties Descriptor properties (typically Read and/or Write)
+	 * @param value Initial value of the descriptor
+	 * @param handle Optional handle for the descriptor (used in DB)
+	 * @return Reference to the newly added Attribute for callback configuration
+	 */
+	Attribute& AddDescriptor(const Uuid& uuid, Attribute::Properties properties,
+		const std::vector<uint8_t>& value, uint16_t handle = 0);
+
+	/**
+	 * @brief Get count of custom descriptors (excluding CCCD and User Description).
+	 * @return Number of additional descriptors
+	 */
+	size_t GetDescriptorCount() const { return descriptors_.size(); }
+
+	/**
+	 * @brief Get a custom descriptor by index.
+	 * @param index Index of the descriptor (0 to GetDescriptorCount()-1)
+	 * @return Pointer to the Attribute, or nullptr if index out of range
+	 */
+	Attribute* GetDescriptor(size_t index);
+
+	/**
+	 * @brief Get a custom descriptor by index (const version).
+	 * @param index Index of the descriptor (0 to GetDescriptorCount()-1)
+	 * @return Const pointer to the Attribute, or nullptr if index out of range
+	 */
+	const Attribute* GetDescriptor(size_t index) const;
+
+	// ========== Attribute Access ==========
+
+	/**
+	 * @brief Get the Declaration Attribute.
+	 * The declaration attribute contains properties, value handle, and UUID.
+	 * @return Reference to the Declaration Attribute
+	 */
+	Attribute& GetDeclarationAttribute() { return declaration_attr_; }
+
+	/**
+	 * @brief Get the Declaration Attribute (const version).
+	 * @return Const reference to the Declaration Attribute
+	 */
+	const Attribute& GetDeclarationAttribute() const { return declaration_attr_; }
+
+	/**
+	 * @brief Get the Value Attribute.
+	 * The value attribute holds the actual characteristic data.
+	 * @return Reference to the Value Attribute
+	 */
+	Attribute& GetValueAttribute() { return value_attr_; }
+
+	/**
+	 * @brief Get the Value Attribute (const version).
+	 * @return Const reference to the Value Attribute
+	 */
+	const Attribute& GetValueAttribute() const { return value_attr_; }
+	// ========== Event Handler Management ==========
+
+	/**
+	 * @brief Register an event handler for this characteristic.
+	 *
+	 * The handler is stored as a pointer; it must outlive the Characteristic instance.
+	 * Multiple handlers can be registered and will be called in the order they were added.
+	 *
+	 * @param handler Reference to the EventHandlers structure to register
+	 */
+	void AddEventHandler(const EventHandlers& handler);
+
+	/**
+	 * @brief Unregister an event handler from this characteristic.
+	 *
+	 * @param handler Reference to the EventHandlers structure to unregister
+	 * @return true if the handler was found and removed, false otherwise
+	 *
+	 * @note Handlers are compared by pointer address. If multiple identical handlers were added,
+	 * only the first is removed.
+	 * @note Removing a handler that was not registered has no effect.
+	 * @note Do not remove handlers while iterating through the handler list (e.g. during event
+	 * dispatch). It is NOT safe to remove handlers from within event callbacks.
+	 * @note The handler instance is not deleted by this method. Therefore, the caller must delete
+	 * the object if it was dynamically allocated.
+	 */
+	bool RemoveEventHandler(const EventHandlers& handler);
+
+	/**
+	 * @brief Clear all registered event handlers for this characteristic.
+	 *
+	 * @note The handler instances are not deleted by this method. Therefore, the caller must delete
+	 * the objects if they were dynamically allocated.
+	 */
+	void ClearEventHandlers();
+
+	/**
+	 * @brief Get the list of registered event handlers.
+	 * @return List of pointers to registered EventHandlers structures
+	 */
+	std::list<const EventHandlers*> GetEEventHandlers() const {
+		return event_handlers_;
+	}
+
+	// ========== Connection Handle Management ==========
+
+	/**
+	 * @brief Set the connection handle for this characteristic.
+	 * 
+	 * The connection handle is set when a device connects and the characteristic's
+	 * security requirements are satisfied. Used by UpdateValue to send notifications/indications.
+	 * 
+	 * @param connection_handle The connection handle (0 is invalid/disconnected)
+	 */
+	void SetConnectionHandle(uint16_t connection_handle) {
+		connection_handle_ = connection_handle;
+	}
+
+	/**
+	 * @brief Get the current connection handle.
+	 * @return The connection handle, or 0 if disconnected/invalid
+	 */
+	uint16_t GetConnectionHandle() const {
+		return connection_handle_;
+	}
+
+	// ========== Event Dispatch Functions ==========
+
+	/**
+	 * @brief Dispatch BLE HCI packet to the appropriate event handler.
+	 * 
+	 * @param packet_type The type of the HCI packet
+	 * @param packet_data Pointer to the packet data
+	 * @param packet_data_size Size of the packet data
+	 * @return BleError indicating success or failure
+	 */
+	virtual BleError DispatchBleHciPacket(uint8_t packet_type, const uint8_t* packet_data, 
+	                                       uint16_t packet_data_size);
+	// Attribute dispatcher functions for BLE stack callbacks
+	uint16_t HandleAttributeRead(uint16_t attribute_handle,
+								 uint16_t offset,
+								 uint8_t* buffer,
+								 uint16_t buffer_size);
+	BleError HandleAttributeWrite(uint16_t attribute_handle,
+								  uint16_t offset,
+								  const uint8_t* data,
+								  uint16_t size);
+
+   protected:
+	/**
+	 * @brief Dispatch event to registered event handlers.
+	 * 
+	 * @param event_id The event identifier
+	 * @param event_data Pointer to the event data
+	 * @param event_data_size Size of the event data
+	 * @return BleError indicating success or failure
+	 */
+	virtual BleError DispatchEvent(EventId event_id, const uint8_t* event_data, 
+	                                uint16_t event_data_size);
+
+	/**
+	 * @brief Update the characteristic value and send notification/indication if enabled.
+	 * 
+	 * This is called internally by SetValue functions to handle platform-specific
+	 * transmission logic. The function checks CCCD configuration and sends the appropriate
+	 * update to the connected client based on enabled notifications/indications.
+	 * 
+	 * Logic:
+	 * - If neither notifications nor indications are enabled: no transmission
+	 * - If only notifications are enabled: sends notification
+	 * - If only indications are enabled: sends indication
+	 * - If both are enabled: prioritizes indication over notification
+	 * 
+	 * @return BleError indicating success or failure
+	 * 
+	 * @note Only executes if connection_handle_ is valid (non-zero)
+	 * @note Platform-specific implementation handles actual transmission
+	 */
+	virtual BleError UpdateValue();
+
+private:
+	/**
+	 * @brief Build the characteristic declaration value.
+	 * Format: 1 byte properties + 2 bytes value handle + UUID (2 or 16 bytes)
+	 * @return Vector containing the complete declaration value
+	 */
+	std::vector<uint8_t> BuildDeclarationValue() const;
+
+	// Core characteristic data
+	Uuid uuid_;                                    ///< Characteristic UUID
+	Properties properties_;                        ///< Read, Write, Notify, Indicate, etc.
+	uint16_t connection_handle_;                   ///< Current connection handle (0 if disconnected)
+	bool notification_pending_;                    ///< True if notification/indication is pending due to full buffers
+
+	// Required attributes
+	Attribute declaration_attr_;                   ///< Characteristic Declaration attribute
+	Attribute value_attr_;                         ///< Characteristic Value attribute
+
+	// Optional descriptors
+	std::unique_ptr<Attribute> cccd_;              ///< Client Characteristic Configuration Descriptor
+	std::unique_ptr<Attribute> sccd_;              ///< Server Characteristic Configuration Descriptor
+	std::unique_ptr<Attribute> extended_properties_; ///< Extended Properties descriptor
+	std::unique_ptr<Attribute> user_description_;  ///< User Description descriptor
+	std::list<Attribute> descriptors_;             ///< Additional custom descriptors
+
+	// Internal helpers for descriptor write handling
+	BleError HandleCccdWrite(uint16_t offset, const uint8_t* data, uint16_t size);
+	BleError HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size);
+
+	// Internal helpers for value attribute read/write handling
+	uint16_t HandleValueRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size);
+	BleError HandleValueWrite(uint16_t offset, const uint8_t* data, uint16_t size);
+
+	// Event handlers
+	std::list<const EventHandlers*> event_handlers_; ///< Registered event handlers
+
+	/**
+	 * @brief Stream insertion operator for Characteristic.
+	 * Outputs the characteristic UUID, properties, security requirements, and descriptors.
+	 */
+	friend std::ostream& operator<<(std::ostream& os, const Characteristic& characteristic);
+};
+
+// ========== Bitwise operators for Characteristic::Properties ==========
+
+/**
+ * @brief Bitwise OR operator for Characteristic::Properties.
+ * @param lhs Left-hand side operand
+ * @param rhs Right-hand side operand
+ * @return Combined properties bitmask
+ */
+constexpr Characteristic::Properties operator|(Characteristic::Properties lhs, Characteristic::Properties rhs) noexcept {
+	return static_cast<Characteristic::Properties>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+/**
+ * @brief Bitwise AND operator for Characteristic::Properties.
+ * @param lhs Left-hand side operand
+ * @param rhs Right-hand side operand
+ * @return Intersection of properties bitmask
+ */
+constexpr Characteristic::Properties operator&(Characteristic::Properties lhs, Characteristic::Properties rhs) noexcept {
+	return static_cast<Characteristic::Properties>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+}
+
+/**
+ * @brief Bitwise XOR operator for Characteristic::Properties.
+ * @param lhs Left-hand side operand
+ * @param rhs Right-hand side operand
+ * @return XOR of properties bitmask
+ */
+constexpr Characteristic::Properties operator^(Characteristic::Properties lhs, Characteristic::Properties rhs) noexcept {
+	return static_cast<Characteristic::Properties>(static_cast<uint8_t>(lhs) ^ static_cast<uint8_t>(rhs));
+}
+
+/**
+ * @brief Bitwise NOT operator for Characteristic::Properties.
+ * @param prop Properties to invert
+ * @return Inverted properties bitmask
+ */
+constexpr Characteristic::Properties operator~(Characteristic::Properties prop) noexcept {
+	return static_cast<Characteristic::Properties>(~static_cast<uint8_t>(prop));
+}
+
+/**
+ * @brief Bitwise OR assignment operator for Characteristic::Properties.
+ * @param lhs Left-hand side operand (modified)
+ * @param rhs Right-hand side operand
+ * @return Reference to modified lhs
+ */
+constexpr Characteristic::Properties& operator|=(Characteristic::Properties& lhs, Characteristic::Properties rhs) noexcept {
+	lhs = static_cast<Characteristic::Properties>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+	return lhs;
+}
+
+/**
+ * @brief Bitwise AND assignment operator for Characteristic::Properties.
+ * @param lhs Left-hand side operand (modified)
+ * @param rhs Right-hand side operand
+ * @return Reference to modified lhs
+ */
+constexpr Characteristic::Properties& operator&=(Characteristic::Properties& lhs, Characteristic::Properties rhs) noexcept {
+	lhs = static_cast<Characteristic::Properties>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+	return lhs;
+}
+
+/**
+ * @brief Bitwise XOR assignment operator for Characteristic::Properties.
+ * @param lhs Left-hand side operand (modified)
+ * @param rhs Right-hand side operand
+ * @return Reference to modified lhs
+ */
+constexpr Characteristic::Properties& operator^=(Characteristic::Properties& lhs, Characteristic::Properties rhs) noexcept {
+	lhs = static_cast<Characteristic::Properties>(static_cast<uint8_t>(lhs) ^ static_cast<uint8_t>(rhs));
+	return lhs;
+}
+
+/**
+ * @brief Stream output operator for Characteristic::Properties.
+ * Outputs a human-readable list of properties (e.g., "Read | Write | Notify").
+ * @param os Output stream
+ * @param props Properties bitmask
+ * @return Reference to the output stream
+ */
+std::ostream& operator<<(std::ostream& os, Characteristic::Properties props);
+
+/**
+ * @brief Stream output operator for Characteristic.
+ * Outputs comprehensive information about the characteristic including UUID, properties,
+ * handles, value, and all descriptors.
+ * @param os Output stream
+ * @param characteristic The characteristic to output
+ * @return Reference to the output stream
+ */
+std::ostream& operator<<(std::ostream& os, const Characteristic& characteristic);
+
+// ========== Bitwise operators for Characteristic::CCCDProperties ==========
+
+constexpr Characteristic::CCCDProperties operator|(Characteristic::CCCDProperties lhs, Characteristic::CCCDProperties rhs) noexcept {
+	return static_cast<Characteristic::CCCDProperties>(static_cast<uint16_t>(lhs) | static_cast<uint16_t>(rhs));
+}
+
+constexpr Characteristic::CCCDProperties operator&(Characteristic::CCCDProperties lhs, Characteristic::CCCDProperties rhs) noexcept {
+	return static_cast<Characteristic::CCCDProperties>(static_cast<uint16_t>(lhs) & static_cast<uint16_t>(rhs));
+}
+
+// ========== Bitwise operators for Characteristic::SCCDProperties ==========
+
+constexpr Characteristic::SCCDProperties operator|(Characteristic::SCCDProperties lhs, Characteristic::SCCDProperties rhs) noexcept {
+	return static_cast<Characteristic::SCCDProperties>(static_cast<uint16_t>(lhs) | static_cast<uint16_t>(rhs));
+}
+
+constexpr Characteristic::SCCDProperties operator&(Characteristic::SCCDProperties lhs, Characteristic::SCCDProperties rhs) noexcept {
+	return static_cast<Characteristic::SCCDProperties>(static_cast<uint16_t>(lhs) & static_cast<uint16_t>(rhs));
+}
+
+// ========== Bitwise operators for Characteristic::ExtendedProperties ==========
+
+constexpr Characteristic::ExtendedProperties operator|(Characteristic::ExtendedProperties lhs, Characteristic::ExtendedProperties rhs) noexcept {
+	return static_cast<Characteristic::ExtendedProperties>(static_cast<uint16_t>(lhs) | static_cast<uint16_t>(rhs));
+}
+
+constexpr Characteristic::ExtendedProperties operator&(Characteristic::ExtendedProperties lhs, Characteristic::ExtendedProperties rhs) noexcept {
+	return static_cast<Characteristic::ExtendedProperties>(static_cast<uint16_t>(lhs) & static_cast<uint16_t>(rhs));
+}
+
+} // namespace c7222
+
+#endif // ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_

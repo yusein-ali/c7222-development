@@ -18,6 +18,12 @@ namespace c7222 {
 /**
  * @brief UUID storage for 16-bit and 128-bit UUIDs.
  *
+ * The first two bytes of `uuid_` are used for 16-bit UUIDs and the full
+ * 16-byte array is used for 128-bit UUIDs. On RP2040, 16-bit UUIDs are
+ * stored in little-endian order to match the BTstack ATT DB layout.
+ * For 128-bit UUIDs, the byte order matches the standard UUID string
+ * format shown by the stream operator.
+ *
  * Example (16-bit construction and access):
  * @code
  * c7222::Uuid uuid16(0x180D);
@@ -46,15 +52,24 @@ class Uuid {
 		/** @brief 128-bit UUID stored in the full array. */
 		k128Bit = 2
 	};
-	/** @brief Constructs a 16-bit UUID with value 0x0000. */
+	/** @brief Constructs an invalid/empty UUID. */
 	Uuid() = default;
 
 	/** @brief Copy-constructs a UUID. */
 	Uuid(const Uuid&) = default;
 
+	/** @brief Move-constructs a UUID. */
+	Uuid(Uuid&&) noexcept = default;
+
+	/** @brief Copy assignment operator. */
+	Uuid& operator=(const Uuid&) = default;
+
+	/** @brief Move assignment operator. */
+	Uuid& operator=(Uuid&&) noexcept = default;
+
 	/**
 	 * @brief Constructs a 16-bit UUID from a numeric value.
-	 * @param uuid16 16-bit UUID value.
+	 * @param uuid16 16-bit UUID value (stored in little-endian order).
 	 */
 	explicit Uuid(uint16_t uuid16) : type_(Type::k16Bit) {
 		uint8_t* ptr = reinterpret_cast<uint8_t*>(&uuid16);
@@ -66,30 +81,21 @@ class Uuid {
 	 * @brief Constructs a UUID from a raw byte buffer.
 	 * @param uuid Pointer to 2 or 16 bytes of UUID data.
 	 * @param size Size of the buffer in bytes (must be 2 or 16).
+	 *
+	 * For 16-bit UUIDs, the buffer is interpreted as little-endian.
+	 * For 128-bit UUIDs, the buffer is interpreted in standard byte order.
 	 */
-	Uuid(const uint8_t* uuid, size_t size) {
-		switch(size) {
-			case 2:
-				type_ = Type::k16Bit;
-				std::copy(uuid, uuid + 2, uuid_.begin());
-			case 16:
-				type_ = Type::k128Bit;
-				std::copy(uuid, uuid + 16, uuid_.begin());
-				break;
-			default:
-				assert(false && "UUID can be either 16 bits or 128 bits");
-		}
-	}
+	Uuid(const uint8_t* uuid, size_t size);
 
 	/**
 	 * @brief Constructs a 128-bit UUID from an array.
-	 * @param uuid 128-bit UUID bytes.
+	 * @param uuid 128-bit UUID bytes in standard order.
 	 */
 	explicit Uuid(const std::array<uint8_t, 16>& uuid) : type_(Type::k128Bit), uuid_(uuid) {}
 
 	/**
 	 * @brief Constructs a 16-bit UUID from an array.
-	 * @param uuid 16-bit UUID bytes.
+	 * @param uuid 16-bit UUID bytes in little-endian order.
 	 */
 	explicit Uuid(const std::array<uint8_t, 2>& uuid) : type_(Type::k16Bit) {
 		std::copy(uuid.begin(), uuid.end(), uuid_.begin());
@@ -117,6 +123,13 @@ class Uuid {
 	}
 
 	/**
+	 * @brief Returns true if the UUID has been initialized to 16- or 128-bit.
+	 */
+	bool IsValid() const {
+		return type_ != Type::Invalid;
+	}
+
+	/**
 	 * @brief Returns the 16-bit UUID value.
 	 * @return 16-bit UUID value.
 	 */
@@ -140,6 +153,8 @@ class Uuid {
 	/**
 	 * @brief Returns the raw UUID storage pointer.
 	 * @return Pointer to the internal UUID byte array.
+	 *
+	 * The byte order matches the storage rules documented above.
 	 */
 	const uint8_t* data() const {
 		return uuid_.data();
@@ -150,29 +165,24 @@ class Uuid {
 	 * @param uuid16 16-bit UUID to expand.
 	 * @return 128-bit UUID using the Bluetooth base UUID format.
 	 */
-	static Uuid Convert16To128(const Uuid& uuid16) {
-		assert(uuid16.type_ == Type::k16Bit && "Input UUID is not 16-bit");
-		std::array<uint8_t, 16> uuid128 = {0x00,
-										   0x00,
-										   0x00,
-										   0x00,
-										   0x00,
-										   0x00,
-										   0x10,
-										   0x00,
-										   0x80,
-										   0x00,
-										   0x00,
-										   0x80,
-										   0x5F,
-										   0x9B,
-										   0x34,
-										   0xFB};
-		const uint8_t* short_uuid = uuid16.data();
-		uuid128[2] = (short_uuid[1]) & 0xFF;
-		uuid128[3] = (short_uuid[0]) & 0xFF;
-		return Uuid(uuid128);
+	static Uuid Convert16To128(const Uuid& uuid16);
+
+	/**
+	 * @brief Equality comparison based on UUID type and value.
+	 * @param other UUID to compare against.
+	 * @return true when type and value match.
+	 */
+	bool operator==(const Uuid& other) const;
+
+	/**
+	 * @brief Inequality comparison based on UUID type and value.
+	 * @param other UUID to compare against.
+	 * @return true when type or value differ.
+	 */
+	bool operator!=(const Uuid& other) const {
+		return !(*this == other);
 	}
+
 
 	/**
 	 * @brief Prints the UUID to a stream.
@@ -184,11 +194,16 @@ class Uuid {
 
    private:
 	/** @brief UUID representation type. */
-	Type type_ = Type::k16Bit;
+	Type type_ = Type::Invalid;
 	/** @brief UUID storage (first two bytes used for 16-bit). */
 	std::array<uint8_t, 16> uuid_{};
 };
 
+/**
+ * @brief Prints the UUID to a stream.
+ *
+ * This is the definition corresponding to the friend declaration above.
+ */
 std::ostream& operator<<(std::ostream& os, const Uuid& uuid);
 
 }  // namespace c7222

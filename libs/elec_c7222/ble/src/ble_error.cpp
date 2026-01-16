@@ -207,6 +207,12 @@ std::ostream& operator<<(std::ostream& os, BleError error) {
 			return os << "AttHandleValueIndicationTimeout";
 		case BleError::kAttHandleValueIndicationDisconnect:
 			return os << "AttHandleValueIndicationDisconnect";
+		case BleError::kAttErrorReadNotPermitted:
+			return os << "AttErrorReadNotPermitted";
+		case BleError::kAttErrorWriteNotPermitted:
+			return os << "AttErrorWriteNotPermitted";
+		case BleError::kAttErrorInvalidAttrValueLength:
+			return os << "AttErrorInvalidAttrValueLength";
 		case BleError::kGattClientNotConnected:
 			return os << "GattClientNotConnected";
 		case BleError::kGattClientBusy:

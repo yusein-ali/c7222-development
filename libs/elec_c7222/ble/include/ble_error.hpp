@@ -13,7 +13,7 @@ namespace c7222 {
 /**
  * @brief BLE error codes.
  */
-enum class BleError : uint8_t {
+enum class BleError : int {
 
 	kSuccess,
 	kUnknownHciCommand,
@@ -122,6 +122,10 @@ enum class BleError : uint8_t {
 	kAttHandleValueIndicationInProgress,
 	kAttHandleValueIndicationTimeout,
 	kAttHandleValueIndicationDisconnect,
+
+	kAttErrorReadNotPermitted,      // ATT Error: Read Not Permitted (0x02 from spec)
+	kAttErrorWriteNotPermitted,     // ATT Error: Write Not Permitted (0x03 from spec)
+	kAttErrorInvalidAttrValueLength, // ATT Error: Invalid Attribute Value Length (0x0D from spec)
 
 	kGattClientNotConnected,
 	kGattClientBusy,
