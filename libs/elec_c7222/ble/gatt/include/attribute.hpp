@@ -30,10 +30,24 @@ namespace c7222 {
  *   the ATT DB blob without copying. This matches BTstack, which treats
  *   these values as immutable, fixed-at-compile-time data. Avoiding a copy
  *   saves RAM and preserves the DB as the single source of truth.
+ *   - Storage: `static_value_ptr_` + `static_value_size_` point into the
+ *     ATT DB image parsed by `ParseAttributesFromDb()`.
+ *   - Mutability: immutable at runtime; `SetValue()` rejects writes.
+ *   - Access: `GetValueData()` returns the DB pointer; `GetValueSize()`
+ *     returns the DB length.
+ *   - Optional override: `SetStaticValue()` copies into
+ *     `static_value_storage_` and repoints `static_value_ptr_`, allowing
+ *     a controlled, owned static value without toggling `kDynamic`.
  * - Dynamic attributes (`kDynamic` set): keep a mutable `std::vector` that
  *   can be updated at runtime. Dynamic attributes rely on callbacks and
  *   writable storage; copying into a vector provides ownership and resize
  *   capability that a DB-backed pointer cannot offer.
+ *   - Storage: `dynamic_value_` owns the bytes and can grow/shrink.
+ *   - Mutability: `SetValue()` and write callbacks may update contents.
+ *   - Access: `GetValueData()` returns the vector data pointer; size is
+ *     `dynamic_value_.size()`.
+ *   - Writes: `InvokeWriteCallback()` rejects writes if no write callback
+ *     is installed (dynamic attributes are expected to be callback-backed).
  *
  * Consequence: callers cannot change static attribute payloads via
  * `SetValue()`; writes are rejected unless a dynamic attribute and a write
@@ -161,6 +175,12 @@ class Attribute : public MovableOnly {
 	 * @note As per Bluetooth Assigned Numbers
 	 */
 	enum class AttributeType : uint16_t {
+		/** @brief Primary Service Declaration (0x2800). */
+		kPrimaryService = 0x2800,
+		/** @brief Secondary Service Declaration (0x2801). */
+		kSecondaryService = 0x2801,
+		/** @brief Include Declaration (0x2802). */
+		kInclude = 0x2802,
 		/** @brief Characteristic Declaration attribute (0x2803). */
 		kCharacteristicDeclaration = 0x2803,
 		/** @brief Client Characteristic Configuration Descriptor (0x2902). */
@@ -199,6 +219,13 @@ class Attribute : public MovableOnly {
 	 * @return true if the attribute UUID matches the Characteristic Declaration type
 	 */
 	static bool IsCharacteristicDeclaration(const Attribute& attr);
+
+	/**
+	 * @brief Check if an attribute is a Service Declaration (primary or secondary).
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches a primary or secondary service type
+	 */
+	static bool IsServiceDeclaration(const Attribute& attr);
 
 	/**
 	 * @brief Check if an attribute is a Client Characteristic Configuration Descriptor.
@@ -354,6 +381,15 @@ class Attribute : public MovableOnly {
 	bool SetValue(const uint8_t* data, size_t size);
 
 	/**
+	 * @brief Set attribute value for static attributes.
+	 * Copies the data into owned storage and updates the static value pointer.
+	 * @param data Pointer to value data
+	 * @param size Size of value in bytes
+	 * @return true if value was set, false if rejected (dynamic attribute)
+	 */
+	bool SetStaticValue(const uint8_t* data, size_t size);
+
+	/**
 	 * @brief Set attribute value from rvalue vector (move semantics).
 	 * Only allowed for dynamic attributes.
 	 * @param data Rvalue reference to vector (ownership transferred via move)
@@ -368,6 +404,13 @@ class Attribute : public MovableOnly {
 	 * @return true if value was set, false if rejected (static attribute)
 	 */
 	bool SetValue(const std::vector<uint8_t>& data);
+
+	/**
+	 * @brief Set attribute value for static attributes from vector (copy semantics).
+	 * @param data Const reference to vector (copied into static storage)
+	 * @return true if value was set, false if rejected (dynamic attribute)
+	 */
+	bool SetStaticValue(const std::vector<uint8_t>& data);
 
 	/**
 	 * @brief Set attribute value from a typed value (generic template).
@@ -516,8 +559,8 @@ class Attribute : public MovableOnly {
 	 * - Always nullptr
 	 * - Value stored in dynamic_value_ vector instead
 	 *
-	 * @note This pointer is NOT owned by Attribute - it references external
-	 *       constant data that must outlive the Attribute instance.
+	 * @note This pointer is NOT owned by Attribute unless SetStaticValue()
+	 *       is used, in which case it points into static_value_storage_.
 	 */
 	const uint8_t* static_value_ptr_ = nullptr;
 
@@ -530,6 +573,14 @@ class Attribute : public MovableOnly {
 	 * Cached from ATT DB parsing to avoid recomputing size on each access.
 	 */
 	size_t static_value_size_ = 0;
+
+	/**
+	 * @brief Owned storage for static values set at runtime.
+	 *
+	 * Used by SetStaticValue(); DB-backed static attributes keep a pointer
+	 * into the ATT DB image and leave this vector empty.
+	 */
+	std::vector<uint8_t> static_value_storage_{};
 
 	// ========== Dynamic Attribute Value Storage ==========
 
