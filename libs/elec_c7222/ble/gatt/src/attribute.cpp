@@ -10,6 +10,23 @@
 #include "ble_error.hpp"
 
 namespace c7222 {
+namespace {
+
+void AppendLe16(std::vector<uint8_t>& out, uint16_t value) {
+	out.push_back(static_cast<uint8_t>(value & 0xFF));
+	out.push_back(static_cast<uint8_t>((value >> 8) & 0xFF));
+}
+
+void AppendUuidBytes(std::vector<uint8_t>& out, const Uuid& uuid) {
+	if(uuid.Is16Bit()) {
+		AppendLe16(out, uuid.Get16Bit());
+	} else if(uuid.Is128Bit()) {
+		const auto& bytes = uuid.Get128Bit();
+		out.insert(out.end(), bytes.begin(), bytes.end());
+	}
+}
+
+}  // namespace
 
 std::ostream& operator<<(std::ostream& os, const Attribute& attr) {
 	os << "Attribute(handle=0x" << std::hex << std::setw(4) << std::setfill('0') << attr.GetHandle()
@@ -155,7 +172,6 @@ bool Attribute::SetStaticValue(const uint8_t* data, size_t size) {
 		return false;
 	}
 
-	static_value_storage_.clear();
 	static_value_ptr_ = nullptr;
 	static_value_size_ = 0;
 
@@ -163,9 +179,8 @@ bool Attribute::SetStaticValue(const uint8_t* data, size_t size) {
 		return true;
 	}
 
-	static_value_storage_.assign(data, data + size);
-	static_value_ptr_ = static_value_storage_.data();
-	static_value_size_ = static_value_storage_.size();
+	static_value_ptr_ = data;
+	static_value_size_ = size;
 	return true;
 }
 
@@ -199,63 +214,162 @@ bool Attribute::SetValue(std::vector<uint8_t>&& data) {
 // ========== Static Helper Functions for Attribute Type Checking ==========
 
 bool Attribute::IsPrimaryServiceDeclaration(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kPrimaryServiceDeclaration);
+	return Uuid::IsPrimaryServiceDeclaration(attr.uuid_);
 }
 
 bool Attribute::IsSecondaryServiceDeclaration(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kSecondaryServiceDeclaration);
-}
-
-bool Attribute::IsServiceDeclaration(const Attribute& attr) {
-	return IsPrimaryServiceDeclaration(attr) || IsSecondaryServiceDeclaration(attr);
+	return Uuid::IsSecondaryServiceDeclaration(attr.uuid_);
 }
 
 bool Attribute::IsIncludedServiceDeclaration(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kIncludedServiceDeclaration);
+	return Uuid::IsIncludedServiceDeclaration(attr.uuid_);
 }
 
 bool Attribute::IsCharacteristicDeclaration(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicDeclaration);
+	return Uuid::IsCharacteristicDeclaration(attr.uuid_);
 }
 
 bool Attribute::IsServiceDeclaration(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	if(!uuid.Is16Bit()) {
-		return false;
-	}
-
-	const uint16_t uuid16 = uuid.Get16Bit();
-	return uuid16 == static_cast<uint16_t>(AttributeType::kPrimaryService) ||
-		   uuid16 == static_cast<uint16_t>(AttributeType::kSecondaryService);
+	return Uuid::IsServiceDeclaration(attr.uuid_);
 }
 
 bool Attribute::IsClientCharacteristicConfiguration(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kClientCharacteristicConfiguration);
+	return Uuid::IsClientCharacteristicConfiguration(attr.uuid_);
 }
 
 bool Attribute::IsCharacteristicUserDescription(const Attribute& attr) {
-	const Uuid& uuid = attr.uuid_;
-	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicUserDescription);
+	return Uuid::IsCharacteristicUserDescription(attr.uuid_);
 }
 
 bool Attribute::IsDescriptor(const Attribute& attr) {
-	// Check if UUID matches any known descriptor type
-	if (!attr.uuid_.Is16Bit()) {
-		return false;
+	return Uuid::IsDescriptor(attr.uuid_);
+}
+
+Attribute Attribute::PrimaryServiceDeclaration(const Uuid& service_uuid, uint16_t handle) {
+	std::vector<uint8_t> value;
+	AppendUuidBytes(value, service_uuid);
+	return Attribute(Uuid::PrimaryServiceDeclaration(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
+}
+
+Attribute Attribute::SecondaryServiceDeclaration(const Uuid& service_uuid, uint16_t handle) {
+	std::vector<uint8_t> value;
+	AppendUuidBytes(value, service_uuid);
+	return Attribute(Uuid::SecondaryServiceDeclaration(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
+}
+
+Attribute Attribute::IncludedServiceDeclaration(uint16_t start_handle,
+												uint16_t end_handle,
+												const Uuid& service_uuid,
+												uint16_t handle) {
+	std::vector<uint8_t> value;
+	AppendLe16(value, start_handle);
+	AppendLe16(value, end_handle);
+	AppendUuidBytes(value, service_uuid);
+	return Attribute(Uuid::IncludedServiceDeclaration(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
+}
+
+Attribute Attribute::CharacteristicDeclaration(uint8_t properties,
+											   uint16_t value_handle,
+											   const Uuid& characteristic_uuid,
+											   uint16_t handle) {
+	std::vector<uint8_t> value;
+	value.push_back(properties);
+	AppendLe16(value, value_handle);
+	AppendUuidBytes(value, characteristic_uuid);
+	return Attribute(Uuid::CharacteristicDeclaration(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
+}
+
+Attribute Attribute::ClientCharacteristicConfiguration(uint16_t value, uint16_t handle) {
+	std::vector<uint8_t> bytes;
+	AppendLe16(bytes, value);
+	return Attribute(Uuid::ClientCharacteristicConfiguration(),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kWrite |
+										   Properties::kDynamic),
+					 bytes.data(),
+					 bytes.size(),
+					 handle);
+}
+
+Attribute Attribute::ServerCharacteristicConfiguration(uint16_t value, uint16_t handle) {
+	std::vector<uint8_t> bytes;
+	AppendLe16(bytes, value);
+	return Attribute(Uuid::ServerCharacteristicConfiguration(),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kWrite |
+										   Properties::kDynamic),
+					 bytes.data(),
+					 bytes.size(),
+					 handle);
+}
+
+Attribute Attribute::CharacteristicUserDescription(const std::string& description,
+												   uint16_t handle) {
+	const std::vector<uint8_t> value(description.begin(), description.end());
+	return Attribute(Uuid::CharacteristicUserDescription(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
+}
+
+Attribute Attribute::CharacteristicExtendedProperties(uint16_t value, uint16_t handle) {
+	std::vector<uint8_t> bytes;
+	AppendLe16(bytes, value);
+	return Attribute(Uuid::CharacteristicExtendedProperties(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 bytes.data(),
+					 bytes.size(),
+					 handle);
+}
+
+Attribute Attribute::CharacteristicPresentationFormat(uint8_t format,
+													  int8_t exponent,
+													  uint16_t unit,
+													  uint8_t name_space,
+													  uint16_t description,
+													  uint16_t handle) {
+	std::vector<uint8_t> value;
+	value.push_back(format);
+	value.push_back(static_cast<uint8_t>(exponent));
+	AppendLe16(value, unit);
+	value.push_back(name_space);
+	AppendLe16(value, description);
+	return Attribute(Uuid::CharacteristicPresentationFormat(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
+}
+
+Attribute Attribute::CharacteristicAggregateFormat(const std::vector<uint16_t>& handles,
+												   uint16_t handle) {
+	std::vector<uint8_t> value;
+	value.reserve(handles.size() * 2);
+	for(uint16_t entry: handles) {
+		AppendLe16(value, entry);
 	}
-	
-	uint16_t uuid16 = attr.uuid_.Get16Bit();
-	return uuid16 == static_cast<uint16_t>(AttributeType::kClientCharacteristicConfiguration) ||
-	       uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicUserDescription) ||
-	       uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicExtendedProperties) ||
-	       uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicPresentationFormat) ||
-	       uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicAggregateFormat) ||
-	       uuid16 == static_cast<uint16_t>(AttributeType::kServerCharacteristicConfiguration);
+	return Attribute(Uuid::CharacteristicAggregateFormat(),
+					 static_cast<uint16_t>(Properties::kRead),
+					 value.data(),
+					 value.size(),
+					 handle);
 }
 
 uint16_t Attribute::InvokeReadCallback(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) const {
@@ -277,15 +391,34 @@ uint16_t Attribute::InvokeReadCallback(uint16_t offset, uint8_t* buffer, uint16_
 }
 
 BleError Attribute::InvokeWriteCallback(uint16_t offset, const uint8_t* data, uint16_t size) {
+	const bool is_dynamic = (properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0;
+	const bool is_write_permitted =
+		(properties_ & static_cast<uint16_t>(Properties::kWrite)) != 0 ||
+		(properties_ & static_cast<uint16_t>(Properties::kWriteWithoutResponse)) != 0;
+	if(!is_write_permitted) {
+		return BleError::kAttErrorWriteNotPermitted;
+	}
+	
+	if(is_dynamic) {
+		if(write_callback_) {
+			const BleError status = write_callback_(offset, data, size);
+			if(status != BleError::kSuccess) {
+				return status;
+			}
+		}
+
+		// Apply write into the dynamic storage after successful callback.
+		// Store only the written data chunk (no offset padding).
+		if(data != nullptr && size > 0) {
+			dynamic_value_.assign(data, data + size);
+		}
+		return BleError::kSuccess;
+	}
+
+	// Static attributes cannot be written.
 	if(write_callback_) {
 		return write_callback_(offset, data, size);
 	}
-	// Default behavior: reject writes when no callback is installed
-	// Dynamic attributes require a write callback
-	if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0) {
-		return BleError::kAttErrorWriteNotPermitted;
-	}
-	// Static attributes cannot be written
 	return BleError::kAttErrorWriteNotPermitted;
 }
 

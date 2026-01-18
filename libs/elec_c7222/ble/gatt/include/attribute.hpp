@@ -10,6 +10,7 @@
 #include <functional>
 #include <iostream>
 #include <list>
+#include <string>
 #include <vector>
 #include "uuid.hpp"
 #include "non_copyable.hpp"
@@ -35,8 +36,9 @@ namespace c7222 {
  *   - Mutability: immutable at runtime; `SetValue()` rejects writes.
  *   - Access: `GetValueData()` returns the DB pointer; `GetValueSize()`
  *     returns the DB length.
- *   - Optional override: `SetStaticValue()` copies into
- *     `static_value_storage_` and repoints `static_value_ptr_`, allowing
+ *   - Lifetime: the DB buffer must remain valid for the life of the
+ *     Attribute; use `SetStaticValue()` to own a copy.
+ *   - Optional override: `SetStaticValue()` repoints `static_value_ptr_`, allowing
  *     a controlled, owned static value without toggling `kDynamic`.
  * - Dynamic attributes (`kDynamic` set): keep a mutable `std::vector` that
  *   can be updated at runtime. Dynamic attributes rely on callbacks and
@@ -46,12 +48,18 @@ namespace c7222 {
  *   - Mutability: `SetValue()` and write callbacks may update contents.
  *   - Access: `GetValueData()` returns the vector data pointer; size is
  *     `dynamic_value_.size()`.
- *   - Writes: `InvokeWriteCallback()` rejects writes if no write callback
- *     is installed (dynamic attributes are expected to be callback-backed).
+ *   - Writes: `InvokeWriteCallback()` stores data even if no write callback
+ *     is installed; callbacks are optional for dynamic attributes.
  *
- * Consequence: callers cannot change static attribute payloads via
- * `SetValue()`; writes are rejected unless a dynamic attribute and a write
- * callback are provided.
+ * Consequence:
+ * - `SetValue()` is only valid for dynamic attributes.
+ * - Remote writes are accepted only through `InvokeWriteCallback()`. If no
+ *   write callback is installed for a dynamic attribute, the value is still
+ *   stored and the write succeeds.
+ *
+ * Ownership and moves:
+ * - The class is move-only (inherits `MovableOnly`) to avoid accidental
+ *   copies of pointer-backed/static storage and callback state.
  *
  * Construction:
  * - Provide a `Uuid` plus a properties bitmask; an optional handle can be
@@ -63,6 +71,8 @@ namespace c7222 {
  *   constants and the provided bitwise operators to combine them.
  * - The `kUuid128` flag is synchronized automatically based on the `Uuid`
  *   when constructing or calling `SetProperties()`.
+ * - Permission bits are not enforced by this class; the stack should gate
+ *   read/write requests before invoking callbacks.
  *
  * Callback architecture:
  * - Read callbacks return `uint16_t`: byte count on success, or ATT error
@@ -73,6 +83,11 @@ namespace c7222 {
  *   on successful write operations.
  * - Platform-specific implementations in platform/rpi_pico/ handle BTstack
  *   integration; core logic remains platform-independent.
+ *
+ * Attribute type helpers:
+ * - Use `Uuid::AttributeType` for the standard 16-bit type UUIDs.
+ * - Use `Uuid::Is*` helpers when you only have a UUID. This class provides
+ *   wrappers that accept an Attribute object.
  *
  * Example:
  * @code
@@ -94,15 +109,20 @@ namespace c7222 {
  * @endcode
  *
  * Dynamic attributes:
- * - If `kDynamic` is set, the attribute is expected to use callbacks rather
- *   than a fixed in-DB value. `InvokeWriteCallback()` will reject writes
- *   if no write callback is installed, returning BleError::kAttErrorWriteNotPermitted.
+ * - If `kDynamic` is set, the attribute uses owned storage and optional
+ *   callbacks rather than a fixed in-DB value.
+ * - When a write callback is installed, `InvokeWriteCallback()` calls the
+ *   callback first. If it succeeds, `dynamic_value_` is updated (when data
+ *   is provided).
  *
  * Thread safety:
  * - Not thread-safe. External synchronization required for concurrent access.
  */
 class Attribute : public MovableOnly {
    public:
+	/// \name Types
+	///@{
+
 	/**
 	 * @brief Attribute flags with direct BTstack ATT_PROPERTY_* mapping.
 	 *
@@ -137,7 +157,7 @@ class Attribute : public MovableOnly {
 		/**
 		 * @brief Value is dynamic (handled by callbacks, not fixed DB storage).
 		 *
-		 * The local `value_` may be used as a cache, but when no write callback
+		 * The local `dynamic_value_` may be used as a cache, but when no write callback
 		 * is installed, `InvokeWriteCallback()` rejects writes for dynamic attrs.
 		 */
 		kDynamic = 0x0100,
@@ -166,38 +186,6 @@ class Attribute : public MovableOnly {
 	};
 
 	/**
-	 * @brief Standard GATT Attribute Type UUIDs.
-	 * 
-	 * These are well-known 16-bit UUIDs defined by the Bluetooth specification
-	 * to identify common attribute types used in GATT services,
-	 * characteristic-related attributes and descriptors.
-	 * 
-	 * @note As per Bluetooth Assigned Numbers
-	 */
-	enum class AttributeType : uint16_t {
-		/** @brief Primary Service Declaration attribute (0x2800). */
-		kPrimaryServiceDeclaration = 0x2800,
-		/** @brief Secondary Service Declaration attribute (0x2801). */
-		kSecondaryServiceDeclaration = 0x2801,
-		/** @brief Included Service Declaration attribute (0x2802). */
-		kIncludedServiceDeclaration = 0x2802,
-		/** @brief Characteristic Declaration attribute (0x2803). */
-		kCharacteristicDeclaration = 0x2803,
-		/** @brief Server Characteristic Configuration Descriptor (0x2903). */
-		kServerCharacteristicConfiguration = 0x2903,
-		/** @brief Client Characteristic Configuration Descriptor (0x2902). */
-		kClientCharacteristicConfiguration = 0x2902,
-		/** @brief Characteristic User Description Descriptor (0x2901). */
-		kCharacteristicUserDescription = 0x2901,
-		/** @brief Characteristic Extended Properties Descriptor (0x2900). */
-		kCharacteristicExtendedProperties = 0x2900,
-		/** @brief Characteristic Presentation Format Descriptor (0x2904). */
-		kCharacteristicPresentationFormat = 0x2904,
-		/** @brief Characteristic Aggregate Format Descriptor (0x2905). */
-		kCharacteristicAggregateFormat = 0x2905
-	};
-
-	/**
 	 * @brief Callback type for reading attribute value.
 	 * Parameters: offset, destination buffer, buffer size
 	 * Returns: number of bytes read, or ATT error code if > 0xfe00
@@ -210,8 +198,11 @@ class Attribute : public MovableOnly {
 	 * Returns: BleError code (BleError::kSuccess = success)
 	 */
 	using WriteCallback = std::function<BleError(uint16_t offset, const uint8_t* data, uint16_t size)>;
+	///@}
 
-	// ========== Static Helper Functions for Attribute Type Checking ==========
+	/// \name Attribute Type Checks (Attribute wrappers)
+	/// For UUID-only checks, use the corresponding Uuid::Is* helpers.
+	///@{
 
 	/**
 	 * @brief Check if an attribute is a Primary Service Declaration.
@@ -249,13 +240,6 @@ class Attribute : public MovableOnly {
 	static bool IsCharacteristicDeclaration(const Attribute& attr);
 
 	/**
-	 * @brief Check if an attribute is a Service Declaration (primary or secondary).
-	 * @param attr Attribute to check
-	 * @return true if the attribute UUID matches a primary or secondary service type
-	 */
-	static bool IsServiceDeclaration(const Attribute& attr);
-
-	/**
 	 * @brief Check if an attribute is a Client Characteristic Configuration Descriptor.
 	 * @param attr Attribute to check
 	 * @return true if the attribute UUID matches CCCD type
@@ -275,13 +259,96 @@ class Attribute : public MovableOnly {
 	 * @return true if the attribute is a known descriptor type
 	 */
 	static bool IsDescriptor(const Attribute& attr);
+	///@}
 
+	/// \name Attribute Type Factories
+	///@{
+
+	/**
+	 * @brief Create a Primary Service Declaration with a service UUID payload.
+	 */
+	static Attribute PrimaryServiceDeclaration(const Uuid& service_uuid, uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Secondary Service Declaration with a service UUID payload.
+	 */
+	static Attribute SecondaryServiceDeclaration(const Uuid& service_uuid, uint16_t handle = 0);
+
+	/**
+	 * @brief Create an Included Service Declaration payload.
+	 * @param start_handle First attribute handle of the included service
+	 * @param end_handle Last attribute handle of the included service
+	 * @param service_uuid Included service UUID (16-bit or 128-bit)
+	 */
+	static Attribute IncludedServiceDeclaration(uint16_t start_handle,
+												uint16_t end_handle,
+												const Uuid& service_uuid,
+												uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Characteristic Declaration payload.
+	 * @param properties Characteristic properties byte (GATT characteristic properties)
+	 * @param value_handle Handle of the characteristic value attribute
+	 * @param characteristic_uuid Characteristic UUID (16-bit or 128-bit)
+	 */
+	static Attribute CharacteristicDeclaration(uint8_t properties,
+											   uint16_t value_handle,
+											   const Uuid& characteristic_uuid,
+											   uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Client Characteristic Configuration with a 16-bit value.
+	 */
+	static Attribute ClientCharacteristicConfiguration(uint16_t value, uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Server Characteristic Configuration with a 16-bit value.
+	 */
+	static Attribute ServerCharacteristicConfiguration(uint16_t value, uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Characteristic User Description with a UTF-8 string.
+	 */
+	static Attribute CharacteristicUserDescription(const std::string& description,
+												   uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Characteristic Extended Properties with a 16-bit value.
+	 */
+	static Attribute CharacteristicExtendedProperties(uint16_t value, uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Characteristic Presentation Format payload (0x2904).
+	 */
+	static Attribute CharacteristicPresentationFormat(uint8_t format,
+													  int8_t exponent,
+													  uint16_t unit,
+													  uint8_t name_space,
+													  uint16_t description,
+													  uint16_t handle = 0);
+
+	/**
+	 * @brief Create a Characteristic Aggregate Format from a list of handles.
+	 */
+	static Attribute CharacteristicAggregateFormat(const std::vector<uint16_t>& handles,
+												   uint16_t handle = 0);
+	///@}
+
+	/// \name Construction and Assignment
+	///@{
+
+	/**
+	 * @brief Default-construct an invalid attribute.
+	 *
+	 * Use the UUID/properties constructors or the factory helpers to create
+	 * usable attributes.
+	 */
 	Attribute() = default;
 	
-	/** @brief Move constructor. */
+	/** @brief Move constructor (transfers storage and callbacks). */
 	Attribute(Attribute&&) noexcept = default;
 
-	/** @brief Move assignment operator. */
+	/** @brief Move assignment operator (transfers storage and callbacks). */
 	Attribute& operator=(Attribute&&) noexcept = default;
 
 	/**
@@ -294,19 +361,39 @@ class Attribute : public MovableOnly {
 	 * dynamic attributes copy the data into owned storage so it can be mutated.
 	 */
 	Attribute(const Uuid& uuid, uint16_t properties, const uint8_t* data, size_t size, uint16_t handle = 0);
+	///@}
 
+	/// \name Identity and Matching
+	///@{
+
+	/**
+	 * @brief Get the ATT handle.
+	 * @return Attribute handle (0 if unassigned)
+	 */
 	uint16_t GetHandle() const {
 		return handle_;
 	}
 
+	/**
+	 * @brief Set the ATT handle.
+	 * @param handle New handle assigned by the stack or builder
+	 */
 	void SetHandle(uint16_t handle) {
 		handle_ = handle;
 	}
 
+	/**
+	 * @brief Get the attribute UUID.
+	 * @return Reference to the UUID identifying this attribute type
+	 */
 	const Uuid& GetUuid() const {
 		return uuid_;
 	}
 
+	/**
+	 * @brief Check if the attribute UUID is 128-bit.
+	 * @return true for 128-bit UUIDs, false for 16-bit
+	 */
 	bool IsUuid128() const {
 		return uuid_.Is128Bit();
 	}
@@ -345,6 +432,10 @@ class Attribute : public MovableOnly {
 	bool IsThisAttribute(const Uuid& uuid, uint16_t handle) const {
 		return uuid_ == uuid && handle_ == handle;
 	}
+	///@}
+
+	/// \name Properties
+	///@{
 
 	/**
 	 * @brief Get the properties bitmask of the attribute.
@@ -362,6 +453,10 @@ class Attribute : public MovableOnly {
 		properties_ = properties;
 		UpdateUuidProperty();
 	}
+	///@}
+
+	/// \name Value Accessors and Mutators
+	///@{
 
 	/**
 	 * @brief Get value as vector (for compatibility).
@@ -456,6 +551,10 @@ class Attribute : public MovableOnly {
 			"T must be a trivial type for binary conversion");
 		return SetValue(reinterpret_cast<const uint8_t*>(&value), sizeof(T));
 	}
+	///@}
+
+	/// \name Callbacks
+	///@{
 
 	/**
 	 * @brief Set the read callback for this attribute.
@@ -480,7 +579,7 @@ class Attribute : public MovableOnly {
 	 * @param buffer Destination buffer for data
 	 * @param buffer_size Size of destination buffer
 	 * @return Number of bytes read, or error code
-	 * @note Platform-specific implementation required in platform dependent attribute.cpp
+	 * @note Implemented in src/attribute.cpp; falls back to stored value if no callback.
 	 */
 	uint16_t InvokeReadCallback(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) const;
 
@@ -508,14 +607,23 @@ class Attribute : public MovableOnly {
 	 * @param size Number of bytes to write
 	 * @return BleError code (BleError::kSuccess = success)
 	 * @note Platform-independent implementation in src/attribute.cpp
+	 * @note For dynamic attributes, the callback (if installed) runs first.
+	 *       On success, the data is stored. If no callback is set, the write
+	 *       stores the data and succeeds.
+	 *       If the callback returns an error, the value is restored.
 	 */
 	BleError InvokeWriteCallback(uint16_t offset, const uint8_t* data, uint16_t size);
+	///@}
+
+	/// \name Streaming
+	///@{
 
 	/**
 	 * @brief Stream insertion operator for Attribute.
 	 * Outputs the attribute handle, UUID, and parsed properties flags.
 	 */
 	friend std::ostream& operator<<(std::ostream& os, const Attribute& attr);
+	///@}
 
    private:
 	/**
@@ -602,14 +710,6 @@ class Attribute : public MovableOnly {
 	 */
 	size_t static_value_size_ = 0;
 
-	/**
-	 * @brief Owned storage for static values set at runtime.
-	 *
-	 * Used by SetStaticValue(); DB-backed static attributes keep a pointer
-	 * into the ATT DB image and leave this vector empty.
-	 */
-	std::vector<uint8_t> static_value_storage_{};
-
 	// ========== Dynamic Attribute Value Storage ==========
 
 	/**
@@ -663,7 +763,7 @@ class Attribute : public MovableOnly {
 	 * - Return appropriate BleError code on failure (e.g., kAttErrorWriteNotPermitted)
 	 *
 	 * If no callback is set for a dynamic attribute, InvokeWriteCallback()
-	 * returns BleError::kAttErrorWriteNotPermitted. For static attributes,
+	 * stores the data and returns BleError::kSuccess. For static attributes,
 	 * writes are always rejected as the value is immutable DB data.
 	 *
 	 * Type safety: BleError return type ensures compile-time correctness
