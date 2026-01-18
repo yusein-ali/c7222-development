@@ -715,6 +715,18 @@ public:
 	bool HasCCCD() const { return cccd_ != nullptr; }
 
 	/**
+	 * @brief Check if notifications are enabled via CCCD.
+	 * @return true if CCCD is present and notifications bit is set
+	 */
+	bool IsNotificationsEnabled() const;
+
+	/**
+	 * @brief Check if indications are enabled via CCCD.
+	 * @return true if CCCD is present and indications bit is set
+	 */
+	bool IsIndicationsEnabled() const;
+
+	/**
 	 * @brief Get the CCCD descriptor.
 	 * @return Pointer to CCCD Attribute, or nullptr if not enabled
 	 */
@@ -748,6 +760,12 @@ public:
 	 * @return true if SCCD has been enabled
 	 */
 	bool HasSCCD() const { return sccd_ != nullptr; }
+
+	/**
+	 * @brief Check if broadcasts are enabled via SCCD.
+	 * @return true if SCCD is present and broadcasts bit is set
+	 */
+	bool IsBroadcastEnabled() const;
 
 	/**
 	 * @brief Get the SCCD descriptor.

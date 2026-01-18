@@ -291,6 +291,45 @@ bool Characteristic::HasWriteCallback() const {
 	return value_attr_.HasWriteCallback();
 }
 
+bool Characteristic::IsNotificationsEnabled() const {
+	if (!cccd_) {
+		return false;
+	}
+	const uint8_t* data = cccd_->GetValueData();
+	if (data == nullptr || cccd_->GetValueSize() < 2) {
+		return false;
+	}
+	const uint16_t value = static_cast<uint16_t>(data[0]) |
+	                       (static_cast<uint16_t>(data[1]) << 8);
+	return (value & static_cast<uint16_t>(CCCDProperties::kNotifications)) != 0;
+}
+
+bool Characteristic::IsIndicationsEnabled() const {
+	if (!cccd_) {
+		return false;
+	}
+	const uint8_t* data = cccd_->GetValueData();
+	if (data == nullptr || cccd_->GetValueSize() < 2) {
+		return false;
+	}
+	const uint16_t value = static_cast<uint16_t>(data[0]) |
+	                       (static_cast<uint16_t>(data[1]) << 8);
+	return (value & static_cast<uint16_t>(CCCDProperties::kIndications)) != 0;
+}
+
+bool Characteristic::IsBroadcastEnabled() const {
+	if (!sccd_) {
+		return false;
+	}
+	const uint8_t* data = sccd_->GetValueData();
+	if (data == nullptr || sccd_->GetValueSize() < 2) {
+		return false;
+	}
+	const uint16_t value = static_cast<uint16_t>(data[0]) |
+	                       (static_cast<uint16_t>(data[1]) << 8);
+	return (value & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;
+}
+
 Attribute& Characteristic::EnableCCCD() {
 	if (!cccd_) {
 		// CCCD initial value: {0x00, 0x00} = notifications and indications disabled
