@@ -27,11 +27,14 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	 ERROR_CODE_SYNCHRONOUS_CONNECTION_LIMIT_TO_A_DEVICE_EXCEEDED},
 	{BleError::kAclConnectionAlreadyExists, ERROR_CODE_ACL_CONNECTION_ALREADY_EXISTS},
 	{BleError::kCommandDisallowed, ERROR_CODE_COMMAND_DISALLOWED},
-	{BleError::kConnectionRejectedDueToLimitedResources, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES},
-	{BleError::kConnectionRejectedDueToSecurityReasons, ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS},
+	{BleError::kConnectionRejectedDueToLimitedResources,
+	 ERROR_CODE_CONNECTION_REJECTED_DUE_TO_LIMITED_RESOURCES},
+	{BleError::kConnectionRejectedDueToSecurityReasons,
+	 ERROR_CODE_CONNECTION_REJECTED_DUE_TO_SECURITY_REASONS},
 	{BleError::kConnectionRejectedDueToUnacceptableBdAddr,
 	 ERROR_CODE_CONNECTION_REJECTED_DUE_TO_UNACCEPTABLE_BD_ADDR},
-	{BleError::kUnsupportedFeatureOrParameterValue, ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE},
+	{BleError::kUnsupportedFeatureOrParameterValue,
+	 ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE},
 	{BleError::kInvalidHciCommandParameters, ERROR_CODE_INVALID_HCI_COMMAND_PARAMETERS},
 	{BleError::kRemoteUserTerminatedConnection, ERROR_CODE_REMOTE_USER_TERMINATED_CONNECTION},
 	{BleError::kConnectionAcceptTimeoutExceeded, ERROR_CODE_CONNECTION_ACCEPT_TIMEOUT_EXCEEDED},
@@ -48,12 +51,14 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	{BleError::kScoOffsetRejected, ERROR_CODE_SCO_OFFSET_REJECTED},
 	{BleError::kScoIntervalRejected, ERROR_CODE_SCO_INTERVAL_REJECTED},
 	{BleError::kScoAirModeRejected, ERROR_CODE_SCO_AIR_MODE_REJECTED},
-	{BleError::kInvalidLmpParametersInvalidLlParameters, ERROR_CODE_INVALID_LMP_PARAMETERS_INVALID_LL_PARAMETERS},
+	{BleError::kInvalidLmpParametersInvalidLlParameters,
+	 ERROR_CODE_INVALID_LMP_PARAMETERS_INVALID_LL_PARAMETERS},
 	{BleError::kUnspecifiedError, ERROR_CODE_UNSPECIFIED_ERROR},
 	{BleError::kUnsupportedLmpParameterValueUnsupportedLlParameterValue,
 	 ERROR_CODE_UNSUPPORTED_LMP_PARAMETER_VALUE_UNSUPPORTED_LL_PARAMETER_VALUE},
 	{BleError::kRoleChangeNotAllowed, ERROR_CODE_ROLE_CHANGE_NOT_ALLOWED},
-	{BleError::kLmpResponseTimeoutLlResponseTimeout, ERROR_CODE_LMP_RESPONSE_TIMEOUT_LL_RESPONSE_TIMEOUT},
+	{BleError::kLmpResponseTimeoutLlResponseTimeout,
+	 ERROR_CODE_LMP_RESPONSE_TIMEOUT_LL_RESPONSE_TIMEOUT},
 	{BleError::kLmpErrorTransactionCollision, ERROR_CODE_LMP_ERROR_TRANSACTION_COLLISION},
 	{BleError::kLmpPduNotAllowed, ERROR_CODE_LMP_PDU_NOT_ALLOWED},
 	{BleError::kEncryptionModeNotAcceptable, ERROR_CODE_ENCRYPTION_MODE_NOT_ACCEPTABLE},
@@ -80,7 +85,8 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	{BleError::kControllerBusy, ERROR_CODE_CONTROLLER_BUSY},
 	{BleError::kUnacceptableConnectionParameters, ERROR_CODE_UNACCEPTABLE_CONNECTION_PARAMETERS},
 	{BleError::kDirectedAdvertisingTimeout, ERROR_CODE_DIRECTED_ADVERTISING_TIMEOUT},
-	{BleError::kConnectionTerminatedDueToMicFailure, ERROR_CODE_CONNECTION_TERMINATED_DUE_TO_MIC_FAILURE},
+	{BleError::kConnectionTerminatedDueToMicFailure,
+	 ERROR_CODE_CONNECTION_TERMINATED_DUE_TO_MIC_FAILURE},
 	{BleError::kConnectionFailedToBeEstablished, ERROR_CODE_CONNECTION_FAILED_TO_BE_ESTABLISHED},
 	{BleError::kMacConnectionFailed, ERROR_CODE_MAC_CONNECTION_FAILED},
 	{BleError::kCoarseClockAdjustmentRejectedButWillTryToAdjustUsingClockDragging,
@@ -95,16 +101,25 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	{BleError::kBtstackMemoryAllocFailed, BTSTACK_MEMORY_ALLOC_FAILED},
 	{BleError::kBtstackAclBuffersFull, BTSTACK_ACL_BUFFERS_FULL},
 
-	{BleError::kL2capCommandRejectReasonCommandNotUnderstood, L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD},
-	{BleError::kL2capCommandRejectReasonSignalingMtuExceeded, L2CAP_COMMAND_REJECT_REASON_SIGNALING_MTU_EXCEEDED},
-	{BleError::kL2capCommandRejectReasonInvalidCidInRequest, L2CAP_COMMAND_REJECT_REASON_INVALID_CID_IN_REQUEST},
-	{BleError::kL2capConnectionResponseResultSuccessful, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL},
+	{BleError::kL2capCommandRejectReasonCommandNotUnderstood,
+	 L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD},
+	{BleError::kL2capCommandRejectReasonSignalingMtuExceeded,
+	 L2CAP_COMMAND_REJECT_REASON_SIGNALING_MTU_EXCEEDED},
+	{BleError::kL2capCommandRejectReasonInvalidCidInRequest,
+	 L2CAP_COMMAND_REJECT_REASON_INVALID_CID_IN_REQUEST},
+	{BleError::kL2capConnectionResponseResultSuccessful,
+	 L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL},
 	{BleError::kL2capConnectionResponseResultPending, L2CAP_CONNECTION_RESPONSE_RESULT_PENDING},
-	{BleError::kL2capConnectionResponseResultRefusedPsm, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM},
-	{BleError::kL2capConnectionResponseResultRefusedSecurity, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY},
-	{BleError::kL2capConnectionResponseResultRefusedResources, L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES},
-	{BleError::kL2capConnectionResponseResultErtmNotSupported, L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED},
-	{BleError::kL2capConnectionResponseResultRtxTimeout, L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT},
+	{BleError::kL2capConnectionResponseResultRefusedPsm,
+	 L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM},
+	{BleError::kL2capConnectionResponseResultRefusedSecurity,
+	 L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY},
+	{BleError::kL2capConnectionResponseResultRefusedResources,
+	 L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES},
+	{BleError::kL2capConnectionResponseResultErtmNotSupported,
+	 L2CAP_CONNECTION_RESPONSE_RESULT_ERTM_NOT_SUPPORTED},
+	{BleError::kL2capConnectionResponseResultRtxTimeout,
+	 L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT},
 	{BleError::kL2capConnectionBasebandDisconnect, L2CAP_CONNECTION_BASEBAND_DISCONNECT},
 	{BleError::kL2capServiceAlreadyRegistered, L2CAP_SERVICE_ALREADY_REGISTERED},
 	{BleError::kL2capDataLenExceedsRemoteMtu, L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU},
@@ -140,7 +155,8 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	{BleError::kGattClientDifferentContextForAddressAlreadyExists,
 	 GATT_CLIENT_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS},
 	{BleError::kGattClientValueTooLong, GATT_CLIENT_VALUE_TOO_LONG},
-	{BleError::kGattClientCharacteristicNotificationNotSupported, GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED},
+	{BleError::kGattClientCharacteristicNotificationNotSupported,
+	 GATT_CLIENT_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED},
 	{BleError::kGattClientCharacteristicIndicationNotSupported,
 	 GATT_CLIENT_CHARACTERISTIC_INDICATION_NOT_SUPPORTED},
 
@@ -159,11 +175,11 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 	{BleError::kMeshErrorAppkeyIndexInvalid, MESH_ERROR_APPKEY_INDEX_INVALID},
 };
 
-} // namespace
+}  // namespace
 
 bool ToBtStack(BleError error, uint8_t& out) {
-	for (const auto& entry : kBleErrorMap) {
-		if (entry.error == error) {
+	for(const auto& entry: kBleErrorMap) {
+		if(entry.error == error) {
 			out = entry.btstack;
 			return true;
 		}
@@ -172,8 +188,8 @@ bool ToBtStack(BleError error, uint8_t& out) {
 }
 
 bool FromBtStackError(uint8_t code, BleError& out) {
-	for (const auto& entry : kBleErrorMap) {
-		if (entry.btstack == code) {
+	for(const auto& entry: kBleErrorMap) {
+		if(entry.btstack == code) {
 			out = entry.error;
 			return true;
 		}
@@ -181,4 +197,4 @@ bool FromBtStackError(uint8_t code, BleError& out) {
 	return false;
 }
 
-} // namespace c7222::btstack_map
+}  // namespace c7222::btstack_map
