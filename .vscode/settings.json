@@ -73,5 +73,14 @@
     "clangd.arguments": [
         "--compile-commands-dir=${workspaceFolder}/build",
         "--query-driver=${env:USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-g++.exe",
+    ],
+    "cSpell.diagnosticLevel": "Hint",
+    "cSpell.words": [
+        "btstack",
+        "CCCD",
+        "ELEC",
+        "Pico",
+        "RSSI",
+        "SCCD"
     ]
 }
