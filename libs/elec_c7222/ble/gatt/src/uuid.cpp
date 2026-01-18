@@ -84,5 +84,98 @@ Uuid Uuid::Convert16To128(const Uuid& uuid16) {
 	return Uuid(uuid128);
 }
 
+Uuid Uuid::PrimaryServiceDeclaration() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kPrimaryServiceDeclaration));
+}
+
+Uuid Uuid::SecondaryServiceDeclaration() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kSecondaryServiceDeclaration));
+}
+
+Uuid Uuid::IncludedServiceDeclaration() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kIncludedServiceDeclaration));
+}
+
+Uuid Uuid::CharacteristicDeclaration() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kCharacteristicDeclaration));
+}
+
+Uuid Uuid::ClientCharacteristicConfiguration() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kClientCharacteristicConfiguration));
+}
+
+Uuid Uuid::ServerCharacteristicConfiguration() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kServerCharacteristicConfiguration));
+}
+
+Uuid Uuid::CharacteristicUserDescription() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kCharacteristicUserDescription));
+}
+
+Uuid Uuid::CharacteristicExtendedProperties() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kCharacteristicExtendedProperties));
+}
+
+Uuid Uuid::CharacteristicPresentationFormat() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kCharacteristicPresentationFormat));
+}
+
+Uuid Uuid::CharacteristicAggregateFormat() {
+	return Uuid(static_cast<uint16_t>(AttributeType::kCharacteristicAggregateFormat));
+}
+
+bool Uuid::IsPrimaryServiceDeclaration(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kPrimaryServiceDeclaration);
+}
+
+bool Uuid::IsSecondaryServiceDeclaration(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kSecondaryServiceDeclaration);
+}
+
+bool Uuid::IsIncludedServiceDeclaration(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kIncludedServiceDeclaration);
+}
+
+bool Uuid::IsCharacteristicDeclaration(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicDeclaration);
+}
+
+bool Uuid::IsServiceDeclaration(const Uuid& uuid) {
+	if(!uuid.Is16Bit()) {
+		return false;
+	}
+	const uint16_t uuid16 = uuid.Get16Bit();
+	return uuid16 == static_cast<uint16_t>(AttributeType::kPrimaryServiceDeclaration) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kSecondaryServiceDeclaration);
+}
+
+bool Uuid::IsClientCharacteristicConfiguration(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() ==
+			   static_cast<uint16_t>(AttributeType::kClientCharacteristicConfiguration);
+}
+
+bool Uuid::IsCharacteristicUserDescription(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicUserDescription);
+}
+
+bool Uuid::IsDescriptor(const Uuid& uuid) {
+	if(!uuid.Is16Bit()) {
+		return false;
+	}
+	const uint16_t uuid16 = uuid.Get16Bit();
+	return uuid16 == static_cast<uint16_t>(AttributeType::kClientCharacteristicConfiguration) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicUserDescription) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicExtendedProperties) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicPresentationFormat) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kCharacteristicAggregateFormat) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kServerCharacteristicConfiguration);
+}
+
 
 } //namespace c7222

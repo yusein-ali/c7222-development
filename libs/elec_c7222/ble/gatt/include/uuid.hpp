@@ -24,6 +24,9 @@ namespace c7222 {
  * For 128-bit UUIDs, the byte order matches the standard UUID string
  * format shown by the stream operator.
  *
+ * The class also defines common 16-bit GATT attribute type UUIDs and
+ * helper predicates to recognize declaration/descriptor UUIDs.
+ *
  * Example (16-bit construction and access):
  * @code
  * c7222::Uuid uuid16(0x180D);
@@ -51,6 +54,35 @@ class Uuid {
 		k16Bit = 1,
 		/** @brief 128-bit UUID stored in the full array. */
 		k128Bit = 2
+	};
+
+	/**
+	 * @brief Standard GATT Attribute Type UUIDs (16-bit).
+	 *
+	 * These values identify service/characteristic declarations and common
+	 * descriptors as defined by Bluetooth Assigned Numbers.
+	 */
+	enum class AttributeType : uint16_t {
+		/** @brief Primary Service Declaration attribute (0x2800). */
+		kPrimaryServiceDeclaration = 0x2800,
+		/** @brief Secondary Service Declaration attribute (0x2801). */
+		kSecondaryServiceDeclaration = 0x2801,
+		/** @brief Included Service Declaration attribute (0x2802). */
+		kIncludedServiceDeclaration = 0x2802,
+		/** @brief Characteristic Declaration attribute (0x2803). */
+		kCharacteristicDeclaration = 0x2803,
+		/** @brief Server Characteristic Configuration Descriptor (0x2903). */
+		kServerCharacteristicConfiguration = 0x2903,
+		/** @brief Client Characteristic Configuration Descriptor (0x2902). */
+		kClientCharacteristicConfiguration = 0x2902,
+		/** @brief Characteristic User Description Descriptor (0x2901). */
+		kCharacteristicUserDescription = 0x2901,
+		/** @brief Characteristic Extended Properties Descriptor (0x2900). */
+		kCharacteristicExtendedProperties = 0x2900,
+		/** @brief Characteristic Presentation Format Descriptor (0x2904). */
+		kCharacteristicPresentationFormat = 0x2904,
+		/** @brief Characteristic Aggregate Format Descriptor (0x2905). */
+		kCharacteristicAggregateFormat = 0x2905
 	};
 	/** @brief Constructs an invalid/empty UUID. */
 	Uuid() = default;
@@ -166,6 +198,99 @@ class Uuid {
 	 * @return 128-bit UUID using the Bluetooth base UUID format.
 	 */
 	static Uuid Convert16To128(const Uuid& uuid16);
+
+	// ========== GATT Attribute Type Helpers ==========
+	// These helpers return false for non-16-bit/custom UUIDs.
+
+	/**
+	 * @brief Create a Primary Service Declaration UUID (0x2800).
+	 */
+	static Uuid PrimaryServiceDeclaration();
+
+	/**
+	 * @brief Create a Secondary Service Declaration UUID (0x2801).
+	 */
+	static Uuid SecondaryServiceDeclaration();
+
+	/**
+	 * @brief Create an Included Service Declaration UUID (0x2802).
+	 */
+	static Uuid IncludedServiceDeclaration();
+
+	/**
+	 * @brief Create a Characteristic Declaration UUID (0x2803).
+	 */
+	static Uuid CharacteristicDeclaration();
+
+	/**
+	 * @brief Create a Client Characteristic Configuration UUID (0x2902).
+	 */
+	static Uuid ClientCharacteristicConfiguration();
+
+	/**
+	 * @brief Create a Server Characteristic Configuration UUID (0x2903).
+	 */
+	static Uuid ServerCharacteristicConfiguration();
+
+	/**
+	 * @brief Create a Characteristic User Description UUID (0x2901).
+	 */
+	static Uuid CharacteristicUserDescription();
+
+	/**
+	 * @brief Create a Characteristic Extended Properties UUID (0x2900).
+	 */
+	static Uuid CharacteristicExtendedProperties();
+
+	/**
+	 * @brief Create a Characteristic Presentation Format UUID (0x2904).
+	 */
+	static Uuid CharacteristicPresentationFormat();
+
+	/**
+	 * @brief Create a Characteristic Aggregate Format UUID (0x2905).
+	 */
+	static Uuid CharacteristicAggregateFormat();
+
+	/**
+	 * @brief Check if UUID is Primary Service Declaration (0x2800).
+	 */
+	static bool IsPrimaryServiceDeclaration(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is Secondary Service Declaration (0x2801).
+	 */
+	static bool IsSecondaryServiceDeclaration(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is Included Service Declaration (0x2802).
+	 */
+	static bool IsIncludedServiceDeclaration(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is Characteristic Declaration (0x2803).
+	 */
+	static bool IsCharacteristicDeclaration(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is any Service Declaration (Primary or Secondary).
+	 */
+	static bool IsServiceDeclaration(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is Client Characteristic Configuration (0x2902).
+	 */
+	static bool IsClientCharacteristicConfiguration(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is Characteristic User Description (0x2901).
+	 */
+	static bool IsCharacteristicUserDescription(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID matches a known descriptor type.
+	 */
+	static bool IsDescriptor(const Uuid& uuid);
 
 	/**
 	 * @brief Equality comparison based on UUID type and value.
