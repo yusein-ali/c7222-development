@@ -17,16 +17,10 @@ Characteristic::Characteristic(const Uuid& uuid,
 	  properties_(static_cast<Properties>(properties)),
 	  connection_handle_(0),
 	  notification_pending_(false),
-	  declaration_attr_(uuid, 0),
+	  declaration_attr_(Attribute::CharacteristicDeclaration(properties, value_handle, uuid, declaration_handle)),
 	  value_attr_(uuid, 0) {
 	// Set handles on the attributes
-	declaration_attr_.SetHandle(declaration_handle);
 	value_attr_.SetHandle(value_handle);
-
-	// Build and set declaration value
-	auto decl_value = BuildDeclarationValue();
-	declaration_attr_.SetStaticValue(decl_value.data(), decl_value.size());
-	declaration_attr_.SetProperties(static_cast<uint16_t>(Attribute::Properties::kRead));
 
 	// Map characteristic properties (bitfield) to attribute properties (bitfield)
 	// Properties is a bitfield enum: each bit represents a capability (Read, Write, Notify,
@@ -320,19 +314,9 @@ bool Characteristic::IsBroadcastEnabled() const {
 
 Attribute& Characteristic::EnableCCCD() {
 	if(!cccd_) {
-		// CCCD initial value: {0x00, 0x00} = notifications and indications disabled
-		static const uint8_t initial_value[] = {0x00, 0x00};
-		// Create CCCD with all attributes in one constructor call
-		cccd_ = std::make_unique<
-			Attribute>(Uuid(static_cast<uint16_t>(
-						   Attribute::AttributeType::kClientCharacteristicConfiguration)),
-					   static_cast<uint16_t>(Attribute::Properties::kRead |
-											 Attribute::Properties::kWrite |
-											 Attribute::Properties::kDynamic),
-					   initial_value,
-					   sizeof(initial_value),
-					   0  // handle will be assigned later
-		);
+		// CCCD initial value: 0x0000 = notifications and indications disabled
+		cccd_ = std::make_unique<Attribute>(
+			Attribute::ClientCharacteristicConfiguration(0x0000, 0 /* handle assigned later */));
 		cccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
 			return HandleCccdWrite(offset, data, size);
 		});
@@ -354,19 +338,9 @@ Attribute& Characteristic::SetCCCDValue(CCCDProperties config) {
 
 Attribute& Characteristic::EnableSCCD() {
 	if(!sccd_) {
-		// SCCD initial value: {0x00, 0x00} = broadcasts disabled
-		static const uint8_t initial_value[] = {0x00, 0x00};
-		// Create SCCD with all attributes in one constructor call
-		sccd_ = std::make_unique<
-			Attribute>(Uuid(static_cast<uint16_t>(
-						   Attribute::AttributeType::kServerCharacteristicConfiguration)),
-					   static_cast<uint16_t>(Attribute::Properties::kRead |
-											 Attribute::Properties::kWrite |
-											 Attribute::Properties::kDynamic),
-					   initial_value,
-					   sizeof(initial_value),
-					   0  // handle will be assigned later
-		);
+		// SCCD initial value: 0x0000 = broadcasts disabled
+		sccd_ = std::make_unique<Attribute>(
+			Attribute::ServerCharacteristicConfiguration(0x0000, 0 /* handle assigned later */));
 		sccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
 			return HandleSccdWrite(offset, data, size);
 		});
@@ -388,17 +362,9 @@ Attribute& Characteristic::SetSCCDValue(SCCDProperties config) {
 
 Attribute& Characteristic::EnableExtendedProperties() {
 	if(!extended_properties_) {
-		// Extended Properties initial value: {0x00, 0x00} = no extended properties
-		static const uint8_t initial_value[] = {0x00, 0x00};
-		// Create Extended Properties with all attributes in one constructor call
-		extended_properties_ = std::make_unique<
-			Attribute>(Uuid(static_cast<uint16_t>(
-						   Attribute::AttributeType::kCharacteristicExtendedProperties)),
-					   static_cast<uint16_t>(Attribute::Properties::kRead),
-					   initial_value,
-					   sizeof(initial_value),
-					   0  // handle will be assigned later
-		);
+		// Extended Properties initial value: 0x0000 = no extended properties
+		extended_properties_ = std::make_unique<Attribute>(
+			Attribute::CharacteristicExtendedProperties(0x0000, 0 /* handle assigned later */));
 	}
 	return *extended_properties_;
 }
@@ -417,13 +383,8 @@ Attribute& Characteristic::SetExtendedPropertiesValue(ExtendedProperties config)
 
 Attribute& Characteristic::SetUserDescription(const std::string& description) {
 	if(!user_description_) {
-		// Create User Description with all attributes in one constructor call
-		user_description_ = std::make_unique<
-			Attribute>(Uuid(static_cast<uint16_t>(
-						   Attribute::AttributeType::kCharacteristicUserDescription)),
-					   static_cast<uint16_t>(Attribute::Properties::kRead),
-					   0  // handle will be assigned later
-		);
+		user_description_ = std::make_unique<Attribute>(
+			Attribute::CharacteristicUserDescription(description, 0 /* handle assigned later */));
 	}
 	// Update existing description (copy into static storage)
 	std::vector<uint8_t> desc_data(description.begin(), description.end());
@@ -438,7 +399,7 @@ Attribute& Characteristic::AddDescriptor(const Uuid& uuid,
 	// Check if this is a User Description descriptor
 	if(uuid.Is16Bit() &&
 	   uuid.Get16Bit() ==
-		   static_cast<uint16_t>(Attribute::AttributeType::kCharacteristicUserDescription)) {
+		   static_cast<uint16_t>(Uuid::AttributeType::kCharacteristicUserDescription)) {
 		// Handle as User Description - convert bytes to string
 		std::string description(value.begin(), value.end());
 		Attribute& desc = SetUserDescription(description);
@@ -476,33 +437,6 @@ const Attribute* Characteristic::GetDescriptor(size_t index) const {
 	auto it = descriptors_.begin();
 	std::advance(it, index);
 	return &(*it);
-}
-
-std::vector<uint8_t> Characteristic::BuildDeclarationValue() const {
-	std::vector<uint8_t> declaration;
-	declaration.reserve(20);  // Max: 1 + 2 + 16 bytes
-
-	// 1. Properties (1 byte)
-	declaration.push_back(static_cast<uint8_t>(properties_));
-
-	// 2. Value Handle (2 bytes, little-endian)
-	uint16_t value_handle = value_attr_.GetHandle();
-	declaration.push_back(static_cast<uint8_t>(value_handle & 0xFF));
-	declaration.push_back(static_cast<uint8_t>((value_handle >> 8) & 0xFF));
-
-	// 3. UUID (2 or 16 bytes depending on type)
-	if(uuid_.type() == Uuid::Type::k16Bit) {
-		// 16-bit UUID (2 bytes, little-endian)
-		uint16_t uuid16 = uuid_.Get16Bit();
-		declaration.push_back(static_cast<uint8_t>(uuid16 & 0xFF));
-		declaration.push_back(static_cast<uint8_t>((uuid16 >> 8) & 0xFF));
-	} else if(uuid_.type() == Uuid::Type::k128Bit) {
-		// 128-bit UUID (16 bytes)
-		const auto& uuid128 = uuid_.Get128Bit();
-		declaration.insert(declaration.end(), uuid128.begin(), uuid128.end());
-	}
-
-	return declaration;
 }
 
 std::ostream& operator<<(std::ostream& os, Characteristic::Properties props) {

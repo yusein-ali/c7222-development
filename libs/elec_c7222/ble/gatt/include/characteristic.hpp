@@ -165,7 +165,7 @@ namespace c7222 {
  * - `UpdateValue()` (platform transport of notifications/indications)
  * - `HandleCccdWrite()` / `HandleSccdWrite()` (descriptor write handling)
  * - `HandleValueRead()` / `HandleValueWrite()` (value attribute handlers)
- * - `BuildDeclarationValue()` (declaration packing)
+ * - Attribute factories for standard declarations/descriptors
  *
  * @note Only one of Notify or Indicate should be set; both require CCCD descriptor.
  * @note Read callbacks are required for dynamic read attributes.
@@ -1317,18 +1317,6 @@ class Characteristic : public MovableOnly {
 	///@}
 
    private:
-	/// \name Internal Helpers
-	/// Internal packing and helper routines.
-	///@{
-	/**
-	 * @brief Build the characteristic declaration value.
-	 * Format: 1 byte properties + 2 bytes value handle + UUID (2 or 16 bytes)
-	 * @return Vector containing the complete declaration value
-	 * @note Internal use only (declaration packing).
-	 */
-	std::vector<uint8_t> BuildDeclarationValue() const;
-	///@}
-
 	// Core characteristic data
 	Uuid uuid_;					  ///< Characteristic UUID
 	Properties properties_;		  ///< Read, Write, Notify, Indicate, etc.
