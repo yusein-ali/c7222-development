@@ -68,5 +68,10 @@
     "C_Cpp.codeAnalysis.clangTidy.args": [
         "--checks=google-*"
     ],
-    "C_Cpp.default.intelliSenseMode": "linux-gcc-arm"
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-arm",
+    "clangd.path": "clangd",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}/build",
+        "--query-driver=${env:USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-g++.exe",
+    ]
 }
