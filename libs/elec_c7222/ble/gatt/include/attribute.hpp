@@ -161,8 +161,16 @@ class Attribute : public MovableOnly {
 	 * @note As per Bluetooth Assigned Numbers
 	 */
 	enum class AttributeType : uint16_t {
+		/** @brief Primary Service Declaration attribute (0x2800). */
+		kPrimaryServiceDeclaration = 0x2800,
+		/** @brief Secondary Service Declaration attribute (0x2801). */
+		kSecondaryServiceDeclaration = 0x2801,
+		/** @brief Included Service Declaration attribute (0x2802). */
+		kIncludedServiceDeclaration = 0x2802,
 		/** @brief Characteristic Declaration attribute (0x2803). */
 		kCharacteristicDeclaration = 0x2803,
+		/** @brief Server Characteristic Configuration Descriptor (0x2903). */
+		kServerCharacteristicConfiguration = 0x2903,
 		/** @brief Client Characteristic Configuration Descriptor (0x2902). */
 		kClientCharacteristicConfiguration = 0x2902,
 		/** @brief Characteristic User Description Descriptor (0x2901). */
@@ -172,9 +180,7 @@ class Attribute : public MovableOnly {
 		/** @brief Characteristic Presentation Format Descriptor (0x2904). */
 		kCharacteristicPresentationFormat = 0x2904,
 		/** @brief Characteristic Aggregate Format Descriptor (0x2905). */
-		kCharacteristicAggregateFormat = 0x2905,
-		/** @brief Server Characteristic Configuration Descriptor (0x2903). */
-		kServerCharacteristicConfiguration = 0x2903
+		kCharacteristicAggregateFormat = 0x2905
 	};
 
 	/**
@@ -192,6 +198,34 @@ class Attribute : public MovableOnly {
 	using WriteCallback = std::function<BleError(uint16_t offset, const uint8_t* data, uint16_t size)>;
 
 	// ========== Static Helper Functions for Attribute Type Checking ==========
+
+	/**
+	 * @brief Check if an attribute is a Primary Service Declaration.
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches the Primary Service Declaration type
+	 */
+	static bool IsPrimaryServiceDeclaration(const Attribute& attr);
+
+	/**
+	 * @brief Check if an attribute is a Secondary Service Declaration.
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches the Secondary Service Declaration type
+	 */
+	static bool IsSecondaryServiceDeclaration(const Attribute& attr);
+
+	/**
+	 * @brief Check if an attribute is any Service Declaration (Primary or Secondary).
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches either service declaration type
+	 */
+	static bool IsServiceDeclaration(const Attribute& attr);
+
+	/**
+	 * @brief Check if an attribute is an Included Service Declaration.
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches the Included Service Declaration type
+	 */
+	static bool IsIncludedServiceDeclaration(const Attribute& attr);
 
 	/**
 	 * @brief Check if an attribute is a Characteristic Declaration.

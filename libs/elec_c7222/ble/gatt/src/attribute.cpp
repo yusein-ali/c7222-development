@@ -174,6 +174,25 @@ bool Attribute::SetValue(std::vector<uint8_t>&& data) {
 
 // ========== Static Helper Functions for Attribute Type Checking ==========
 
+bool Attribute::IsPrimaryServiceDeclaration(const Attribute& attr) {
+	const Uuid& uuid = attr.uuid_;
+	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kPrimaryServiceDeclaration);
+}
+
+bool Attribute::IsSecondaryServiceDeclaration(const Attribute& attr) {
+	const Uuid& uuid = attr.uuid_;
+	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kSecondaryServiceDeclaration);
+}
+
+bool Attribute::IsServiceDeclaration(const Attribute& attr) {
+	return IsPrimaryServiceDeclaration(attr) || IsSecondaryServiceDeclaration(attr);
+}
+
+bool Attribute::IsIncludedServiceDeclaration(const Attribute& attr) {
+	const Uuid& uuid = attr.uuid_;
+	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kIncludedServiceDeclaration);
+}
+
 bool Attribute::IsCharacteristicDeclaration(const Attribute& attr) {
 	const Uuid& uuid = attr.uuid_;
 	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicDeclaration);
