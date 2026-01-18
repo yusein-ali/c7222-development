@@ -6,7 +6,7 @@
             "CXX": "${command:raspberry-pi-pico.getCxxCompilerPath}"
         },
         "environmentVariables": {
-            "PATH": "${command:raspberry-pi-pico.getEnvPath}:${env:PATH}"
+            "PATH": "${userHome}/.pico-sdk/toolchain/14_2_Rel1/bin/:${env:PATH}"
         },
         "cmakeSettings": {
             "Python3_EXECUTABLE": "${command:raspberry-pi-pico.getPythonPath}"

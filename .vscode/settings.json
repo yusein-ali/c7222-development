@@ -67,5 +67,6 @@
     "raspberry-pi-pico.ninjaPath": "${HOME}/.pico-sdk/ninja/v1.12.1/ninja",
     "C_Cpp.codeAnalysis.clangTidy.args": [
         "--checks=google-*"
-    ]
+    ],
+    "C_Cpp.default.intelliSenseMode": "linux-gcc-arm"
 }
