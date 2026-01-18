@@ -137,8 +137,9 @@ Attribute::Attribute(const Uuid& uuid, uint16_t properties, const uint8_t* data,
 }
 
 bool Attribute::SetValue(const uint8_t* data, size_t size) {
-	// Reject writes to static attributes
-	assert((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0 && "Cannot set value of static attribute");
+	if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) == 0) {
+		return false;
+	}
 
 	// For dynamic attributes, store in vector
 	if(data == nullptr || size == 0) {
@@ -149,10 +150,29 @@ bool Attribute::SetValue(const uint8_t* data, size_t size) {
 	return true;
 }
 
+bool Attribute::SetStaticValue(const uint8_t* data, size_t size) {
+	if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0) {
+		return false;
+	}
+
+	static_value_storage_.clear();
+	static_value_ptr_ = nullptr;
+	static_value_size_ = 0;
+
+	if(data == nullptr || size == 0) {
+		return true;
+	}
+
+	static_value_storage_.assign(data, data + size);
+	static_value_ptr_ = static_value_storage_.data();
+	static_value_size_ = static_value_storage_.size();
+	return true;
+}
 
 bool Attribute::SetValue(const std::vector<uint8_t>& data) {
-	// Reject writes to static attributes
-	assert((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0 && "Cannot set value of static attribute");
+	if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) == 0) {
+		return false;
+	}
 
 	if(data.empty()) {
 		dynamic_value_.clear();
@@ -162,10 +182,14 @@ bool Attribute::SetValue(const std::vector<uint8_t>& data) {
 	return true;
 }
 
+bool Attribute::SetStaticValue(const std::vector<uint8_t>& data) {
+	return SetStaticValue(data.data(), data.size());
+}
+
 bool Attribute::SetValue(std::vector<uint8_t>&& data) {
-	// Reject writes to static attributes
-	assert((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0 &&
-		   "Cannot set value of static attribute");
+	if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) == 0) {
+		return false;
+	}
 
 	// Move into dynamic storage (empty input clears)
 	dynamic_value_ = std::move(data);
@@ -196,6 +220,17 @@ bool Attribute::IsIncludedServiceDeclaration(const Attribute& attr) {
 bool Attribute::IsCharacteristicDeclaration(const Attribute& attr) {
 	const Uuid& uuid = attr.uuid_;
 	return uuid.Is16Bit() && uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicDeclaration);
+}
+
+bool Attribute::IsServiceDeclaration(const Attribute& attr) {
+	const Uuid& uuid = attr.uuid_;
+	if(!uuid.Is16Bit()) {
+		return false;
+	}
+
+	const uint16_t uuid16 = uuid.Get16Bit();
+	return uuid16 == static_cast<uint16_t>(AttributeType::kPrimaryService) ||
+		   uuid16 == static_cast<uint16_t>(AttributeType::kSecondaryService);
 }
 
 bool Attribute::IsClientCharacteristicConfiguration(const Attribute& attr) {
