@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <stdexcept>
 
 namespace c7222 {
 

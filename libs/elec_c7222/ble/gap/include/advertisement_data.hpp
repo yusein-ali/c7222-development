@@ -540,6 +540,7 @@ class AdvertisementDataBuilder {
 				assert(false && "AdvertisementData already exists in the builder");
 			}
 		}
+		return *this;
 	}
 
 	/**

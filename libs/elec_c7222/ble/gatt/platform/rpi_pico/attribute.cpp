@@ -17,10 +17,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-#include <algorithm>
 
 #include "attribute.hpp"
-#include "bluetooth.h"  // For ATT_ERROR_* constants
 
 namespace c7222 {
 namespace {

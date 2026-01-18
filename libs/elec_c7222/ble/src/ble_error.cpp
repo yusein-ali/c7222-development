@@ -1,5 +1,4 @@
 #include "ble_error.hpp"
-#include "ble_address.hpp"
 
 namespace c7222 {
 

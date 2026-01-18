@@ -3,15 +3,11 @@
 
 #include "characteristic.hpp"
 #include "uuid.hpp"
-#include "ble_error.hpp"
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <iosfwd>
 #include <list>
-#include <memory>
-#include <string>
 #include <vector>
 
 namespace c7222 {

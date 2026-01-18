@@ -5,7 +5,6 @@
 #include <iostream>
 #include <iterator>
 #include <optional>
-#include <stdexcept>
 
 namespace c7222 {
 
