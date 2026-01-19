@@ -1,4 +1,5 @@
 #include "ble.hpp"
+#include "attribute_server.hpp"
 #include <btstack.h>
 #include <assert.h>
 
@@ -84,8 +85,15 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 		}
 		return BleError::kSuccess;
 	default:
-		return gap_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+		break;
 	}
+
+	BleError gap_status = gap_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	auto* attribute_server = AttributeServer::GetInstance();
+	if(attribute_server != nullptr && attribute_server->IsInitialized()) {
+		attribute_server->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	}
+	return gap_status;
 }
 
 Ble::Ble() : gap_(Gap::GetInstance()) {
