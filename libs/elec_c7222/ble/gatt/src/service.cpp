@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 
 namespace c7222 {
 
@@ -84,12 +85,16 @@ std::list<Service> Service::ParseFromAttributes(std::list<Attribute>& attributes
 
 Characteristic& Service::GetCharacteristic(size_t index) {
 	assert(index < characteristics_.size() && "Characteristic index out of range");
-	return characteristics_[index];
+	auto it = characteristics_.begin();
+	std::advance(it, static_cast<long>(index));
+	return *it;
 }
 
 const Characteristic& Service::GetCharacteristic(size_t index) const {
 	assert(index < characteristics_.size() && "Characteristic index out of range");
-	return characteristics_[index];
+	auto it = characteristics_.begin();
+	std::advance(it, static_cast<long>(index));
+	return *it;
 }
 
 Characteristic* Service::FindCharacteristicByUuid(const Uuid& uuid) {
@@ -106,28 +111,56 @@ const Characteristic* Service::FindCharacteristicByUuid(const Uuid& uuid) const 
 
 Characteristic* Service::FindCharacteristicByHandle(uint16_t handle) {
 	auto it = std::find_if(characteristics_.begin(), characteristics_.end(),
-		[handle](const Characteristic& ch) { return ch.IsThisCharacteristic(handle); });
+		[handle](const Characteristic& ch) { return ch.HasHandle(handle); });
 	return it != characteristics_.end() ? &(*it) : nullptr;
 }
 
 const Characteristic* Service::FindCharacteristicByHandle(uint16_t handle) const {
 	auto it = std::find_if(characteristics_.begin(), characteristics_.end(),
-		[handle](const Characteristic& ch) { return ch.IsThisCharacteristic(handle); });
+		[handle](const Characteristic& ch) { return ch.HasHandle(handle); });
 	return it != characteristics_.end() ? &(*it) : nullptr;
 }
 
 Service& Service::GetIncludedService(size_t index) {
 	assert(index < included_services_.size() && "Included service index out of range");
-	return included_services_[index];
+	auto it = included_services_.begin();
+	std::advance(it, static_cast<long>(index));
+	return *it;
 }
 
 const Service& Service::GetIncludedService(size_t index) const {
 	assert(index < included_services_.size() && "Included service index out of range");
-	return included_services_[index];
+	auto it = included_services_.begin();
+	std::advance(it, static_cast<long>(index));
+	return *it;
 }
 
 bool Service::IsValid() const {
 	return uuid_.IsValid() && declaration_attr_.GetHandle() != 0 && characteristics_.size() > 0;
+}
+
+Attribute* Service::FindServiceAttributeByHandle(uint16_t handle) {
+	if(declaration_attr_.GetHandle() == handle) {
+		return &declaration_attr_;
+	}
+	for(auto& included_attr: included_service_declarations_) {
+		if(included_attr.GetHandle() == handle) {
+			return &included_attr;
+		}
+	}
+	return nullptr;
+}
+
+const Attribute* Service::FindServiceAttributeByHandle(uint16_t handle) const {
+	if(declaration_attr_.GetHandle() == handle) {
+		return &declaration_attr_;
+	}
+	for(const auto& included_attr: included_service_declarations_) {
+		if(included_attr.GetHandle() == handle) {
+			return &included_attr;
+		}
+	}
+	return nullptr;
 }
 
 void Service::SetConnectionHandle(uint16_t connection_handle) {
@@ -155,7 +188,9 @@ bool Service::RemoveCharacteristic(size_t index) {
 	if (index >= characteristics_.size()) {
 		return false;
 	}
-	characteristics_.erase(characteristics_.begin() + index);
+	auto it = characteristics_.begin();
+	std::advance(it, static_cast<long>(index));
+	characteristics_.erase(it);
 	return true;
 }
 
@@ -206,7 +241,9 @@ bool Service::RemoveIncludedService(size_t index) {
 	if (index >= included_services_.size()) {
 		return false;
 	}
-	included_services_.erase(included_services_.begin() + index);
+	auto it = included_services_.begin();
+	std::advance(it, static_cast<long>(index));
+	included_services_.erase(it);
 	if (index < included_service_declarations_.size()) {
 		included_service_declarations_.erase(included_service_declarations_.begin() + index);
 	}
