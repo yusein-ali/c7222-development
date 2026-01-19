@@ -69,9 +69,9 @@ namespace c7222 {
  * ### RPi Pico (BTstack) Integration
  *
  * On the Pico W BLE stack, the GATT database is compiled into a binary
- * Attribute DB (typically `att_db.h`/`att_db.c`). The helper
- * `ParseAttributesFromDb()` (see `attribute.hpp`) parses that binary
- * blob into `Attribute` objects. You can then call `ParseFromAttributes()`
+ * Attribute DB (typically `att_db.h`/`att_db.c`). The AttributeServer
+ * parses that binary blob into `Attribute` objects. You can then call
+ * `ParseFromAttributes()`
  * to peel one characteristic at a time from the ordered list.
  *
  * Important implications:
@@ -527,11 +527,11 @@ class Characteristic : public MovableOnly {
 	bool IsThisCharacteristic(const Uuid& uuid) const;
 
 	/**
-	 * @brief Check if this characteristic matches the given handle.
+	 * @brief Check if this characteristic owns the given handle.
 	 * @param handle Attribute handle (declaration or value)
-	 * @return true if handle matches declaration or value
+	 * @return true if handle matches declaration, value, or descriptor
 	 */
-	bool IsThisCharacteristic(uint16_t handle) const;
+	bool HasHandle(uint16_t handle) const;
 	///@}
 
 	/// \name Capability Checks

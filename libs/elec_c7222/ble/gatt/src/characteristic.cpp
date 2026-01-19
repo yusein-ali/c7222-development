@@ -178,7 +178,7 @@ bool Characteristic::IsThisCharacteristic(const Uuid& uuid) const {
 	return uuid_ == uuid;
 }
 
-bool Characteristic::IsThisCharacteristic(uint16_t handle) const {
+bool Characteristic::HasHandle(uint16_t handle) const {
 	// Check declaration and value attributes
 	if(value_attr_.GetHandle() == handle || declaration_attr_.GetHandle() == handle) {
 		return true;
@@ -215,7 +215,7 @@ bool Characteristic::IsThisCharacteristic(uint16_t handle) const {
 }
 
 bool Characteristic::IsThisCharacteristic(const Uuid& uuid, uint16_t handle) const {
-	return (uuid_ == uuid) && (IsThisCharacteristic(handle));
+	return (uuid_ == uuid) && (HasHandle(handle));
 }
 
 const uint8_t* Characteristic::GetValueData() const {
