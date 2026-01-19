@@ -7,9 +7,12 @@ else()
 endif()
 file(GLOB ELEC_C7222_BLE_GATT_SOURCES_COMMON "${ELEC_C7222_BLE_GATT_DIR}/src/*.cpp")
 
+set(ELEC_C7222_BLE_GATT_SERVICES_DIR ${ELEC_C7222_BLE_GATT_DIR}/platform/rpi_pico/services)
+
 add_library(ELEC_C7222_BLE_GATT INTERFACE)
 target_sources(ELEC_C7222_BLE_GATT INTERFACE 
                     ${ELEC_C7222_BLE_GATT_SOURCES} 
                     ${ELEC_C7222_BLE_GATT_SOURCES_COMMON})
 
 target_include_directories(ELEC_C7222_BLE_GATT INTERFACE "${ELEC_C7222_BLE_GATT_DIR}/include")
+target_include_directories(ELEC_C7222_BLE_GATT INTERFACE "${ELEC_C7222_BLE_GATT_DIR}/platform/rpi_pico/config")

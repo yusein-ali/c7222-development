@@ -20,6 +20,9 @@ target_link_libraries(ELEC_C7222 INTERFACE
     ELEC_C7222_UTILS
 )
 
+target_include_directories(ELEC_C7222 INTERFACE "${ELEC_C7222_DIR}/include")
+target_include_directories(ELEC_C7222 INTERFACE "${ELEC_C7222_DIR}/config")
+
 if (ELEC_C7222_ENABLE_BLE)
     include(${ELEC_C7222_DIR}/ble/ble.cmake)
     target_link_libraries(ELEC_C7222 INTERFACE ELEC_C7222_BLE)
