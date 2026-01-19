@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
-#include <list>
 #include <string>
 #include <vector>
 #include "uuid.hpp"
@@ -23,7 +22,7 @@ namespace c7222 {
  *
  * This class mirrors a single ATT database entry as used by the RP2040
  * Pico W BLE stack (BTstack). The fields align with BTstack's binary
- * ATT DB layout parsed in `ParseAttributesFromDb`, so the `properties_`
+ * ATT DB layout parsed by the AttributeServer, so the `properties_`
  * bitmask and `handle_` values can be populated directly from the stack.
  *
  * Value storage model:
@@ -32,7 +31,7 @@ namespace c7222 {
  *   these values as immutable, fixed-at-compile-time data. Avoiding a copy
  *   saves RAM and preserves the DB as the single source of truth.
  *   - Storage: `static_value_ptr_` + `static_value_size_` point into the
- *     ATT DB image parsed by `ParseAttributesFromDb()`.
+ *     ATT DB image parsed by AttributeServer.
  *   - Mutability: immutable at runtime; `SetValue()` rejects writes.
  *   - Access: `GetValueData()` returns the DB pointer; `GetValueSize()`
  *     returns the DB length.
@@ -774,13 +773,6 @@ class Attribute : public MovableOnly {
 	 */
 	WriteCallback write_callback_{};
 };
-
-/**
- * @brief Parse a BTstack ATT database into Attribute objects.
- * @param db Pointer to ATT DB starting with the version byte.
- * @return Parsed attributes in database order.
- */
-std::list<Attribute> ParseAttributesFromDb(const uint8_t* db);
 
 /**
  * @brief Stream insertion operator for Attribute.
