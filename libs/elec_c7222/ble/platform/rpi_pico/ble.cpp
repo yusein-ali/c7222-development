@@ -2,6 +2,8 @@
 #include <btstack.h>
 #include <assert.h>
 
+#include "hci_dump_embedded_stdout.h"
+
 namespace c7222 {
 namespace {
 
@@ -93,6 +95,32 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 	BleError attribute_server_status = attribute_server_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
 	
 	return static_cast<BleError>(static_cast<int>(gap_status) + static_cast<int>(attribute_server_status));
+}
+
+void Ble::EnableHCILoggingToStdout() {
+	hci_logging_enabled_ = true;
+#if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_ERROR)
+	hci_dump_init(hci_dump_embedded_stdout_get_instance());
+#else
+	hci_logging_enabled_ = false;
+#endif
+}
+
+void Ble::DisableHCILoggingToStdout() {
+	hci_logging_enabled_ = false;
+#if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_ERROR)
+	hci_dump_enable_packet_log(false);
+	hci_dump_enable_log_level(HCI_DUMP_LOG_LEVEL_INFO, 0);
+	hci_dump_enable_log_level(HCI_DUMP_LOG_LEVEL_ERROR, 0);
+#endif
+}
+
+void Ble::DumpAttributeServerContext() {
+#if defined(ENABLE_LOG_INFO) || defined(ENABLE_LOG_ERROR)
+	if(instance_ != nullptr && instance_->attribute_server_ != nullptr && instance_->hci_logging_enabled_) {
+		att_dump_attributes();
+	}
+#endif
 }
 
 Ble::Ble() : gap_(Gap::GetInstance()), attribute_server_(nullptr) {

@@ -19,6 +19,14 @@
 namespace c7222 {
 
 /**
+ * @brief Dump the platform attribute server context (platform-dependent).
+ *
+ * On Pico W, this dumps the ATT database attributes via BTstack when
+ * HCI logging is enabled.
+ */
+void DumpAttributeServerContext();
+
+/**
  * @class Ble
  * @brief Singleton entry point for BLE configuration and events.
  */
@@ -27,12 +35,7 @@ class Ble : public NonCopyableNonMovable {
 	/**
 	 * @brief Get the singleton instance.
 	 */
-	static Ble* GetInstance() {
-		if(instance_ == nullptr) {
-			instance_ = new Ble();
-		}
-		return instance_;
-	}
+	static Ble* GetInstance(bool enable_hci_logging = false);
 
 	/**
 	 * @brief Access the underlying GAP instance.
@@ -49,6 +52,22 @@ class Ble : public NonCopyableNonMovable {
 	}
 
 	AttributeServer* EnableAttributeServer(const void* context);
+
+	/**
+	 * @brief Enable HCI event logging to stdout (platform-dependent).
+	 *
+	 * On the Pico W platform, this initializes the BTstack HCI dump target
+	 * when logging is enabled in btstack_config.h.
+	 */
+	void EnableHCILoggingToStdout();
+
+	void DisableHCILoggingToStdout();
+
+	bool IsHCILoggingEnabled() const {
+		return hci_logging_enabled_;
+	}
+
+	void DumpAttributeServerContext();
 	
 	AttributeServer* GetAttributeServer() {
 		return attribute_server_;
@@ -218,7 +237,7 @@ class Ble : public NonCopyableNonMovable {
 	Ble();
 	virtual ~Ble();
 
-	inline static Ble* instance_ = nullptr;
+	static Ble* instance_;
 
 	std::string device_name_;
 	uint8_t advertisement_flags_ = 0;
@@ -234,6 +253,7 @@ class Ble : public NonCopyableNonMovable {
 
 	Gap* gap_ = nullptr;
 	AttributeServer* attribute_server_ = nullptr;
+	bool hci_logging_enabled_ = false;
 	bool turned_on_ = false;
 
 	void* context_ = nullptr;
