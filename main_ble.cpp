@@ -3,13 +3,24 @@
 #include <advertisement_data.hpp>
 
 #include "FreeRTOS.h"
-#include "att_db.h"
+#include "temp_sensor.h"
 #include "attribute.hpp"
 #include "ble.hpp"
 #include "btstack.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
+#include "pico/time.h"
 #include "task.h"
+
+#if (configGENERATE_RUN_TIME_STATS == 1)
+extern "C" void vConfigureTimerForRunTimeStats(void) {
+	// Pico SDK time base already running; nothing to configure.
+}
+
+extern "C" unsigned long ulGetRunTimeCounterValue(void) {
+	return static_cast<unsigned long>(time_us_64());
+}
+#endif
 
 class GapEventHandler : public c7222::Gap::EventHandler {
   public:
@@ -237,15 +248,22 @@ static void on_turn_on(){
 void ble_app_task(void* params) {
 	(void) params;
 	static uint32_t seconds = 0;
-	auto* ble = c7222::Ble::GetInstance();
-	auto* gap = ble->GetGap();
-	auto& adb = ble->GetAdvertisementDataBuilder();
 
 	// Initialize CYW43 Architecture (Starts the SDK background worker)
 	if(cyw43_arch_init()) {
 		printf("CYW43 init failed\n");
 		vTaskDelete(NULL);
 	}
+	
+	auto* ble = c7222::Ble::GetInstance(true);
+	auto* gap = ble->GetGap();
+	auto* attribute_server = ble->EnableAttributeServer(profile_data);
+	auto& adb = ble->GetAdvertisementDataBuilder();
+
+	ble->DumpAttributeServerContext();
+	std::cout << "Attribute server initialized." << std::endl
+			  << "Printing Attribute Server" << std::endl;
+	std::cout << *attribute_server << std::endl;
 
 	printf("CYW43 init complete. Setting up BTstack... here!\n");
 
@@ -278,7 +296,6 @@ void ble_app_task(void* params) {
 // -------------------------------------------------------------------------
 int main() {
 	stdio_init_all();
-	sleep_ms(2000); // Give serial monitor time to connect
 	printf("Starting FreeRTOS BLE Example...\n");
 
 	// Create the BLE application task
