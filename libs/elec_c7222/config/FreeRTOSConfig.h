@@ -87,9 +87,9 @@
 
 /* Run time and task stats gathering related definitions. */
 #define configRECORD_STACK_HIGH_ADDRESS 1
-#define configGENERATE_RUN_TIME_STATS 0
+#define configGENERATE_RUN_TIME_STATS 1
 #define configUSE_TRACE_FACILITY 1
-#define configUSE_STATS_FORMATTING_FUNCTIONS 0
+#define configUSE_STATS_FORMATTING_FUNCTIONS 1
 
 /* Co-routine related definitions. */
 #define configUSE_CO_ROUTINES 0
@@ -147,6 +147,8 @@ to exclude the API function. */
 #define INCLUDE_xTaskGetHandle 1
 #define INCLUDE_xTaskResumeFromISR 1
 #define INCLUDE_xQueueGetMutexHolder 1
+#define INCLUDE_vTaskList 1
+#define INCLUDE_uxTaskGetSystemState 1
 
 #if PICO_RP2350
 #define configENABLE_MPU 0
@@ -157,5 +159,19 @@ to exclude the API function. */
 #endif
 
 /* A header file that defines trace macro can be included here. */
+
+#if (configGENERATE_RUN_TIME_STATS == 1)
+#ifdef __cplusplus
+extern "C" {
+#endif
+void vConfigureTimerForRunTimeStats(void);
+unsigned long ulGetRunTimeCounterValue(void);
+#ifdef __cplusplus
+}
+#endif
+
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
+#define portGET_RUN_TIME_COUNTER_VALUE() ulGetRunTimeCounterValue()
+#endif
 
 #endif /* FREERTOS_CONFIG_H */
