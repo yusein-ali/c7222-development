@@ -1,5 +1,7 @@
 build
 build_local
+**/__pycache__/
+
 .cache
 *.elf
 *.bin
