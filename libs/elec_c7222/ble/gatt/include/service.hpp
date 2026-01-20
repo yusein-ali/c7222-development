@@ -35,8 +35,8 @@ namespace c7222 {
  *    via `AddCharacteristic()` or `CreateCharacteristic()`.
  * 2. **Parse from attributes:** Use `ParseFromAttributes()` to extract services
  *    from an ordered attribute list. The extracted attributes are removed from
- *    the list. This path copies characteristic values and descriptor values,
- *    but does not copy callbacks; register callbacks after parsing.
+ *    the list and moved into the resulting Service/Characteristic instances.
+ *    Callbacks are not copied; register callbacks after parsing.
  *
  * ---
  * ### Included Service Model
@@ -74,8 +74,8 @@ namespace c7222 {
  * Important implications:
  * - Parsed static attributes keep pointers into the DB blob; the DB memory
  *   must remain valid for the lifetime of the `Attribute`/`Service`.
- * - Parsing copies value bytes for dynamic attributes, but does not copy
- *   callbacks. Install callbacks after parsing as needed.
+ * - Parsing moves the attribute objects; callbacks are not copied. Install
+ *   callbacks after parsing as needed.
  *
  * ---
  * ### Internal/Reserved APIs (do not call from application code)
@@ -136,6 +136,22 @@ class Service : public MovableOnly {
 		uint16_t declaration_handle = 0);
 
 	/**
+	 * @brief Construct a Service by moving parsed attributes.
+	 *
+	 * This constructor takes ownership of the ATT DB attributes and avoids
+	 * rebuilding them. The declaration attribute must be a Primary or Secondary
+	 * Service Declaration with a 16-bit or 128-bit service UUID value payload.
+	 * Handles are preserved from the moved attributes.
+	 *
+	 * @param declaration_attr Service Declaration attribute (moved)
+	 * @param included_service_declarations Included Service Declaration attributes (moved)
+	 * @param characteristics Characteristics parsed from the same attribute block (moved)
+	 */
+	explicit Service(Attribute&& declaration_attr,
+					 std::vector<Attribute>&& included_service_declarations,
+					 std::list<Characteristic>&& characteristics);
+
+	/**
 	 * @brief Move constructor.
 	 * Transfers ownership of all internal characteristics and attributes.
 	 */
@@ -167,6 +183,9 @@ class Service : public MovableOnly {
 	 *
 	 * @param attributes Attribute list to consume (modified in place)
 	 * @return Parsed Services in discovery order
+	 *
+	 * @note Parsed attributes are moved into each Service instance
+	 * @note Expects a well-formed, ordered ATT DB; characteristic parsing is asserted
 	 */
 	static std::list<Service> ParseFromAttributes(std::list<Attribute>& attributes);
 	///@}
@@ -197,6 +216,22 @@ class Service : public MovableOnly {
 	 * @return Count of characteristics
 	 */
 	size_t GetCharacteristicCount() const { return characteristics_.size(); }
+
+	/**
+	 * @brief Get the list of characteristics in this service.
+	 * @return Reference to the characteristic list
+	 */
+	const std::list<Characteristic>& GetCharacteristics() const {
+		return characteristics_;
+	}
+	/**
+	 * \brief Get the Characteristics object
+	 * 
+	 * \return std::list<Characteristic>& 
+	 */
+	std::list<Characteristic>& GetCharacteristics() {
+		return characteristics_;
+	}
 
 	/**
 	 * @brief Get a characteristic by index.
