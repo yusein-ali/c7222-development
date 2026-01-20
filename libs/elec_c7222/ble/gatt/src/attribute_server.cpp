@@ -1,116 +1,15 @@
 #include "attribute_server.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
 #include <iterator>
-#include <memory>
-#include <utility>
-
-#include "attribute.hpp"
 
 namespace c7222 {
-namespace {
-
-// Binary parsing helpers
-constexpr size_t kEntryHeaderSize = 6;  // Size + Flags + Handle
-constexpr size_t kUuid16Size = 2;
-constexpr size_t kUuid128Size = 16;
-constexpr size_t kValue16Offset = kEntryHeaderSize + kUuid16Size;    // 8
-constexpr size_t kValue128Offset = kEntryHeaderSize + kUuid128Size;  // 22
-
-uint16_t ReadLe16(const uint8_t* data) {
-	return *(reinterpret_cast<const uint16_t*>(data));
-}
-
-std::array<uint8_t, 16> ReverseUuid128(const uint8_t* data) {
-	std::array<uint8_t, 16> out{};
-	for(size_t i = 0; i < out.size(); ++i) {
-		out[i] = data[out.size() - 1 - i];
-	}
-	return out;
-}
-
-Attribute ParseEntry(const uint8_t* ptr, uint16_t entry_size) {
-	const uint16_t flags = ReadLe16(ptr + 2);
-	const uint8_t* uuid_ptr = ptr + 6;
-
-	if((flags & static_cast<uint16_t>(Attribute::Properties::kUuid128)) != 0) {
-		if(entry_size < kValue128Offset) {
-			return Attribute();
-		}
-		const uint8_t* value_ptr = ptr + kValue128Offset;
-		const uint16_t value_len = static_cast<uint16_t>(entry_size - kValue128Offset);
-		const std::array<uint8_t, 16> uuid_bytes = ReverseUuid128(uuid_ptr);
-		return Attribute(Uuid(uuid_bytes), flags, value_ptr, value_len);
-	}
-
-	if(entry_size < kValue16Offset) {
-		return Attribute();
-	}
-	const uint16_t uuid16 = ReadLe16(uuid_ptr);
-	const uint8_t* value_ptr = ptr + kValue16Offset;
-	const uint16_t value_len = static_cast<uint16_t>(entry_size - kValue16Offset);
-	return Attribute(Uuid(uuid16), flags, value_ptr, value_len);
-}
-
-std::unique_ptr<std::list<Attribute>> ParseAttributesFromDb(const uint8_t* db) {
-	auto attributes = std::make_unique<std::list<Attribute>>();
-
-	if(db == nullptr) {
-		return attributes;
-	}
-
-	const uint8_t* ptr = db + 1;
-
-	while(true) {
-		const uint16_t entry_size = ReadLe16(ptr);
-		if(entry_size == 0) {
-			break;
-		}
-		if(entry_size < kEntryHeaderSize) {
-			break;
-		}
-
-		attributes->emplace_back(std::move(ParseEntry(ptr, entry_size)));
-		ptr += entry_size;
-	}
-
-	return attributes;
-}
-
-}  // namespace
 
 AttributeServer* AttributeServer::instance_ = nullptr;
 
-BleError AttributeServer::Init(const uint8_t* att_db) {
-	services_.clear();
-	connection_handle_ = 0;
-	initialized_ = false;
-
-	if(att_db == nullptr) {
-		return BleError::kUnspecifiedError;
-	}
-
-	ParseDatabase(att_db);
-
-	BleError status = InitPlatform(att_db);
-	if(status != BleError::kSuccess) {
-		return status;
-	}
-
-	initialized_ = true;
-	return BleError::kSuccess;
-}
-
-void AttributeServer::ParseDatabase(const uint8_t* att_db) {
-	auto attributes = ParseAttributesFromDb(att_db);
-	if(!attributes) {
-		return;
-	}
-	services_ = Service::ParseFromAttributes(*attributes);
+void AttributeServer::InitServices(std::list<Attribute>& attributes) {
+	services_ = Service::ParseFromAttributes(attributes);
 }
 
 Service& AttributeServer::GetService(size_t index) {

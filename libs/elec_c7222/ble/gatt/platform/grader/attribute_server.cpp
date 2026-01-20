@@ -2,8 +2,15 @@
 
 namespace c7222 {
 
-BleError AttributeServer::InitPlatform(const uint8_t* att_db) {
-	(void) att_db;
+BleError AttributeServer::Init(const void* context) {
+	services_.clear();
+	connection_handle_ = 0;
+	initialized_ = false;
+
+	if(context_ == nullptr) {
+		context_ = context;
+	}
+	(void) context_;
 	return BleError::kUnsupportedFeatureOrParameterValue;
 }
 
