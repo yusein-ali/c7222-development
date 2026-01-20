@@ -1,5 +1,6 @@
 build
 build_local
+tools/gdb_printers/
 **/__pycache__/
 
 .cache
