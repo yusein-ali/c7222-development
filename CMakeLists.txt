@@ -97,10 +97,15 @@ target_compile_definitions(picoboard_freertos_test PRIVATE
     _GLIBCXX_USE_C99_STDINT_TR1=1
 )
 
+# Set the default UART baudrate to 921600 (or any other standard rate)
+add_compile_definitions(PICO_DEFAULT_UART_BAUD_RATE=921600)
+
 # enable usb output, disable uart output
-pico_enable_stdio_usb(picoboard_freertos_test 1)
-pico_enable_stdio_uart(picoboard_freertos_test  0)
+pico_enable_stdio_usb(picoboard_freertos_test 0)
+pico_enable_stdio_uart(picoboard_freertos_test  1)
 pico_add_extra_outputs(picoboard_freertos_test)
+
+pico_btstack_make_gatt_header(picoboard_freertos_test PRIVATE "${ELEC_C7222_BLE_GATT_SERVICES_DIR}/custom/temp_sensor.gatt")
 
 # add url via pico_set_program_url
 
