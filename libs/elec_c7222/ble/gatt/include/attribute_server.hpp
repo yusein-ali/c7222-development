@@ -8,6 +8,7 @@
 #include "ble_error.hpp"
 #include "non_copyable.hpp"
 #include "service.hpp"
+#include "uuid.hpp"
 
 namespace c7222 {
 
@@ -130,6 +131,8 @@ class AttributeServer : public NonCopyableNonMovable {
 	static AttributeServer* GetInstance() {
 		if(instance_ == nullptr) {
 			instance_ = new AttributeServer();
+			assert(instance_ != nullptr &&
+				   "Failed to allocate AttributeServer singleton instance");
 		}
 		return instance_;
 	}
@@ -146,6 +149,13 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * When called the first time, the context pointer is cached in the instance.
 	 * The Pico W implementation parses the ATT DB and registers BTstack
 	 * read/write callbacks. Subsequent calls reuse the cached context.
+	 *
+	 * RPi Pico (BTstack) steps:
+	 * 1. Cache the ATT DB pointer if not already stored.
+	 * 2. Parse the ATT DB into `Attribute` objects.
+	 * 3. Call `InitServices()` to build services/characteristics.
+	 * 4. Register BTstack callbacks via `att_server_init()`.
+	 * 5. Mark the server initialized.
 	 *
 	 * @param context Platform-specific context pointer.
 	 * @return BleError::kSuccess on success.
@@ -188,6 +198,7 @@ class AttributeServer : public NonCopyableNonMovable {
 		return services_.size();
 	}
 
+
 	/**
 	 * @brief Get a service by index.
 	 *
@@ -196,6 +207,24 @@ class AttributeServer : public NonCopyableNonMovable {
 	 */
 	Service& GetService(size_t index);
 
+	/**
+	 * @brief Get the list of services.
+	 *
+	 * @return Const reference to the service list.
+	 */
+	const std::list<Service>& GetServices() const {
+		return services_;
+	}
+
+	/**
+	 * @brief Get the list of services.
+	 *
+	 * @return Reference to the service list.
+	 */
+	std::list<Service>& GetServices() {
+		return services_;
+	}
+	
 	/**
 	 * @brief Get a service by index (const version).
 	 *
@@ -355,6 +384,19 @@ class AttributeServer : public NonCopyableNonMovable {
 	WriteAttribute(uint16_t attribute_handle, uint16_t offset, const uint8_t* data, uint16_t size);
 	///@}
 
+	/// \name Stream Output
+	///@{
+	/**
+	 * @brief Stream insertion operator for attribute server information.
+	 *
+	 * Outputs summary details including:
+	 * - Initialization state
+	 * - Service count
+	 * - Connection handle
+	 */
+	friend std::ostream& operator<<(std::ostream& os, const AttributeServer& server);
+	///@}
+
 	/// \name Service Parsing Helpers
 	///@{
 	/**
@@ -408,7 +450,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	/// \name State
 	///@{
 	/// @brief Parsed GATT services in discovery order.
-	std::list<Service> services_{};
+	std::list<Service> services_;
 	/// @brief Platform-specific context pointer (e.g., ATT DB blob on Pico W).
 	const void* context_ = nullptr;
 	/// @brief Active connection handle (0 when disconnected).

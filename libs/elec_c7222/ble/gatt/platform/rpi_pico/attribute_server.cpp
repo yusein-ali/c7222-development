@@ -32,6 +32,7 @@ std::array<uint8_t, 16> ReverseUuid128(const uint8_t* data) {
 
 Attribute ParseEntry(const uint8_t* ptr, uint16_t entry_size) {
 	const uint16_t flags = ReadLe16(ptr + 2);
+	const uint16_t handle = ReadLe16(ptr + 4);
 	const uint8_t* uuid_ptr = ptr + 6;
 
 	if((flags & static_cast<uint16_t>(Attribute::Properties::kUuid128)) != 0) {
@@ -41,7 +42,7 @@ Attribute ParseEntry(const uint8_t* ptr, uint16_t entry_size) {
 		const uint8_t* value_ptr = ptr + kValue128Offset;
 		const uint16_t value_len = static_cast<uint16_t>(entry_size - kValue128Offset);
 		const std::array<uint8_t, 16> uuid_bytes = ReverseUuid128(uuid_ptr);
-		return Attribute(Uuid(uuid_bytes), flags, value_ptr, value_len);
+		return Attribute(Uuid(uuid_bytes), flags, value_ptr, value_len, handle);
 	}
 
 	if(entry_size < kValue16Offset) {
@@ -50,7 +51,7 @@ Attribute ParseEntry(const uint8_t* ptr, uint16_t entry_size) {
 	const uint16_t uuid16 = ReadLe16(uuid_ptr);
 	const uint8_t* value_ptr = ptr + kValue16Offset;
 	const uint16_t value_len = static_cast<uint16_t>(entry_size - kValue16Offset);
-	return Attribute(Uuid(uuid16), flags, value_ptr, value_len);
+	return Attribute(Uuid(uuid16), flags, value_ptr, value_len, handle);
 }
 
 std::unique_ptr<std::list<Attribute>> ParseAttributesFromDb(const uint8_t* db) {
@@ -130,6 +131,7 @@ int att_write_callback(hci_con_handle_t connection_handle,
 }  // namespace
 
 BleError AttributeServer::Init(const void* context) {
+	// Reset runtime state before re-initializing from the platform context.
 	services_.clear();
 	connection_handle_ = 0;
 	initialized_ = false;
@@ -141,16 +143,23 @@ BleError AttributeServer::Init(const void* context) {
 		return BleError::kUnspecifiedError;
 	}
 
+	// Cache the ATT DB pointer the first time we see it.
 	if(context_ == nullptr) {
 		context_ = context;
 	}
 
 	const auto* att_db = static_cast<const uint8_t*>(context_);
+	// Parse the BTstack ATT DB into Attribute objects and build services.
 	auto attributes = ParseAttributesFromDb(att_db);
 	if(attributes) {
 		InitServices(*attributes);
 	}
 
+	// Ensure L2CAP/SM are initialized before registering the ATT server.
+	l2cap_init();
+	sm_init();
+
+	// Register ATT read/write callbacks with BTstack using the ATT DB blob.
 	att_server_init(att_db, att_read_callback, att_write_callback);
 	initialized_ = true;
 	return BleError::kSuccess;

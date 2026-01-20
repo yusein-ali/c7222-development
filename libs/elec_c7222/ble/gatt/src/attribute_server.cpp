@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <iomanip>
+#include <iostream>
 
 namespace c7222 {
 
@@ -291,6 +293,27 @@ bool AttributeServer::IsAttErrorCode(uint16_t value, BleError& out_error) {
 		break;
 	}
 	return false;
+}
+
+std::ostream& operator<<(std::ostream& os, const AttributeServer& server) {
+	os << "AttributeServer {";
+	os << "\n  Initialized: " << (server.IsInitialized() ? "true" : "false");
+	os << "\n  Service Count: " << server.GetServiceCount();
+	if(server.GetConnectionHandle() == 0) {
+		os << "\n  Connection: disconnected";
+	} else {
+		os << "\n  Connection: connected (handle=0x" << std::hex << std::setw(4)
+		   << std::setfill('0') << server.GetConnectionHandle() << std::dec << ")";
+	}
+	os << "\n  Services:" << std::endl;
+	size_t index = 1;
+	for(const auto& service: server) {
+		os << "  [" << index << "]:";
+		os << service << std::endl;
+		++index;
+	}
+	os << "\n}";
+	return os;
 }
 
 }  // namespace c7222
