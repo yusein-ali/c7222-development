@@ -63,6 +63,69 @@ Characteristic::Characteristic(const Uuid& uuid,
 	});
 }
 
+Characteristic::Characteristic(Attribute&& decl_attribute,
+							   Attribute&& value_attr,
+							   std::list<Attribute>&& descriptor_attrs)
+	: uuid_(Uuid()),
+	  properties_(Properties::kNone),
+	  connection_handle_(0),
+	  notification_pending_(false),
+	  declaration_attr_(std::move(decl_attribute)),
+	  value_attr_(std::move(value_attr)) {
+
+	const uint8_t* decl_data = declaration_attr_.GetValueData();
+	const size_t decl_size = declaration_attr_.GetValueSize();
+	uint16_t value_handle = 0;
+	if(decl_data != nullptr && (decl_size == 5 || decl_size == 19)) {
+		properties_ = static_cast<Properties>(decl_data[0]);
+		value_handle = static_cast<uint16_t>(decl_data[1]) |
+					   (static_cast<uint16_t>(decl_data[2]) << 8);
+
+		if(decl_size == 5) {
+			uint16_t uuid16 = static_cast<uint16_t>(decl_data[3]) |
+							  (static_cast<uint16_t>(decl_data[4]) << 8);
+			uuid_ = Uuid(uuid16);
+		} else {
+			std::array<uint8_t, 16> uuid128;
+			std::copy(decl_data + 3, decl_data + 19, uuid128.begin());
+			uuid_ = Uuid(uuid128);
+		}
+	} else {
+		uuid_ = value_attr_.GetUuid();
+	}
+
+	if(value_handle != 0 && value_attr_.GetHandle() == 0) {
+		value_attr_.SetHandle(value_handle);
+	}
+
+	value_attr_.SetReadCallback([this](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
+		return HandleValueRead(offset, buffer, buffer_size);
+	});
+	value_attr_.SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+		return HandleValueWrite(offset, data, size);
+	});
+
+	for(auto& descriptor: descriptor_attrs) {
+		if(Attribute::IsClientCharacteristicConfiguration(descriptor)) {
+			cccd_ = std::make_unique<Attribute>(std::move(descriptor));
+			cccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+				return HandleCccdWrite(offset, data, size);
+			});
+		} else if(Attribute::IsServerCharacteristicConfiguration(descriptor)) {
+			sccd_ = std::make_unique<Attribute>(std::move(descriptor));
+			sccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+				return HandleSccdWrite(offset, data, size);
+			});
+		} else if(Attribute::IsCharacteristicExtendedProperties(descriptor)) {
+			extended_properties_ = std::make_unique<Attribute>(std::move(descriptor));
+		} else if(Attribute::IsCharacteristicUserDescription(descriptor)) {
+			user_description_ = std::make_unique<Attribute>(std::move(descriptor));
+		} else {
+			descriptors_.push_back(std::move(descriptor));
+		}
+	}
+}
+
 std::optional<Characteristic>
 Characteristic::ParseFromAttributes(std::list<Attribute>& attributes) {
 	auto decl_it = attributes.begin();
@@ -93,24 +156,8 @@ Characteristic::ParseFromAttributes(std::list<Attribute>& attributes) {
 		return std::nullopt;
 	}
 
-	uint8_t props = decl_data[0];
 	uint16_t value_handle = static_cast<uint16_t>(decl_data[1]) |
 							(static_cast<uint16_t>(decl_data[2]) << 8);
-
-	Uuid char_uuid;
-	if(decl_size == 5) {
-		uint16_t uuid16 = static_cast<uint16_t>(decl_data[3]) |
-						  (static_cast<uint16_t>(decl_data[4]) << 8);
-		char_uuid = Uuid(uuid16);
-	} else if(decl_size == 19) {
-		std::array<uint8_t, 16> uuid128;
-		std::copy(decl_data + 3, decl_data + 19, uuid128.begin());
-		char_uuid = Uuid(uuid128);
-	} else {
-		return std::nullopt;
-	}
-
-	Characteristic characteristic(char_uuid, props, value_handle, decl_attr.GetHandle());
 
 	auto value_it = characteristic_attributes.end();
 	for(auto it = std::next(characteristic_attributes.begin()); it != characteristic_attributes.end();
@@ -121,53 +168,27 @@ Characteristic::ParseFromAttributes(std::list<Attribute>& attributes) {
 		}
 	}
 
-	if(value_it != characteristic_attributes.end()) {
-		const Attribute& value_attr = *value_it;
-		const uint8_t* value_data = value_attr.GetValueData();
-		size_t value_size = value_attr.GetValueSize();
-		if(value_data != nullptr && value_size > 0) {
-			characteristic.SetValue(value_data, value_size);
-		}
+	if(value_it == characteristic_attributes.end()) {
+		return std::nullopt;
 	}
 
-	auto desc_it = (value_it != characteristic_attributes.end())
-					   ? std::next(value_it)
-					   : std::next(characteristic_attributes.begin());
-	for(; desc_it != characteristic_attributes.end(); ++desc_it) {
-		const Attribute& next_attr = *desc_it;
+	Attribute decl_attribute = std::move(characteristic_attributes.front());
+	characteristic_attributes.pop_front();
 
-		if(Attribute::IsClientCharacteristicConfiguration(next_attr)) {
-			Attribute& cccd = characteristic.EnableCCCD();
-			const uint8_t* cccd_data = next_attr.GetValueData();
-			size_t cccd_size = next_attr.GetValueSize();
-			if(cccd_data != nullptr && cccd_size > 0) {
-				cccd.SetValue(cccd_data, cccd_size);
-			}
-		} else if(Attribute::IsCharacteristicUserDescription(next_attr)) {
-			const uint8_t* desc_data = next_attr.GetValueData();
-			size_t desc_size = next_attr.GetValueSize();
-			if(desc_data != nullptr && desc_size > 0) {
-				std::string desc_str(reinterpret_cast<const char*>(desc_data), desc_size);
-				characteristic.SetUserDescription(desc_str);
-			}
-		} else if(Attribute::IsDescriptor(next_attr) || !next_attr.GetUuid().Is16Bit()) {
-			std::vector<uint8_t> desc_value;
-			const uint8_t* desc_data = next_attr.GetValueData();
-			size_t desc_size = next_attr.GetValueSize();
-			if(desc_data != nullptr && desc_size > 0) {
-				desc_value.assign(desc_data, desc_data + desc_size);
-			}
+	Attribute value_attribute = std::move(*value_it);
+	characteristic_attributes.erase(value_it);
 
-			characteristic.AddDescriptor(next_attr.GetUuid(),
-										 static_cast<Attribute::Properties>(next_attr.GetProperties()),
-										 desc_value,
-										 next_attr.GetHandle());
-		} else {
-			break;
-		}
+	std::list<Attribute> descriptor_attrs;
+	if(!characteristic_attributes.empty()) {
+		descriptor_attrs.splice(descriptor_attrs.end(),
+								characteristic_attributes,
+								characteristic_attributes.begin(),
+								characteristic_attributes.end());
 	}
 
-	return characteristic;
+	return Characteristic(std::move(decl_attribute),
+						  std::move(value_attribute),
+						  std::move(descriptor_attrs));
 }
 
 bool Characteristic::IsValid() const {
@@ -469,7 +490,7 @@ std::ostream& operator<<(std::ostream& os, Characteristic::Properties props) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Characteristic& characteristic) {
-	os << "Characteristic {" << "\n";
+	os << "{" << "\n";
 	os << "  UUID: " << characteristic.GetUuid() << "\n";
 	os << "  Properties: " << characteristic.GetProperties() << "\n";
 	os << "  Declaration Handle: 0x" << std::hex << characteristic.GetDeclarationHandle()
@@ -516,13 +537,14 @@ std::ostream& operator<<(std::ostream& os, const Characteristic& characteristic)
 	if(characteristic.WriteRequiresSC()) {
 		os << " + Secure Connections";
 	}
-	os << "\n";
+	os << std::endl;
 
 	uint16_t enc_key = characteristic.GetEncryptionKeySize();
 	if(enc_key > 0) {
 		os << "    Encryption Key Size: " << static_cast<int>(enc_key) << " bytes" << "\n";
 	}
 
+	os << "Value Attribute: { " << characteristic.value_attr_<< "}" << std::endl;
 	// Print value data
 	const uint8_t* data = characteristic.GetValueData();
 	size_t size = characteristic.GetValueSize();

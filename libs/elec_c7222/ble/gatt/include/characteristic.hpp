@@ -45,8 +45,8 @@ namespace c7222 {
  *    This is useful when you are assembling attributes in code.
  * 2. **Parse from attributes:** Use `ParseFromAttributes()` to extract the first
  *    characteristic from an ordered attribute list (Declaration, Value, then Descriptors).
- *    The extracted attributes are removed from the list.
- *    This path copies value bytes and descriptor values, but does not copy callbacks.
+ *    The extracted attributes are removed from the list and moved into the new
+ *    Characteristic; no attribute rebuilding is performed. Callbacks are not copied.
  *
  * ---
  * ### Event Handling Model
@@ -77,8 +77,8 @@ namespace c7222 {
  * Important implications:
  * - Parsed static attributes keep pointers into the DB blob; the DB memory
  *   must remain valid for the lifetime of the `Attribute`/`Characteristic`.
- * - Parsing copies value bytes for dynamic descriptors, but does not copy
- *   callbacks; register callbacks after parsing as needed.
+ * - Parsing moves the attribute objects; callbacks are not copied, so register
+ *   callbacks after parsing as needed.
  *
  * ---
  * ### Descriptor Model (what, when, and storage)
@@ -414,6 +414,21 @@ class Characteristic : public MovableOnly {
 							uint16_t declaration_handle = 0);
 
 	/**
+	 * @brief Construct a Characteristic by moving parsed attributes.
+	 *
+	 * This constructor takes ownership of the declaration/value/descriptor
+	 * attributes produced during parsing and avoids rebuilding them. Handles
+	 * are preserved from the moved attributes.
+	 *
+	 * @param decl_attribute Characteristic Declaration attribute (moved)
+	 * @param value_attr Value attribute (moved)
+	 * @param descriptor_attrs Descriptor attributes (moved)
+	 */
+	explicit Characteristic(Attribute&& decl_attribute,
+							Attribute&& value_attr,
+							std::list<Attribute>&& descriptor_attrs);
+
+	/**
 	 * @brief Move constructor.
 	 * Transfers ownership of all internal attributes and descriptors.
 	 */
@@ -463,6 +478,7 @@ class Characteristic : public MovableOnly {
 	 * @note Attributes must be in proper order: Declaration, Value, Descriptors
 	 * @note Stops parsing when the next characteristic declaration or service declaration is found
 	 * @note Value/descriptor callbacks are not copied from the source attributes
+	 * @note The parsed attributes are moved into the resulting Characteristic
 	 * @note The extracted attributes are removed even if parsing fails
 	 */
 	static std::optional<Characteristic>
