@@ -1,5 +1,6 @@
 
 #include "uuid.hpp"
+#include <iomanip>
 
 namespace c7222{
 std::ostream& operator<<(std::ostream& os, const Uuid& uuid) {
@@ -159,9 +160,21 @@ bool Uuid::IsClientCharacteristicConfiguration(const Uuid& uuid) {
 			   static_cast<uint16_t>(AttributeType::kClientCharacteristicConfiguration);
 }
 
+bool Uuid::IsServerCharacteristicConfiguration(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() ==
+			   static_cast<uint16_t>(AttributeType::kServerCharacteristicConfiguration);
+}
+
 bool Uuid::IsCharacteristicUserDescription(const Uuid& uuid) {
 	return uuid.Is16Bit() &&
 		   uuid.Get16Bit() == static_cast<uint16_t>(AttributeType::kCharacteristicUserDescription);
+}
+
+bool Uuid::IsCharacteristicExtendedProperties(const Uuid& uuid) {
+	return uuid.Is16Bit() &&
+		   uuid.Get16Bit() ==
+			   static_cast<uint16_t>(AttributeType::kCharacteristicExtendedProperties);
 }
 
 bool Uuid::IsDescriptor(const Uuid& uuid) {

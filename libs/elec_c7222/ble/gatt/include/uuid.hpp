@@ -10,7 +10,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <iomanip>
 #include <ostream>
 
 namespace c7222 {
@@ -283,9 +282,19 @@ class Uuid {
 	static bool IsClientCharacteristicConfiguration(const Uuid& uuid);
 
 	/**
+	 * @brief Check if UUID is Server Characteristic Configuration (0x2903).
+	 */
+	static bool IsServerCharacteristicConfiguration(const Uuid& uuid);
+
+	/**
 	 * @brief Check if UUID is Characteristic User Description (0x2901).
 	 */
 	static bool IsCharacteristicUserDescription(const Uuid& uuid);
+
+	/**
+	 * @brief Check if UUID is Characteristic Extended Properties (0x2900).
+	 */
+	static bool IsCharacteristicExtendedProperties(const Uuid& uuid);
 
 	/**
 	 * @brief Check if UUID matches a known descriptor type.
@@ -307,7 +316,6 @@ class Uuid {
 	bool operator!=(const Uuid& other) const {
 		return !(*this == other);
 	}
-
 
 	/**
 	 * @brief Prints the UUID to a stream.
