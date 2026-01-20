@@ -29,7 +29,7 @@ void AppendUuidBytes(std::vector<uint8_t>& out, const Uuid& uuid) {
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, const Attribute& attr) {
-	os << "Attribute(handle=0x" << std::hex << std::setw(4) << std::setfill('0') << attr.GetHandle()
+	os << "(handle=0x" << std::hex << std::setw(4) << std::setfill('0') << attr.GetHandle()
 	   << ", uuid=" << attr.uuid_ << ", properties=0x" << std::setw(4) << attr.properties_ << " [";
 
 	// Parse and output property flags
@@ -117,13 +117,24 @@ std::ostream& operator<<(std::ostream& os, const Attribute& attr) {
 
 	// Output value size from appropriate storage
 	size_t value_size;
+	const uint8_t* data_ptr = nullptr;
 	if(attr.properties_ & static_cast<uint16_t>(Attribute::Properties::kDynamic)) {
 		value_size = attr.dynamic_value_.size();
+		data_ptr = attr.dynamic_value_.data();
 	} else {
 		value_size = attr.static_value_size_;
+		data_ptr = attr.static_value_ptr_;
 	}
 	
 	os << "], value_size=" << std::dec << value_size << ")";
+
+	for(size_t i = 0; i < value_size; ++i) {
+		if(i % 16 == 0) {
+			os << "  0x" << std::hex << std::setw(4) << std::setfill('0') << i << ": ";
+		}
+		os << std::hex << std::setw(2) << std::setfill('0')
+		   << static_cast<int>(data_ptr[i]) << " ";
+	}
 
 	return os;
 }
@@ -237,8 +248,16 @@ bool Attribute::IsClientCharacteristicConfiguration(const Attribute& attr) {
 	return Uuid::IsClientCharacteristicConfiguration(attr.uuid_);
 }
 
+bool Attribute::IsServerCharacteristicConfiguration(const Attribute& attr) {
+	return Uuid::IsServerCharacteristicConfiguration(attr.uuid_);
+}
+
 bool Attribute::IsCharacteristicUserDescription(const Attribute& attr) {
 	return Uuid::IsCharacteristicUserDescription(attr.uuid_);
+}
+
+bool Attribute::IsCharacteristicExtendedProperties(const Attribute& attr) {
+	return Uuid::IsCharacteristicExtendedProperties(attr.uuid_);
 }
 
 bool Attribute::IsDescriptor(const Attribute& attr) {

@@ -246,11 +246,25 @@ class Attribute : public MovableOnly {
 	static bool IsClientCharacteristicConfiguration(const Attribute& attr);
 
 	/**
+	 * @brief Check if an attribute is a Server Characteristic Configuration Descriptor.
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches SCCD type
+	 */
+	static bool IsServerCharacteristicConfiguration(const Attribute& attr);
+
+	/**
 	 * @brief Check if an attribute is a Characteristic User Description.
 	 * @param attr Attribute to check
 	 * @return true if the attribute UUID matches User Description type
 	 */
 	static bool IsCharacteristicUserDescription(const Attribute& attr);
+
+	/**
+	 * @brief Check if an attribute is a Characteristic Extended Properties descriptor.
+	 * @param attr Attribute to check
+	 * @return true if the attribute UUID matches Extended Properties type
+	 */
+	static bool IsCharacteristicExtendedProperties(const Attribute& attr);
 
 	/**
 	 * @brief Check if an attribute is a descriptor (not declaration or value).
