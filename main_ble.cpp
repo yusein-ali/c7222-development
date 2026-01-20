@@ -255,7 +255,7 @@ void ble_app_task(void* params) {
 		vTaskDelete(NULL);
 	}
 	
-	auto* ble = c7222::Ble::GetInstance(true);
+	auto* ble = c7222::Ble::GetInstance(false);
 	auto* gap = ble->GetGap();
 	auto* attribute_server = ble->EnableAttributeServer(profile_data);
 	auto& adb = ble->GetAdvertisementDataBuilder();
