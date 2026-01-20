@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "attribute_server.hpp"
 #include "ble_address.hpp"
 #include "ble_error.hpp"
 #include "gap.hpp"
@@ -45,6 +46,16 @@ class Ble : public NonCopyableNonMovable {
 	 */
 	const Gap* GetGap() const {
 		return gap_;
+	}
+
+	AttributeServer* EnableAttributeServer(const void* context);
+	
+	AttributeServer* GetAttributeServer() {
+		return attribute_server_;
+	}
+
+	const AttributeServer* GetAttributeServer() const {
+		return attribute_server_;
 	}
 
 	/**
@@ -123,33 +134,9 @@ class Ble : public NonCopyableNonMovable {
 		return turned_on_;
 	}
 
-	void SetDeviceName(const std::string& name) {
-		if(gap_ == nullptr) {
-			return;
-		}
-		auto& builder = gap_->GetAdvertisementDataBuilder();
-		builder.ReplaceOrAdd(AdvertisementData(AdvertisementDataType::kCompleteLocalName,
-										  name.c_str(),
-										  name.size()));
-										  bool ok = builder.Build();
-		assert(ok &&
-			   "AdvertisementDataBuilder contains invalid data after setting device name.");
-		device_name_ = name;
-	}
+	void SetDeviceName(const std::string& name);
 
-	void SetAdvertisementFlags(uint8_t flags) {
-		if(gap_ == nullptr) {
-			return;
-		}
-		auto& builder = gap_->GetAdvertisementDataBuilder();
-		builder.ReplaceOrAdd(AdvertisementData(AdvertisementDataType::kFlags,
-										  &flags,
-										  sizeof(flags)));
-		bool ok = builder.Build();
-		assert(ok &&
-			   "AdvertisementDataBuilder contains invalid data after setting flags.");
-		advertisement_flags_ = flags;
-	}
+	void SetAdvertisementFlags(uint8_t flags);
 
 	// ---------------------------------------------------------------------
 	// GAP convenience wrappers
@@ -246,6 +233,7 @@ class Ble : public NonCopyableNonMovable {
 	std::function<void()> callback_on_ble_stack_off_{};
 
 	Gap* gap_ = nullptr;
+	AttributeServer* attribute_server_ = nullptr;
 	bool turned_on_ = false;
 
 	void* context_ = nullptr;

@@ -1,5 +1,4 @@
 #include "ble.hpp"
-#include "attribute_server.hpp"
 #include <btstack.h>
 #include <assert.h>
 
@@ -67,7 +66,9 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 								   uint16_t packet_data_size) {
 	UNUSED(channel);								
 	UNUSED(packet_data_size);
-
+	assert(gap_ != nullptr && "Gap instance is null in Ble::DispatchBleHciPacket");
+	assert(attribute_server_ != nullptr &&
+		   "AttributeServer instance is null in Ble::DispatchBleHciPacket");
 	if(packet_type != HCI_EVENT_PACKET)
 		return BleError::kUnsupportedFeatureOrParameterValue;
 
@@ -89,14 +90,12 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 	}
 
 	BleError gap_status = gap_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
-	auto* attribute_server = AttributeServer::GetInstance();
-	if(attribute_server != nullptr && attribute_server->IsInitialized()) {
-		attribute_server->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
-	}
-	return gap_status;
+	BleError attribute_server_status = attribute_server_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	
+	return static_cast<BleError>(static_cast<int>(gap_status) + static_cast<int>(attribute_server_status));
 }
 
-Ble::Ble() : gap_(Gap::GetInstance()) {
+Ble::Ble() : gap_(Gap::GetInstance()), attribute_server_(nullptr) {
 	auto context = new BleContext();
 	context->callback = &ble_packet_handler;
 	context_ = context;
