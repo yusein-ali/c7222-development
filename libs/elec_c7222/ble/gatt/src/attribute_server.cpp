@@ -60,12 +60,12 @@ const Characteristic* AttributeServer::FindCharacteristicByUuid(const Uuid& uuid
 
 Characteristic* AttributeServer::FindCharacteristicByHandle(uint16_t handle) {
 	for(auto& service: services_) {
-		for(size_t i = 0; i < service.GetCharacteristicCount(); ++i) {
-			auto& characteristic = service.GetCharacteristic(i);
+		for(const auto& characteristic : service.GetCharacteristics()) {
 			if(characteristic.HasHandle(handle)) {
-				return &characteristic;
+				return &const_cast<Characteristic&>(characteristic);
 			}
 		}
+
 	}
 	return nullptr;
 }

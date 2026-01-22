@@ -90,6 +90,7 @@ class NonCopyableNonMovable : public NonCopyable, public NonMovable {
  */
 class MovableOnly : public NonCopyable {
   public:
+	virtual ~MovableOnly() = default;
 	// Re-enable default move operations
 	MovableOnly(MovableOnly&&) = default;
 	MovableOnly& operator=(MovableOnly&&) = default;
