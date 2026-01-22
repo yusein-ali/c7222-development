@@ -676,7 +676,7 @@ std::ostream& operator<<(std::ostream& os, const Characteristic& characteristic)
 }
 // ========== Event Handler Management ==========
 
-void Characteristic::AddEventHandler(const EventHandlers& handler) {
+void Characteristic::AddEventHandler(EventHandlers& handler) {
 	event_handlers_.push_back(&handler);
 }
 
@@ -703,12 +703,12 @@ BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, u
 	uint16_t old_config = 0;
 	const uint8_t* current = cccd_ ? cccd_->GetValueData() : nullptr;
 	if(current) {
-		old_config = static_cast<uint16_t>(current[0]) | (static_cast<uint16_t>(current[1]) << 8);
+		old_config = *reinterpret_cast<const uint16_t*>(current);
 	}
 
-	uint16_t new_config = static_cast<uint16_t>(data[0]) | (static_cast<uint16_t>(data[1]) << 8);
-	std::vector<uint8_t> new_bytes{data[0], data[1]};
-	cccd_->SetValue(std::move(new_bytes));
+	uint16_t new_config = *reinterpret_cast<const uint16_t*>(data);
+
+	// cccd_->SetValue(data+offset, size-offset);
 
 	bool old_notify = (old_config & static_cast<uint16_t>(CCCDProperties::kNotifications)) != 0;
 	bool old_indicate = (old_config & static_cast<uint16_t>(CCCDProperties::kIndications)) != 0;
@@ -716,29 +716,29 @@ BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, u
 	bool new_indicate = (new_config & static_cast<uint16_t>(CCCDProperties::kIndications)) != 0;
 
 	if(new_notify && !old_notify) {
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnUpdatesEnabled) {
+		for(auto* handler: event_handlers_) {
+			if(handler) {
 				handler->OnUpdatesEnabled(false);
 			}
 		}
 	}
 	if(new_indicate && !old_indicate) {
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnUpdatesEnabled) {
+		for(auto* handler: event_handlers_) {
+			if(handler) {
 				handler->OnUpdatesEnabled(true);
 			}
 		}
 	}
 	if(!new_notify && old_notify) {
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnUpdatesDisabled) {
+		for(auto* handler: event_handlers_) {
+			if(handler) {
 				handler->OnUpdatesDisabled();
 			}
 		}
 	}
 	if(!new_indicate && old_indicate) {
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnUpdatesDisabled) {
+		for(auto* handler: event_handlers_) {
+			if(handler) {
 				handler->OnUpdatesDisabled();
 			}
 		}
@@ -753,28 +753,27 @@ BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, u
 	}
 
 	uint16_t old_config = 0;
-	const uint8_t* current = sccd_ ? sccd_->GetValueData() : nullptr;
+	const uint8_t* current = cccd_ ? cccd_->GetValueData() : nullptr;
 	if(current) {
-		old_config = static_cast<uint16_t>(current[0]) | (static_cast<uint16_t>(current[1]) << 8);
+		old_config = *reinterpret_cast<const uint16_t*>(current);
 	}
 
-	uint16_t new_config = static_cast<uint16_t>(data[0]) | (static_cast<uint16_t>(data[1]) << 8);
-	std::vector<uint8_t> new_bytes{data[0], data[1]};
-	sccd_->SetValue(std::move(new_bytes));
+	uint16_t new_config = *reinterpret_cast<const uint16_t*>(data);
+	sccd_->SetValue(data+offset, size-offset);
 
 	bool old_broadcast = (old_config & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;
 	bool new_broadcast = (new_config & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;
 
 	if(new_broadcast && !old_broadcast) {
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnBroadcastEnabled) {
+		for(auto* handler: event_handlers_) {
+			if(handler) {
 				handler->OnBroadcastEnabled();
 			}
 		}
 	}
 	if(!new_broadcast && old_broadcast) {
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnBroadcastDisabled) {
+		for(auto* handler: event_handlers_) {
+			if(handler) {
 				handler->OnBroadcastDisabled();
 			}
 		}
@@ -790,8 +789,8 @@ uint16_t Characteristic::HandleValueRead(uint16_t offset, uint8_t* buffer, uint1
 	}
 
 	// Notify OnRead handlers that a read is happening
-	for(const auto* handler: event_handlers_) {
-		if(handler && handler->OnRead) {
+	for(auto* handler: event_handlers_) {
+		if(handler) {
 			handler->OnRead();
 		}
 	}
@@ -839,8 +838,8 @@ BleError Characteristic::HandleValueWrite(uint16_t offset, const uint8_t* data, 
 	std::vector<uint8_t> write_data(data, data + size);
 
 	// Notify OnWrite handlers
-	for(const auto* handler: event_handlers_) {
-		if(handler && handler->OnWrite) {
+	for(auto* handler: event_handlers_) {
+		if(handler) {
 			handler->OnWrite(write_data);
 		}
 	}

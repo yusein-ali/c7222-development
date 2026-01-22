@@ -91,12 +91,12 @@ BleError Characteristic::DispatchEvent(EventId event_id,
 	switch(event_id) {
 	case EventId::kHandleValueIndicationComplete: {
 		// Extract status from the ATT event
-		const uint8_t status = att_event_handle_value_indication_complete_get_status(event_data);
+		uint8_t status = att_event_handle_value_indication_complete_get_status(event_data);
 		
 		// Call OnConfirmationComplete on all registered event handlers
-		for(const auto* handler: event_handlers_) {
-			if(handler && handler->OnConfirmationComplete) {
-				handler->OnConfirmationComplete(status);
+		for(auto* handler: event_handlers_) {
+			if(handler) {
+				handler->OnConfirmationReceived(status != 0);
 			}
 		}
 		break;

@@ -171,7 +171,7 @@ namespace c7222 {
  * @note Read callbacks are required for dynamic read attributes.
  * @note Write callbacks are required for write-enabled attributes.
  */
-class Characteristic : public MovableOnly {
+class Characteristic final : public MovableOnly {
    public:
 	/// \name Types and Configuration Enums
 	/// Type definitions and configuration enums for characteristics.
@@ -317,6 +317,8 @@ class Characteristic : public MovableOnly {
 	 * - CCCD/SCCD writes (client enables/disables updates or broadcasts).
 	 * - Attribute read/write on the value attribute.
 	 * - HCI indication completion events passed via DispatchBleHciPacket().
+	 *
+	 * \note These Handlers are called before the data of the Attributes are updated!
 	 */
 	struct EventHandlers {
 		/**
@@ -328,8 +330,9 @@ class Characteristic : public MovableOnly {
 		 *
 		 * @param is_indication true if indications are enabled, false if notifications are enabled
 		 */
-		std::function<void(bool is_indication)> OnUpdatesEnabled;
-
+		virtual void OnUpdatesEnabled(bool is_indication) {
+			(void)is_indication;
+		}
 		/**
 		 * @brief Called when notifications or indications are disabled by a client.
 		 *
@@ -337,7 +340,8 @@ class Characteristic : public MovableOnly {
 		 * updates for this characteristic (or writes 0x0000).
 		 * The CCCD value has already been written when this fires.
 		 */
-		std::function<void()> OnUpdatesDisabled;
+		virtual void OnUpdatesDisabled() {
+		}
 
 		/**
 		 * @brief Called when an indication transaction completes.
@@ -352,7 +356,9 @@ class Characteristic : public MovableOnly {
 		 * @note Only applicable for characteristics with Indication property.
 		 * @note This provides additional status information beyond OnConfirmationReceived.
 		 */
-		std::function<void(uint8_t status)> OnConfirmationComplete;
+		virtual void OnIndicationComplete(uint8_t status) {
+			(void)status;
+		}
 
 		/**
 		 * @brief Called when broadcasts are enabled by a client.
@@ -361,7 +367,8 @@ class Characteristic : public MovableOnly {
 		 * broadcasts for this characteristic.
 		 * The SCCD value has already been written when this fires.
 		 */
-		std::function<void()> OnBroadcastEnabled;
+		virtual void OnBroadcastEnabled() {
+		}
 
 		/**
 		 * @brief Called when broadcasts are disabled by a client.
@@ -370,7 +377,8 @@ class Characteristic : public MovableOnly {
 		 * broadcasts for this characteristic (or writes 0x0000).
 		 * The SCCD value has already been written when this fires.
 		 */
-		std::function<void()> OnBroadcastDisabled;
+		virtual void OnBroadcastDisabled() {
+		}
 
 		/**
 		 * @brief Called when a read operation is performed on this characteristic.
@@ -380,7 +388,8 @@ class Characteristic : public MovableOnly {
 		 * Use this to update the characteristic value (via SetValue()) before
 		 * it is copied into the read response.
 		 */
-		std::function<void()> OnRead;
+		virtual void OnRead() {
+		}
 
 		/**
 		 * @brief Called when a write operation is performed on this characteristic.
@@ -392,7 +401,22 @@ class Characteristic : public MovableOnly {
 		 *
 		 * @param data The data written by the client
 		 */
-		std::function<void(const std::vector<uint8_t>& data)> OnWrite;
+		virtual void OnWrite(const std::vector<uint8_t>& data) {
+			(void)data;
+		}
+
+		virtual void OnConfirmationReceived(bool status) {
+			(void)status;
+		}
+	private:
+		/**
+		 * @brief Virtual destructor for the EventHandlers interface.
+		 *
+		 * This ensures proper cleanup of derived classes when deleted through a base class pointer.
+		 * It provides a default no-op implementation and allows implementing classes
+		 * to define their own destructor behavior if needed.
+		 */
+		virtual ~EventHandlers() = default;
 	};
 	///@}
 
@@ -448,7 +472,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Destructor.
 	 * Cleans up all managed attributes and descriptors.
 	 */
-	~Characteristic() = default;
+	~Characteristic() override = default;
 
 	/**
 	 * @brief Parse the first characteristic from a list of attributes.
@@ -493,7 +517,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Get the UUID of this characteristic.
 	 * @return Reference to the characteristic's UUID
 	 */
-	const Uuid& GetUuid() const {
+	[[nodiscard]] const Uuid& GetUuid() const {
 		return uuid_;
 	}
 
@@ -501,7 +525,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Get the properties of this characteristic.
 	 * @return Bitmask of characteristic properties (Read, Write, Notify, etc.)
 	 */
-	Properties GetProperties() const {
+	[[nodiscard]] Properties GetProperties() const {
 		return properties_;
 	}
 
@@ -509,7 +533,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Get the handle of the Value attribute.
 	 * @return Value attribute handle (typically declaration_handle + 1)
 	 */
-	uint16_t GetValueHandle() const {
+	[[nodiscard]] uint16_t GetValueHandle() const {
 		return value_attr_.GetHandle();
 	}
 
@@ -517,7 +541,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Get the handle of the Declaration attribute.
 	 * @return Declaration attribute handle
 	 */
-	uint16_t GetDeclarationHandle() const {
+	[[nodiscard]] uint16_t GetDeclarationHandle() const {
 		return declaration_attr_.GetHandle();
 	}
 
@@ -525,7 +549,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Check if this characteristic is valid.
 	 * @return true if UUID is valid and handles are non-zero
 	 */
-	bool IsValid() const;
+	[[nodiscard]] bool IsValid() const;
 
 	/**
 	 * @brief Check if this characteristic matches the given UUID and handle.
@@ -533,7 +557,7 @@ class Characteristic : public MovableOnly {
 	 * @param handle Attribute handle (declaration or value)
 	 * @return true if both UUID matches and handle matches declaration or value
 	 */
-	bool IsThisCharacteristic(const Uuid& uuid, uint16_t handle) const;
+	[[nodiscard]] bool IsThisCharacteristic(const Uuid& uuid, uint16_t handle) const;
 
 	/**
 	 * @brief Check if this characteristic matches the given UUID.
@@ -1192,7 +1216,7 @@ class Characteristic : public MovableOnly {
 	 *
 	 * @param handler Reference to the EventHandlers structure to register
 	 */
-	void AddEventHandler(const EventHandlers& handler);
+	void AddEventHandler(EventHandlers& handler);
 
 	/**
 	 * @brief Unregister an event handler from this characteristic.
@@ -1222,7 +1246,7 @@ class Characteristic : public MovableOnly {
 	 * @brief Get the list of registered event handlers.
 	 * @return List of pointers to registered EventHandlers structures
 	 */
-	std::list<const EventHandlers*> GetEEventHandlers() const {
+	std::list<EventHandlers*> GetEventHandlers() const {
 		return event_handlers_;
 	}
 	///@}
@@ -1379,7 +1403,7 @@ class Characteristic : public MovableOnly {
 	///@}
 
 	// Event handlers
-	std::list<const EventHandlers*> event_handlers_;  ///< Registered event handlers
+	std::list<EventHandlers*> event_handlers_;  ///< Registered event handlers
 
 	/**
 	 * @brief Stream insertion operator for Characteristic.
