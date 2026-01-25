@@ -1,5 +1,5 @@
 // Raspberry Pi Pico implementation of BoardLED.
-#include "board_led.hpp"
+#include "onboard_led.hpp"
 
 #include "pico/stdlib.h"
 
@@ -9,9 +9,14 @@
 
 namespace c7222 {
 
-BoardLED::BoardLED() = default;
+OnBoardLED& OnBoardLED::GetInstance() {
+	static OnBoardLED instance;
+	return instance;
+}
 
-bool BoardLED::Initialize() {
+OnBoardLED::OnBoardLED() = default;
+
+bool OnBoardLED::Initialize() {
 #if defined(PICO_DEFAULT_LED_PIN)
 	gpio_init(PICO_DEFAULT_LED_PIN);
 	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
@@ -34,7 +39,7 @@ bool BoardLED::Initialize() {
 #endif
 }
 
-void BoardLED::Set(bool on) {
+void OnBoardLED::Set(bool on) {
 	if (!_initialized) {
 		return;
 	}
@@ -46,9 +51,9 @@ void BoardLED::Set(bool on) {
 	_state = on;
 }
 
-void BoardLED::On() { Set(true); }
+void OnBoardLED::On() { Set(true); }
 
-void BoardLED::Off() { Set(false); }
+void OnBoardLED::Off() { Set(false); }
 
-void BoardLED::Toggle() { Set(!_state); }
+void OnBoardLED::Toggle() { Set(!_state); }
 } // namespace c7222

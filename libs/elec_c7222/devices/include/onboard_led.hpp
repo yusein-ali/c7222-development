@@ -11,9 +11,12 @@ namespace c7222 {
  * @class BoardLED
  * @brief Simple on-board LED controller.
  */
-class BoardLED {
+class OnBoardLED {
   public:
-	BoardLED();
+	/**
+	 * @brief Get the singleton instance.
+	 */
+	static OnBoardLED& GetInstance();
 
 	bool Initialize();
 	void Set(bool on);
@@ -21,6 +24,12 @@ class BoardLED {
 	void Off();
 	void Toggle();
   private:
+	OnBoardLED();
+	OnBoardLED(const OnBoardLED&) = delete;
+	OnBoardLED& operator=(const OnBoardLED&) = delete;
+	OnBoardLED(OnBoardLED&&) = delete;
+	OnBoardLED& operator=(OnBoardLED&&) = delete;
+
 	bool _initialized{false};
 	bool _state{false};
 };
