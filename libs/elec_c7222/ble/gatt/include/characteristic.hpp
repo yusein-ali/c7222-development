@@ -1,8 +1,6 @@
 #ifndef ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_
 #define ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_
 
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <iosfwd>
 #include <list>
@@ -564,14 +562,14 @@ class Characteristic final : public MovableOnly {
 	 * @param uuid UUID to compare
 	 * @return true if UUID matches
 	 */
-	bool IsThisCharacteristic(const Uuid& uuid) const;
+	[[nodiscard]] bool IsThisCharacteristic(const Uuid& uuid) const;
 
 	/**
 	 * @brief Check if this characteristic owns the given handle.
 	 * @param handle Attribute handle (declaration or value)
 	 * @return true if handle matches declaration, value, or descriptor
 	 */
-	bool HasHandle(uint16_t handle) const;
+	[[nodiscard]] bool HasHandle(uint16_t handle) const;
 	///@}
 
 	/// \name Capability Checks
@@ -582,7 +580,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports broadcasts.
 	 * @return true if kBroadcast property is set
 	 */
-	bool HasBroadcast() const {
+	[[nodiscard]] bool HasBroadcast() const {
 		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kBroadcast)) !=
 			   0;
 	}
@@ -591,7 +589,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports read operations.
 	 * @return true if kRead property is set
 	 */
-	bool CanRead() const {
+	[[nodiscard]] bool CanRead() const {
 		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kRead)) != 0;
 	}
 
@@ -599,7 +597,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports write without response.
 	 * @return true if kWriteWithoutResponse property is set
 	 */
-	bool CanWriteWithoutResponse() const {
+	[[nodiscard]] bool CanWriteWithoutResponse() const {
 		return (static_cast<uint8_t>(properties_) &
 				static_cast<uint8_t>(Properties::kWriteWithoutResponse)) != 0;
 	}
@@ -608,7 +606,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports write operations (with response).
 	 * @return true if kWrite property is set
 	 */
-	bool CanWrite() const {
+	[[nodiscard]] bool CanWrite() const {
 		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kWrite)) != 0;
 	}
 
@@ -616,7 +614,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports notifications.
 	 * @return true if kNotify property is set
 	 */
-	bool HasNotifications() const {
+	[[nodiscard]] bool HasNotifications() const {
 		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kNotify)) != 0;
 	}
 
@@ -624,7 +622,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports indications.
 	 * @return true if kIndicate property is set
 	 */
-	bool HasIndications() const {
+	[[nodiscard]] bool HasIndications() const {
 		return (static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kIndicate)) !=
 			   0;
 	}
@@ -633,7 +631,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic supports authenticated signed writes.
 	 * @return true if kAuthenticatedSignedWrites property is set
 	 */
-	bool CanSignedWrite() const {
+	[[nodiscard]] bool CanSignedWrite() const {
 		return (static_cast<uint8_t>(properties_) &
 				static_cast<uint8_t>(Properties::kAuthenticatedSignedWrites)) != 0;
 	}
@@ -642,7 +640,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic properties flag has extended properties capability.
 	 * @return true if kExtendedProperties property bit is set
 	 */
-	bool HasExtendedPropertiesCapability() const {
+	[[nodiscard]] bool HasExtendedPropertiesCapability() const {
 		return (static_cast<uint8_t>(properties_) &
 				static_cast<uint8_t>(Properties::kExtendedProperties)) != 0;
 	}
@@ -657,7 +655,7 @@ class Characteristic final : public MovableOnly {
 	 * Read permission bits 0 and 1 indicate security level requirements.
 	 * @return true if read permission bits (kReadPermissionBit0/1) are set
 	 */
-	bool ReadHasSecurityRequirement() const {
+	[[nodiscard]] bool ReadHasSecurityRequirement() const {
 		uint16_t props = value_attr_.GetProperties();
 		return (props & static_cast<uint16_t>(Attribute::Properties::kReadPermissionBit0)) != 0 ||
 			   (props & static_cast<uint16_t>(Attribute::Properties::kReadPermissionBit1)) != 0;
@@ -668,7 +666,7 @@ class Characteristic final : public MovableOnly {
 	 * Write permission bits 0 and 1 indicate security level requirements.
 	 * @return true if write permission bits (kWritePermissionBit0/1) are set
 	 */
-	bool WriteHasSecurityRequirement() const {
+	[[nodiscard]] bool WriteHasSecurityRequirement() const {
 		uint16_t props = value_attr_.GetProperties();
 		return (props & static_cast<uint16_t>(Attribute::Properties::kWritePermissionBit0)) != 0 ||
 			   (props & static_cast<uint16_t>(Attribute::Properties::kWritePermissionBit1)) != 0;
@@ -678,7 +676,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic read requires Secure Connections (SC).
 	 * @return true if kReadPermissionSc is set
 	 */
-	bool ReadRequiresSC() const {
+	[[nodiscard]] bool ReadRequiresSC() const {
 		return (value_attr_.GetProperties() &
 				static_cast<uint16_t>(Attribute::Properties::kReadPermissionSc)) != 0;
 	}
@@ -687,7 +685,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic write requires Secure Connections (SC).
 	 * @return true if kWritePermissionSc is set
 	 */
-	bool WriteRequiresSC() const {
+	[[nodiscard]] bool WriteRequiresSC() const {
 		return (value_attr_.GetProperties() &
 				static_cast<uint16_t>(Attribute::Properties::kWritePermissionSc)) != 0;
 	}
@@ -697,7 +695,7 @@ class Characteristic final : public MovableOnly {
 	 * Returns the encryption key size requirement encoded in bits 12-15.
 	 * @return Encryption key size (0-16 bytes), or 0 if no requirement
 	 */
-	uint16_t GetEncryptionKeySize() const {
+	[[nodiscard]] uint16_t GetEncryptionKeySize() const {
 		return (value_attr_.GetProperties() &
 				static_cast<uint16_t>(Attribute::Properties::kEncryptionKeySizeMask)) >>
 			   12;
@@ -776,13 +774,13 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get current read security level.
 	 * @return SecurityLevel extracted from read permission bits
 	 */
-	SecurityLevel GetReadSecurityLevel() const;
+	[[nodiscard]] SecurityLevel GetReadSecurityLevel() const;
 
 	/**
 	 * @brief Get current write security level.
 	 * @return SecurityLevel extracted from write permission bits
 	 */
-	SecurityLevel GetWriteSecurityLevel() const;
+	[[nodiscard]] SecurityLevel GetWriteSecurityLevel() const;
 	///@}
 
 	/// \name Permission Evaluation
@@ -808,7 +806,7 @@ class Characteristic final : public MovableOnly {
 	 *     // Allow read operation
 	 * }
 	 */
-	bool IsReadPermitted(bool authorized, bool authenticated) const;
+	[[nodiscard]] bool IsReadPermitted(bool authorized, bool authenticated) const;
 
 	/**
 	 * @brief Check if write is permitted given the connection security state.
@@ -829,13 +827,13 @@ class Characteristic final : public MovableOnly {
 	 *     // Allow write operation
 	 * }
 	 */
-	bool IsWritePermitted(bool authorized, bool authenticated) const;
+	[[nodiscard]] bool IsWritePermitted(bool authorized, bool authenticated) const;
 
 	/**
 	 * @brief Check if characteristic has 128-bit UUID.
 	 * @return true if kUuid128 is set in value attribute
 	 */
-	bool Uses128BitUuid() const {
+	[[nodiscard]] bool Uses128BitUuid() const {
 		return (value_attr_.GetProperties() &
 				static_cast<uint16_t>(Attribute::Properties::kUuid128)) != 0;
 	}
@@ -844,7 +842,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if characteristic value is dynamic (can change).
 	 * @return true if kDynamic property is set
 	 */
-	bool IsDynamic() const {
+	[[nodiscard]] bool IsDynamic() const {
 		return (value_attr_.GetProperties() &
 				static_cast<uint16_t>(Attribute::Properties::kDynamic)) != 0;
 	}
@@ -859,19 +857,19 @@ class Characteristic final : public MovableOnly {
 	 * For dynamic values, this may change after SetValue() calls.
 	 * @return Pointer to value data, or nullptr if no value set
 	 */
-	const uint8_t* GetValueData() const;
+	[[nodiscard]] const uint8_t* GetValueData() const;
 
 	/**
 	 * @brief Get the size of the current value.
 	 * @return Size in bytes of the characteristic value
 	 */
-	size_t GetValueSize() const;
+	[[nodiscard]] size_t GetValueSize() const;
 
 	/**
 	 * @brief Get the complete value as a vector.
 	 * @return Vector copy of the characteristic value
 	 */
-	std::vector<uint8_t> GetValueAsVector() const;
+	[[nodiscard]] std::vector<uint8_t> GetValueAsVector() const;
 	///@}
 
 	/// \name Value Updates
@@ -942,13 +940,13 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if a read callback is registered.
 	 * @return true if read callback is set
 	 */
-	bool HasReadCallback() const;
+	[[nodiscard]] bool HasReadCallback() const;
 
 	/**
 	 * @brief Check if a write callback is registered.
 	 * @return true if write callback is set
 	 */
-	bool HasWriteCallback() const;
+	[[nodiscard]] bool HasWriteCallback() const;
 	///@}
 
 	/// \name Descriptor Management
@@ -967,7 +965,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if CCCD descriptor is present.
 	 * @return true if CCCD has been enabled
 	 */
-	bool HasCCCD() const {
+	[[nodiscard]] bool HasCCCD() const {
 		return cccd_ != nullptr;
 	}
 
@@ -975,13 +973,13 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if notifications are enabled via CCCD.
 	 * @return true if CCCD is present and notifications bit is set
 	 */
-	bool IsNotificationsEnabled() const;
+	[[nodiscard]] bool IsNotificationsEnabled() const;
 
 	/**
 	 * @brief Check if indications are enabled via CCCD.
 	 * @return true if CCCD is present and indications bit is set
 	 */
-	bool IsIndicationsEnabled() const;
+	[[nodiscard]] bool IsIndicationsEnabled() const;
 
 	/**
 	 * @brief Get the CCCD descriptor.
@@ -995,7 +993,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the CCCD descriptor (const version).
 	 * @return Const pointer to CCCD Attribute, or nullptr if not enabled
 	 */
-	const Attribute* GetCCCD() const {
+	[[nodiscard]] const Attribute* GetCCCD() const {
 		return cccd_.get();
 	}
 
@@ -1020,7 +1018,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if SCCD descriptor is present.
 	 * @return true if SCCD has been enabled
 	 */
-	bool HasSCCD() const {
+	[[nodiscard]] bool HasSCCD() const {
 		return sccd_ != nullptr;
 	}
 
@@ -1028,7 +1026,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if broadcasts are enabled via SCCD.
 	 * @return true if SCCD is present and broadcasts bit is set
 	 */
-	bool IsBroadcastEnabled() const;
+	[[nodiscard]] bool IsBroadcastEnabled() const;
 
 	/**
 	 * @brief Get the SCCD descriptor.
@@ -1042,7 +1040,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the SCCD descriptor (const version).
 	 * @return Const pointer to SCCD Attribute, or nullptr if not enabled
 	 */
-	const Attribute* GetSCCD() const {
+	[[nodiscard]] const Attribute* GetSCCD() const {
 		return sccd_.get();
 	}
 
@@ -1067,7 +1065,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if Extended Properties descriptor is present.
 	 * @return true if Extended Properties has been enabled
 	 */
-	bool HasExtendedProperties() const {
+	[[nodiscard]] bool HasExtendedProperties() const {
 		return extended_properties_ != nullptr;
 	}
 
@@ -1083,7 +1081,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the Extended Properties descriptor (const version).
 	 * @return Const pointer to Extended Properties Attribute, or nullptr if not enabled
 	 */
-	const Attribute* GetExtendedProperties() const {
+	[[nodiscard]] const Attribute* GetExtendedProperties() const {
 		return extended_properties_.get();
 	}
 
@@ -1108,7 +1106,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Check if User Description descriptor is present.
 	 * @return true if user description has been set
 	 */
-	bool HasUserDescription() const {
+	[[nodiscard]] bool HasUserDescription() const {
 		return user_description_ != nullptr;
 	}
 
@@ -1124,7 +1122,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the User Description descriptor (const version).
 	 * @return Const pointer to User Description Attribute, or nullptr if not set
 	 */
-	const Attribute* GetUserDescription() const {
+	[[nodiscard]] const Attribute* GetUserDescription() const {
 		return user_description_.get();
 	}
 
@@ -1146,7 +1144,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get count of custom descriptors (excluding CCCD and User Description).
 	 * @return Number of additional descriptors
 	 */
-	size_t GetDescriptorCount() const {
+	[[nodiscard]] size_t GetDescriptorCount() const {
 		return descriptors_.size();
 	}
 
@@ -1162,7 +1160,7 @@ class Characteristic final : public MovableOnly {
 	 * @param index Index of the descriptor (0 to GetDescriptorCount()-1)
 	 * @return Const pointer to the Attribute, or nullptr if index out of range
 	 */
-	const Attribute* GetDescriptor(size_t index) const;
+	[[nodiscard]] const Attribute* GetDescriptor(size_t index) const;
 	///@}
 
 	/// \name Attribute Access
@@ -1182,7 +1180,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the Declaration Attribute (const version).
 	 * @return Const reference to the Declaration Attribute
 	 */
-	const Attribute& GetDeclarationAttribute() const {
+	[[nodiscard]] const Attribute& GetDeclarationAttribute() const {
 		return declaration_attr_;
 	}
 
@@ -1199,7 +1197,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the Value Attribute (const version).
 	 * @return Const reference to the Value Attribute
 	 */
-	const Attribute& GetValueAttribute() const {
+	[[nodiscard]] const Attribute& GetValueAttribute() const {
 		return value_attr_;
 	}
 	///@}
@@ -1246,7 +1244,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the list of registered event handlers.
 	 * @return List of pointers to registered EventHandlers structures
 	 */
-	std::list<EventHandlers*> GetEventHandlers() const {
+	[[nodiscard]] std::list<EventHandlers*> GetEventHandlers() const {
 		return event_handlers_;
 	}
 	///@}
@@ -1271,7 +1269,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the current connection handle.
 	 * @return The connection handle, or 0 if disconnected/invalid
 	 */
-	uint16_t GetConnectionHandle() const {
+	[[nodiscard]] uint16_t GetConnectionHandle() const {
 		return connection_handle_;
 	}
 	///@}
@@ -1326,7 +1324,7 @@ class Characteristic final : public MovableOnly {
 	 * @return BleError indicating success or failure
 	 * @note Internal use only (event fan-out from stack dispatch).
 	 */
-	virtual BleError DispatchEvent(EventId event_id,
+	BleError DispatchEvent(EventId event_id,
 								   const uint8_t* event_data,
 								   uint16_t event_data_size);
 	///@}

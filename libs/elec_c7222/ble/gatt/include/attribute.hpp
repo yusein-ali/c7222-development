@@ -5,15 +5,14 @@
 #ifndef ELEC_C7222_BLE_GATT_ATTRIBUTE_H_
 #define ELEC_C7222_BLE_GATT_ATTRIBUTE_H_
 
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
-#include "uuid.hpp"
-#include "non_copyable.hpp"
+
 #include "ble_error.hpp"
+#include "non_copyable.hpp"
+#include "uuid.hpp"
 
 namespace c7222 {
 
@@ -383,7 +382,7 @@ class Attribute : public MovableOnly {
 	 * @brief Get the ATT handle.
 	 * @return Attribute handle (0 if unassigned)
 	 */
-	uint16_t GetHandle() const {
+	[[nodiscard]] uint16_t GetHandle() const {
 		return handle_;
 	}
 
@@ -399,7 +398,7 @@ class Attribute : public MovableOnly {
 	 * @brief Get the attribute UUID.
 	 * @return Reference to the UUID identifying this attribute type
 	 */
-	const Uuid& GetUuid() const {
+	[[nodiscard]] const Uuid& GetUuid() const {
 		return uuid_;
 	}
 
@@ -407,14 +406,14 @@ class Attribute : public MovableOnly {
 	 * @brief Check if the attribute UUID is 128-bit.
 	 * @return true for 128-bit UUIDs, false for 16-bit
 	 */
-	bool IsUuid128() const {
+	[[nodiscard]] bool IsUuid128() const {
 		return uuid_.Is128Bit();
 	}
 
 	/**
 	 * @brief Check if this attribute has a valid handle and UUID.
 	 */
-	bool IsValid() const {
+	[[nodiscard]] bool IsValid() const {
 		return handle_ != 0 && uuid_.IsValid();
 	}
 
@@ -423,7 +422,7 @@ class Attribute : public MovableOnly {
 	 * @param uuid UUID to compare
 	 * @return true if UUIDs match
 	 */
-	bool IsThisAttribute(const Uuid& uuid) const {
+	[[nodiscard]] bool IsThisAttribute(const Uuid& uuid) const {
 		return uuid_ == uuid;
 	}
 
@@ -432,7 +431,7 @@ class Attribute : public MovableOnly {
 	 * @param handle Attribute handle to compare
 	 * @return true if handles match and handle != 0
 	 */
-	bool IsThisAttribute(uint16_t handle) const {
+	[[nodiscard]] bool IsThisAttribute(uint16_t handle) const {
 		return handle != 0 && handle_ == handle;
 	}
 
@@ -442,7 +441,7 @@ class Attribute : public MovableOnly {
 	 * @param handle Attribute handle to compare
 	 * @return true if both UUID and handle match
 	 */
-	bool IsThisAttribute(const Uuid& uuid, uint16_t handle) const {
+	[[nodiscard]] bool IsThisAttribute(const Uuid& uuid, uint16_t handle) const {
 		return uuid_ == uuid && handle_ == handle;
 	}
 	///@}
@@ -454,7 +453,7 @@ class Attribute : public MovableOnly {
 	 * @brief Get the properties bitmask of the attribute.
 	 * @return Properties bitmask
 	 */
-	uint16_t GetProperties() const {
+	[[nodiscard]] uint16_t GetProperties() const {
 		return properties_;
 	}
 
@@ -475,7 +474,7 @@ class Attribute : public MovableOnly {
 	 * @brief Get value as vector (for compatibility).
 	 * Note: Returns empty for static attributes because they are DB-backed.
 	 */
-	const std::vector<uint8_t>& GetDynamicValue() const {
+	[[nodiscard]] const std::vector<uint8_t>& GetDynamicValue() const {
 		return dynamic_value_;
 	}
 
@@ -485,12 +484,11 @@ class Attribute : public MovableOnly {
 	 * @note Static attributes return the ATT DB pointer; dynamic attributes
 	 * return the owned vector data pointer.
 	 */
-	const uint8_t* GetValueData() const {
+	[[nodiscard]] const uint8_t* GetValueData() const {
 		if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0) {
 			return dynamic_value_.empty() ? nullptr : dynamic_value_.data();
-		} else {
-			return static_value_ptr_;
 		}
+		return static_value_ptr_;
 	}
 
 	/**
@@ -498,12 +496,11 @@ class Attribute : public MovableOnly {
 	 * @return Size of value in bytes
 	 * @note Mirrors the storage choice: DB size for static, vector size for dynamic.
 	 */
-	size_t GetValueSize() const {
+	[[nodiscard]] size_t GetValueSize() const {
 		if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0) {
 			return dynamic_value_.size();
-		} else {
-			return static_value_size_;
 		}
+		return static_value_size_;
 	}
 
 	/**
@@ -556,7 +553,7 @@ class Attribute : public MovableOnly {
 	 * @param value The value to store
 	 * @return true if value was set, false if rejected (static attribute)
 	 * @note Uses binary representation; for endian-sensitive types, ensure consistency
-	 * @example SetValue<uint16_t>(0x1234) stores as bytes {0x34, 0x12} (little-endian)
+	 * @example SetValue(0x1234) stores as bytes {0x34, 0x12} (little-endian)
 	 */
 	template<typename T>
 	bool SetValue(const T& value) {
@@ -582,7 +579,7 @@ class Attribute : public MovableOnly {
 	 * @brief Check if a read callback is registered.
 	 * @return true if read callback is set
 	 */
-	bool HasReadCallback() const {
+	[[nodiscard]] bool HasReadCallback() const {
 		return static_cast<bool>(read_callback_);
 	}
 
@@ -609,7 +606,7 @@ class Attribute : public MovableOnly {
 	 * @brief Check if a write callback is registered.
 	 * @return true if write callback is set
 	 */
-	bool HasWriteCallback() const {
+	[[nodiscard]] bool HasWriteCallback() const {
 		return static_cast<bool>(write_callback_);
 	}
 

@@ -1,7 +1,6 @@
 #ifndef ELEC_C7222_BLE_GATT_ATTRIBUTE_SERVER_HPP_
 #define ELEC_C7222_BLE_GATT_ATTRIBUTE_SERVER_HPP_
 
-#include <cstddef>
 #include <cstdint>
 #include <list>
 
@@ -165,7 +164,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	/**
 	 * @brief Check whether the server was initialized.
 	 */
-	bool IsInitialized() const {
+	[[nodiscard]] bool IsInitialized() const {
 		return initialized_;
 	}
 
@@ -175,14 +174,14 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * On Pico W this is the ATT DB blob pointer; other platforms may store
 	 * different context data.
 	 */
-	const void* GetContext() const {
+	[[nodiscard]] const void* GetContext() const {
 		return context_;
 	}
 
 	/**
 	 * @brief Check whether a platform context has been stored.
 	 */
-	bool HasContext() const {
+	[[nodiscard]] bool HasContext() const {
 		return context_ != nullptr;
 	}
 	///@}
@@ -194,7 +193,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 *
 	 * Returns the count of services parsed from the ATT DB in discovery order.
 	 */
-	size_t GetServiceCount() const {
+	[[nodiscard]] size_t GetServiceCount() const {
 		return services_.size();
 	}
 
@@ -212,7 +211,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 *
 	 * @return Const reference to the service list.
 	 */
-	const std::list<Service>& GetServices() const {
+	[[nodiscard]] const std::list<Service>& GetServices() const {
 		return services_;
 	}
 
@@ -231,7 +230,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @param index Service index in discovery order.
 	 * @return Const reference to the service.
 	 */
-	const Service& GetService(size_t index) const;
+	[[nodiscard]] const Service& GetService(size_t index) const;
 
 	/**
 	 * @brief Find a service by UUID.
@@ -247,7 +246,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @param uuid Service UUID to search for.
 	 * @return Const pointer to the service, or nullptr if not found.
 	 */
-	const Service* FindServiceByUuid(const Uuid& uuid) const;
+	[[nodiscard]] const Service* FindServiceByUuid(const Uuid& uuid) const;
 
 	/**
 	 * @brief Find characteristics by UUID.
@@ -269,7 +268,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @param uuid Characteristic UUID to search for.
 	 * @return List of matching characteristics (may be empty).
 	 */
-	std::list<const Characteristic*> FindCharacteristicByUuid(const Uuid& uuid) const;
+	[[nodiscard]] std::list<const Characteristic*> FindCharacteristicByUuid(const Uuid& uuid) const;
 
 	/**
 	 * @brief Find a characteristic by attribute handle.
@@ -285,7 +284,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @param handle ATT handle to search for (value, declaration, or descriptor).
 	 * @return Const pointer to the characteristic, or nullptr if not found.
 	 */
-	const Characteristic* FindCharacteristicByHandle(uint16_t handle) const;
+	[[nodiscard]] const Characteristic* FindCharacteristicByHandle(uint16_t handle) const;
 	///@}
 
 	/// \name Iteration
@@ -310,7 +309,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @brief Get const iterator to first service.
 	 * @return Const iterator to begin of services list
 	 */
-	auto begin() const {
+	[[nodiscard]] auto begin() const {
 		return services_.begin();
 	}
 
@@ -318,7 +317,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @brief Get const iterator to end of services.
 	 * @return Const iterator to end of services list
 	 */
-	auto end() const {
+	[[nodiscard]] auto end() const {
 		return services_.end();
 	}
 
@@ -326,7 +325,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @brief Get const iterator to first service.
 	 * @return Const iterator to begin of services list
 	 */
-	auto cbegin() const {
+	[[nodiscard]] auto cbegin() const {
 		return services_.cbegin();
 	}
 
@@ -334,7 +333,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @brief Get const iterator to end of services.
 	 * @return Const iterator to end of services list
 	 */
-	auto cend() const {
+	[[nodiscard]] auto cend() const {
 		return services_.cend();
 	}
 	///@}
@@ -354,7 +353,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	 *
 	 * Returns 0 when disconnected or not set.
 	 */
-	uint16_t GetConnectionHandle() const {
+	[[nodiscard]] uint16_t GetConnectionHandle() const {
 		return connection_handle_;
 	}
 
@@ -435,7 +434,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	/**
 	 * @brief Find a service-level attribute by handle (const version).
 	 */
-	const Attribute* FindServiceAttributeByHandle(uint16_t handle) const;
+	[[nodiscard]] const Attribute* FindServiceAttributeByHandle(uint16_t handle) const;
 	/**
 	 * @brief Find any attribute by handle across services and characteristics.
 	 */
@@ -443,7 +442,7 @@ class AttributeServer : public NonCopyableNonMovable {
 	/**
 	 * @brief Find any attribute by handle across services and characteristics (const version).
 	 */
-	const Attribute* FindAttributeByHandle(uint16_t handle) const;
+	[[nodiscard]] const Attribute* FindAttributeByHandle(uint16_t handle) const;
 
 	/**
 	 * @brief Check whether a value represents an ATT error code.

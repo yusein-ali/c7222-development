@@ -103,7 +103,7 @@ class Uuid {
 	 * @param uuid16 16-bit UUID value (stored in little-endian order).
 	 */
 	explicit Uuid(uint16_t uuid16) : type_(Type::k16Bit) {
-		uint8_t* ptr = reinterpret_cast<uint8_t*>(&uuid16);
+		auto* ptr = reinterpret_cast<uint8_t*>(&uuid16);
 		std::fill(uuid_.begin(), uuid_.end(), 0);
 		std::copy(ptr, ptr + sizeof(uuid16), uuid_.begin());
 	}
@@ -135,28 +135,26 @@ class Uuid {
 	/**
 	 * @brief Returns the UUID type.
 	 */
-	Type type() const {
+	[[nodiscard]] Type type() const {
 		return type_;
 	}
 
 	/**
 	 * @brief Returns true if this UUID is 16-bit.
 	 */
-	bool Is16Bit() const {
+	[[nodiscard]] bool Is16Bit() const {
 		return type_ == Type::k16Bit;
 	}
 
 	/**
 	 * @brief Returns true if this UUID is 128-bit.
 	 */
-	bool Is128Bit() const {
-		return type_ == Type::k128Bit;
-	}
+	[[nodiscard]] bool Is128Bit() const;
 
 	/**
 	 * @brief Returns true if the UUID has been initialized to 16- or 128-bit.
 	 */
-	bool IsValid() const {
+	[[nodiscard]] bool IsValid() const {
 		return type_ != Type::Invalid;
 	}
 
@@ -164,10 +162,10 @@ class Uuid {
 	 * @brief Returns the 16-bit UUID value.
 	 * @return 16-bit UUID value.
 	 */
-	uint16_t Get16Bit() const {
+	[[nodiscard]] uint16_t Get16Bit() const {
 		assert(type_ == Type::k16Bit && "UUID is not 16-bit");
 		uint16_t ret;
-		uint8_t* ptr = reinterpret_cast<uint8_t*>(&ret);
+		auto* ptr = reinterpret_cast<uint8_t*>(&ret);
 		std::copy(uuid_.begin(), uuid_.begin() + 2, ptr);
 		return ret;
 	}
@@ -176,7 +174,7 @@ class Uuid {
 	 * @brief Returns the 128-bit UUID bytes.
 	 * @return 128-bit UUID byte array.
 	 */
-	const std::array<uint8_t, 16>& Get128Bit() const {
+	[[nodiscard]] const std::array<uint8_t, 16>& Get128Bit() const {
 		assert(type_ == Type::k128Bit && "UUID is not 128-bit");
 		return uuid_;
 	}
@@ -187,7 +185,7 @@ class Uuid {
 	 *
 	 * The byte order matches the storage rules documented above.
 	 */
-	const uint8_t* data() const {
+	[[nodiscard]] const uint8_t* data() const {
 		return uuid_.data();
 	}
 

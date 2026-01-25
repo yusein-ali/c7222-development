@@ -4,8 +4,6 @@
 #include "characteristic.hpp"
 #include "uuid.hpp"
 
-#include <cstddef>
-#include <cstdint>
 #include <iosfwd>
 #include <list>
 #include <vector>
@@ -172,7 +170,7 @@ class Service : public MovableOnly {
 	 * @brief Destructor.
 	 * Cleans up all managed characteristics and included services.
 	 */
-	~Service() = default;
+	~Service() override = default;
 
 	/**
 	 * @brief Parse Services from an ordered attribute list.
@@ -197,31 +195,31 @@ class Service : public MovableOnly {
 	 * @brief Get the UUID of this service.
 	 * @return Reference to the service's UUID
 	 */
-	const Uuid& GetUuid() const { return uuid_; }
+	[[nodiscard]] const Uuid& GetUuid() const { return uuid_; }
 
 	/**
 	 * @brief Get the service type (Primary or Secondary).
 	 * @return ServiceType of this service
 	 */
-	ServiceType GetServiceType() const { return service_type_; }
+	[[nodiscard]] ServiceType GetServiceType() const { return service_type_; }
 
 	/**
 	 * @brief Get the handle of the Declaration attribute.
 	 * @return Declaration attribute handle
 	 */
-	uint16_t GetDeclarationHandle() const { return declaration_attr_.GetHandle(); }
+	[[nodiscard]] uint16_t GetDeclarationHandle() const { return declaration_attr_.GetHandle(); }
 
 	/**
 	 * @brief Get the number of characteristics in this service.
 	 * @return Count of characteristics
 	 */
-	size_t GetCharacteristicCount() const { return characteristics_.size(); }
+	[[nodiscard]] size_t GetCharacteristicCount() const { return characteristics_.size(); }
 
 	/**
 	 * @brief Get the list of characteristics in this service.
 	 * @return Reference to the characteristic list
 	 */
-	const std::list<Characteristic>& GetCharacteristics() const {
+	[[nodiscard]] const std::list<Characteristic>& GetCharacteristics() const {
 		return characteristics_;
 	}
 	/**
@@ -260,7 +258,7 @@ class Service : public MovableOnly {
 	 * @param properties Bitfield of properties to match (logical AND filter)
 	 * @return List of matching characteristic pointers (may be empty)
 	 */
-	std::list<Characteristic*> FindCharacteristicsByProperties(Characteristic::Properties properties) const;
+	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsByProperties(Characteristic::Properties properties) const;
 
 	/**
 	 * @brief Find characteristics that use dynamically assigned value handles.
@@ -268,7 +266,7 @@ class Service : public MovableOnly {
 	 * Dynamic characteristics have a value handle of 0 until the stack assigns one.
 	 * @return List of characteristics with dynamic handles (may be empty)
 	 */
-	std::list<Characteristic*> FindCharacteristicsDynamic() const;
+	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsDynamic() const;
 
 	/**
 	 * @brief Find characteristics that are writable.
@@ -276,7 +274,7 @@ class Service : public MovableOnly {
 	 * Matches characteristics advertising the Write property.
 	 * @return List of writable characteristic pointers (may be empty)
 	 */
-	std::list<Characteristic*> FindCharacteristicsWritable() const {
+	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsWritable() const {
 		return FindCharacteristicsByProperties(Characteristic::Properties::kWrite);
 	}
 
@@ -286,7 +284,7 @@ class Service : public MovableOnly {
 	 * Matches characteristics advertising the Read property.
 	 * @return List of readable characteristic pointers (may be empty)
 	 */
-	std::list<Characteristic*> FindCharacteristicsReadable() const {
+	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsReadable() const {
 		return FindCharacteristicsByProperties(Characteristic::Properties::kRead);
 	}
 
@@ -296,7 +294,7 @@ class Service : public MovableOnly {
 	 * Matches characteristics with Notify and/or Indicate properties set.
 	 * @return List of notifiable or indicatable characteristic pointers (may be empty)
 	 */
-	std::list<Characteristic*> FindCharacteristicsNotifiableOrIndicatable() const {
+	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsNotifiableOrIndicatable() const {
 		return FindCharacteristicsByProperties(Characteristic::Properties::kNotify | Characteristic::Properties::kIndicate);
 	}
 	/**
@@ -304,7 +302,7 @@ class Service : public MovableOnly {
 	 * @param uuid UUID to search for
 	 * @return Const pointer to the characteristic if found, nullptr otherwise
 	 */
-	const Characteristic* FindCharacteristicByUuid(const Uuid& uuid) const;
+	[[nodiscard]] const Characteristic* FindCharacteristicByUuid(const Uuid& uuid) const;
 
 	/**
 	 * @brief Get a characteristic by handle.
@@ -318,13 +316,13 @@ class Service : public MovableOnly {
 	 * @param handle Attribute handle (declaration or value)
 	 * @return Const pointer to the characteristic if found, nullptr otherwise
 	 */
-	const Characteristic* FindCharacteristicByHandle(uint16_t handle) const;
+	[[nodiscard]] const Characteristic* FindCharacteristicByHandle(uint16_t handle) const;
 
 	/**
 	 * @brief Get the number of included services.
 	 * @return Count of included services
 	 */
-	size_t GetIncludedServiceCount() const { return included_services_.size(); }
+	[[nodiscard]] size_t GetIncludedServiceCount() const { return included_services_.size(); }
 
 	/**
 	 * @brief Get an included service by index.
@@ -338,25 +336,25 @@ class Service : public MovableOnly {
 	 * @param index Index of the included service
 	 * @return Const reference to the included service, throws std::out_of_range if invalid
 	 */
-	const Service& GetIncludedService(size_t index) const;
+	[[nodiscard]] const Service& GetIncludedService(size_t index) const;
 
 	/**
 	 * @brief Get the number of included service declaration attributes.
 	 * @return Count of included service declarations
 	 */
-	size_t GetIncludedServiceDeclarationCount() const { return included_service_declarations_.size(); }
+	[[nodiscard]] size_t GetIncludedServiceDeclarationCount() const { return included_service_declarations_.size(); }
 
 	/**
 	 * @brief Check if this service is valid.
 	 * @return true if UUID is valid, handles are non-zero, and has at least one characteristic
 	 */
-	bool IsValid() const;
+	[[nodiscard]] bool IsValid() const;
 
 	/**
 	 * @brief Check if this service uses 128-bit UUID.
 	 * @return true if service UUID is 128-bit
 	 */
-	bool Uses128BitUuid() const { return uuid_.Is128Bit(); }
+	[[nodiscard]] bool Uses128BitUuid() const { return uuid_.Is128Bit(); }
 
 	/**
 	 * @brief Find a service declaration or included service declaration by handle.
@@ -370,7 +368,7 @@ class Service : public MovableOnly {
 	 * @param handle Attribute handle to search for
 	 * @return Const pointer to the attribute if found, nullptr otherwise
 	 */
-	const Attribute* FindServiceAttributeByHandle(uint16_t handle) const;
+	[[nodiscard]] const Attribute* FindServiceAttributeByHandle(uint16_t handle) const;
 
 	/**
 	 * @brief Set the connection handle for all characteristics in this service.
@@ -383,7 +381,7 @@ class Service : public MovableOnly {
 	 * @brief Get the current connection handle for this service.
 	 * @return The connection handle, or 0 if disconnected/invalid
 	 */
-	uint16_t GetConnectionHandle() const { return connection_handle_; }
+	[[nodiscard]] uint16_t GetConnectionHandle() const { return connection_handle_; }
 	///@}
 
 	/// \name Characteristic Management
@@ -480,25 +478,25 @@ class Service : public MovableOnly {
 	 * @brief Get const iterator to first characteristic.
 	 * @return Const iterator to begin of characteristics list
 	 */
-	auto begin() const { return characteristics_.begin(); }
+	[[nodiscard]] auto begin() const { return characteristics_.begin(); }
 
 	/**
 	 * @brief Get const iterator to end of characteristics.
 	 * @return Const iterator to end of characteristics list
 	 */
-	auto end() const { return characteristics_.end(); }
+	[[nodiscard]] auto end() const { return characteristics_.end(); }
 
 	/**
 	 * @brief Get const iterator to first characteristic.
 	 * @return Const iterator to begin of characteristics list
 	 */
-	auto cbegin() const { return characteristics_.cbegin(); }
+	[[nodiscard]] auto cbegin() const { return characteristics_.cbegin(); }
 
 	/**
 	 * @brief Get const iterator to end of characteristics.
 	 * @return Const iterator to end of characteristics list
 	 */
-	auto cend() const { return characteristics_.cend(); }
+	[[nodiscard]] auto cend() const { return characteristics_.cend(); }
 	///@}
 
 	/// \name Stream Output
