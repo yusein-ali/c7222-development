@@ -918,37 +918,6 @@ class Characteristic final : public MovableOnly {
 	}
 	///@}
 
-	/// \name Value Callbacks
-	/// Install callbacks for value read/write handling.
-	///@{
-
-	/**
-	 * @brief Set the read callback for the value attribute.
-	 * Called when a remote client reads this characteristic's value.
-	 * @param callback Function to handle reads
-	 */
-	void SetCharacteristicValueReadCallback(Attribute::ReadCallback callback);
-
-	/**
-	 * @brief Set the write callback for the value attribute.
-	 * Called when a remote client writes to this characteristic's value.
-	 * @param callback Function to handle writes
-	 */
-	void SetCharacteristicValueWriteCallback(Attribute::WriteCallback callback);
-
-	/**
-	 * @brief Check if a read callback is registered.
-	 * @return true if read callback is set
-	 */
-	[[nodiscard]] bool HasReadCallback() const;
-
-	/**
-	 * @brief Check if a write callback is registered.
-	 * @return true if write callback is set
-	 */
-	[[nodiscard]] bool HasWriteCallback() const;
-	///@}
-
 	/// \name Descriptor Management
 	/// Create and inspect standard and custom descriptors.
 	///@{

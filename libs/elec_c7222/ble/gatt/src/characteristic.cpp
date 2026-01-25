@@ -280,21 +280,6 @@ bool Characteristic::SetValue(const std::vector<uint8_t>& data) {
 	return true;
 }
 
-void Characteristic::SetCharacteristicValueReadCallback(Attribute::ReadCallback callback) {
-	value_attr_.SetReadCallback(std::move(callback));
-}
-
-void Characteristic::SetCharacteristicValueWriteCallback(Attribute::WriteCallback callback) {
-	value_attr_.SetWriteCallback(std::move(callback));
-}
-
-bool Characteristic::HasReadCallback() const {
-	return value_attr_.HasReadCallback();
-}
-
-bool Characteristic::HasWriteCallback() const {
-	return value_attr_.HasWriteCallback();
-}
 
 bool Characteristic::IsNotificationsEnabled() const {
 	if(!cccd_) {
