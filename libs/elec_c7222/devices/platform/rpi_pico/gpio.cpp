@@ -24,17 +24,17 @@ static gpio_drive_strength to_drive_strength(GpioPin::DriveStrength drive) {
 
 GpioPin::GpioPin(uint32_t pin, const Config& config) : _pin(pin), _config(config) {
 	assert(_config.validate() && "Invalid GPIO configuration");
-	apply_config();
+	ApplyConfig();
 }
 
-void GpioPin::configure(const Config& config) {
+void GpioPin::Configure(const Config& config) {
 	assert(config.validate() && "Invalid GPIO configuration");
 	_config = config;
-	apply_config();
+	ApplyConfig();
 }
 
 
-void GpioPin::write(bool value) {
+void GpioPin::Write(bool value) {
 	assert(_config.direction == Direction::Output && "Cannot write to GPIO configured as input");
 
 	if(_config.output_type == OutputType::OpenDrain) {
@@ -51,15 +51,15 @@ void GpioPin::write(bool value) {
 	}
 }
 
-bool GpioPin::read() const {
+bool GpioPin::Read() const {
 	return gpio_get(_pin);
 }
 
-void GpioPin::toggle() {
-	write(!read());
+void GpioPin::Toggle() {
+	Write(!Read());
 }
 
-void GpioPin::apply_config() {
+void GpioPin::ApplyConfig() {
 	gpio_init(_pin);
 
 	gpio_set_drive_strength(_pin, to_drive_strength(_config.drive));

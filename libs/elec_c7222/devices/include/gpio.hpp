@@ -100,32 +100,32 @@ class GpioPin {
 	 * @brief Apply a new configuration.
 	 * @param config New configuration.
 	 */
-	void configure(const Config& config);
+	void Configure(const Config& config);
 	/**
 	 * @brief Write an output value (no-op if configured as input).
 	 * @param value Logic level to drive.
 	 */
-	void write(bool value);
+	void Write(bool value);
 	/**
 	 * @brief Read the current GPIO level.
 	 * @return Current logic level.
 	 */
-	bool read() const;
+	bool Read() const;
 	/**
 	 * @brief Toggle the pin output.
 	 */
-	void toggle();
+	void Toggle();
 
 	/**
 	 * @brief Return the GPIO number.
 	 */
-	uint32_t pin() const {
+	uint32_t GetPin() const {
 		return _pin;
 	}
 	/**
 	 * @brief Return the cached configuration.
 	 */
-	Config config() const {
+	Config GetConfig() const {
 		return _config;
 	}
 
@@ -133,7 +133,7 @@ class GpioPin {
 	/**
 	 * @brief Apply internal configuration to the hardware.
 	 */
-	void apply_config();
+	void ApplyConfig();
 
 	uint32_t _pin;
 	Config _config;

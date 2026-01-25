@@ -11,7 +11,7 @@ namespace c7222 {
 
 BoardLED::BoardLED() = default;
 
-bool BoardLED::init() {
+bool BoardLED::Initialize() {
 #if defined(PICO_DEFAULT_LED_PIN)
 	gpio_init(PICO_DEFAULT_LED_PIN);
 	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
@@ -34,7 +34,7 @@ bool BoardLED::init() {
 #endif
 }
 
-void BoardLED::set(bool on) {
+void BoardLED::Set(bool on) {
 	if (!_initialized) {
 		return;
 	}
@@ -46,10 +46,9 @@ void BoardLED::set(bool on) {
 	_state = on;
 }
 
-void BoardLED::on() { set(true); }
+void BoardLED::On() { Set(true); }
 
-void BoardLED::off() { set(false); }
+void BoardLED::Off() { Set(false); }
 
-void BoardLED::toggle() { set(!_state); }
-
+void BoardLED::Toggle() { Set(!_state); }
 } // namespace c7222

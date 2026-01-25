@@ -6,20 +6,20 @@ namespace c7222 {
 
 GpioPin::GpioPin(uint32_t pin, const Config& config) : _pin(pin), _config(config) {}
 
-void GpioPin::configure(const Config& config) {
+void GpioPin::Configure(const Config& config) {
 	assert(config.validate() && "Invalid GPIO configuration");
 	_config = config;
 }
 
 
-void GpioPin::write(bool) {}
+void GpioPin::Write(bool) {}
 
-bool GpioPin::read() const {
+bool GpioPin::Read() const {
 	return false;
 }
 
-void GpioPin::toggle() {}
+void GpioPin::Toggle() {}
 
-void GpioPin::apply_config() {}
+void GpioPin::ApplyConfig() {}
 
 } // namespace c7222

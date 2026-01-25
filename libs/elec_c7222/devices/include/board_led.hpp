@@ -15,12 +15,11 @@ class BoardLED {
   public:
 	BoardLED();
 
-	bool init();
-	void set(bool on);
-	void on();
-	void off();
-	void toggle();
-
+	bool Initialize();
+	void Set(bool on);
+	void On();
+	void Off();
+	void Toggle();
   private:
 	bool _initialized{false};
 	bool _state{false};

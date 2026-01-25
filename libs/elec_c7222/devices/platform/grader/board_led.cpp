@@ -5,20 +5,19 @@ namespace c7222 {
 
 BoardLED::BoardLED() = default;
 
-bool BoardLED::init() {
+bool BoardLED::Initialize() {
 	_initialized = true;
 	_state = false;
 	return true;
 }
 
-void BoardLED::set(bool on) {
+void BoardLED::Set(bool on) {
 	_state = on;
 }
 
-void BoardLED::on() { set(true); }
+void BoardLED::On() { Set(true); }	
+void BoardLED::Off() { Set(false); }
 
-void BoardLED::off() { set(false); }
-
-void BoardLED::toggle() { set(!_state); }
+void BoardLED::Toggle() { Set(!_state); }
 
 } // namespace c7222
