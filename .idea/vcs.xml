@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$USER_HOME$/.pico-sdk/sdk/2.2.0/lib/btstack" vcs="Git" />
+    <mapping directory="$USER_HOME$/.pico-sdk/sdk/2.2.0/lib/cyw43-driver" vcs="Git" />
+    <mapping directory="$USER_HOME$/.pico-sdk/sdk/2.2.0/lib/lwip" vcs="Git" />
+    <mapping directory="$USER_HOME$/.pico-sdk/sdk/2.2.0/lib/mbedtls" vcs="Git" />
+    <mapping directory="$USER_HOME$/.pico-sdk/sdk/2.2.0/lib/tinyusb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/doc/FreeRTOS-Kernel-Book" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/doc/FreeRTOS-Kernel-Book/examples/Win32-simulator-MSVC/FreeRTOS-Kernel" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libs/FreeRTOS-Kernel" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libs/FreeRTOS-Kernel/portable/ThirdParty/Community-Supported-Ports" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libs/FreeRTOS-Kernel/portable/ThirdParty/Partner-Supported-Ports" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libs/FreeRTOS_cpp11" vcs="Git" />
+  </component>
+</project>
