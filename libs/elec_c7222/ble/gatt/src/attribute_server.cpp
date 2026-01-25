@@ -93,6 +93,13 @@ void AttributeServer::SetConnectionHandle(uint16_t connection_handle) {
 	}
 }
 
+void AttributeServer::SetDisconnected() {
+	connection_handle_ = 0;
+	for(auto& service: services_) {
+		service.SetConnectionHandle(0);
+	}
+}
+
 BleError AttributeServer::DispatchBleHciPacket(uint8_t packet_type,
 											   const uint8_t* packet_data,
 											   uint16_t packet_data_size) {

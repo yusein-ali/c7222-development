@@ -357,6 +357,16 @@ class AttributeServer : public NonCopyableNonMovable {
 		return connection_handle_;
 	}
 
+	void SetDisconnected();
+	/**
+	 * @brief Check whether a connection handle is set.
+	 */
+	[[nodiscard]] bool HasConnectionHandle() const {
+		return connection_handle_ != 0;
+	}
+
+
+
 	/**
 	 * @brief Dispatch HCI ATT events to all characteristics.
 	 *
