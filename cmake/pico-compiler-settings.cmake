@@ -1,0 +1,52 @@
+# Pico toolchain defaults derived from .vscode/settings.json.
+if(NOT DEFINED PICO_SDK_PATH)
+    if(DEFINED ENV{PICO_SDK_PATH})
+        set(PICO_SDK_PATH "$ENV{PICO_SDK_PATH}" CACHE PATH "Pico SDK path")
+    elseif(WIN32)
+        set(PICO_SDK_PATH "$ENV{USERPROFILE}/.pico-sdk/sdk/2.2.0" CACHE PATH "Pico SDK path")
+    else()
+        set(PICO_SDK_PATH "$ENV{HOME}/.pico-sdk/sdk/2.2.0" CACHE PATH "Pico SDK path")
+    endif()
+endif()
+
+if(NOT DEFINED PICO_TOOLCHAIN_PATH)
+    if(DEFINED ENV{PICO_TOOLCHAIN_PATH})
+        set(PICO_TOOLCHAIN_PATH "$ENV{PICO_TOOLCHAIN_PATH}" CACHE PATH "Pico toolchain path")
+    elseif(WIN32)
+        set(PICO_TOOLCHAIN_PATH "$ENV{USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1" CACHE PATH "Pico toolchain path")
+    else()
+        set(PICO_TOOLCHAIN_PATH "$ENV{HOME}/.pico-sdk/toolchain/14_2_Rel1" CACHE PATH "Pico toolchain path")
+    endif()
+endif()
+
+if(PICO_TOOLCHAIN_PATH)
+    if(WIN32)
+        set(_pico_path_sep ";")
+    else()
+        set(_pico_path_sep ":")
+    endif()
+    if(DEFINED ENV{PATH})
+        set(ENV{PATH} "${PICO_TOOLCHAIN_PATH}/bin${_pico_path_sep}$ENV{PATH}")
+    else()
+        set(ENV{PATH} "${PICO_TOOLCHAIN_PATH}/bin")
+    endif()
+endif()
+
+if(NOT DEFINED PICO_PLATFORM)
+    set(PICO_PLATFORM rp2350 CACHE STRING "Pico platform")
+endif()
+
+if(NOT DEFINED PICO_COMPILER)
+    set(PICO_COMPILER pico_arm_cortex_m33_gcc CACHE STRING "Pico compiler")
+endif()
+
+set(PICO_GCC_TRIPLE arm-none-eabi CACHE STRING "Pico GCC triple")
+
+if(PICO_SDK_PATH)
+    include("${PICO_SDK_PATH}/cmake/preload/toolchains/${PICO_COMPILER}.cmake")
+endif()
+
+# Tell CMake we're cross-compiling for bare metal to avoid host link flags.
+set(CMAKE_SYSTEM_NAME PICO CACHE STRING "Target system" FORCE)
+set(CMAKE_SYSTEM_PROCESSOR arm CACHE STRING "Target CPU" FORCE)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE STRING "Try-compile target type")

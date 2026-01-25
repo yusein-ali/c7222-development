@@ -1,5 +1,6 @@
 build
 build_local
+cmake-build*/
 tools/gdb_printers/
 **/__pycache__/
 
