@@ -26,6 +26,14 @@ namespace c7222 {
  * The class also defines common 16-bit GATT attribute type UUIDs and
  * helper predicates to recognize declaration/descriptor UUIDs.
  *
+ * @note The UUID class provides type-safe and endian-aware access to
+ *       16-bit and 128-bit UUID values, ensuring compatibility with
+ *       Bluetooth Low Energy (BLE) specifications and BTstack's
+ *       attribute database layout.
+ *
+ * @note You can find BTstack defined UUIDs in "bluetooth_gatt.h" file in ".pico-sdk/sdk/2.2.0/lib/btstack/src/bluetooth_gatt.h"
+ *
+ *
  * Example (16-bit construction and access):
  * @code
  * c7222::Uuid uuid16(0x180D);
