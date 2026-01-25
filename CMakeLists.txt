@@ -105,7 +105,7 @@ pico_enable_stdio_usb(picoboard_freertos_test 0)
 pico_enable_stdio_uart(picoboard_freertos_test  1)
 pico_add_extra_outputs(picoboard_freertos_test)
 
-pico_btstack_make_gatt_header(picoboard_freertos_test PRIVATE "${ELEC_C7222_BLE_GATT_SERVICES_DIR}/custom/temp_sensor.gatt")
+pico_btstack_make_gatt_header(picoboard_freertos_test PRIVATE "${ELEC_C7222_BLE_GATT_SERVICES_DIR}/custom/temp_sensor_service.gatt")
 
 # add url via pico_set_program_url
 

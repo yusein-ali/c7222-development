@@ -16,7 +16,7 @@ include(${ELEC_C7222_DIR}/devices/devices.cmake)
 include(${ELEC_C7222_DIR}/utils/utils.cmake)
 
 target_link_libraries(ELEC_C7222 INTERFACE
-    ELEC_C7222_PLATFORM
+    ELEC_C7222_DEVICES
     ELEC_C7222_UTILS
 )
 
