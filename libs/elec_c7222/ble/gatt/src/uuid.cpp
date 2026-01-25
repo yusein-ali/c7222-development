@@ -48,6 +48,9 @@ Uuid::Uuid(const uint8_t* uuid, size_t size){
 			assert(false && "UUID can be either 16 bits or 128 bits");
 	}
 }
+bool Uuid::Is128Bit() const {
+	return type_ == Type::k128Bit;
+}
 
 bool Uuid::operator==(const Uuid& other) const {
 	if(type_ != other.type_) {

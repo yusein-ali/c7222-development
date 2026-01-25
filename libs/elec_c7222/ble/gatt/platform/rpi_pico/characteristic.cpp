@@ -18,8 +18,7 @@ BleError Characteristic::UpdateValue() {
 
 	// Read CCCD value (2 bytes, little-endian)
 	const uint8_t* cccd_data = cccd->GetValueData();
-	uint16_t cccd_value = static_cast<uint16_t>(cccd_data[0]) | 
-	                       (static_cast<uint16_t>(cccd_data[1]) << 8);
+	const uint16_t cccd_value = *reinterpret_cast<const uint16_t*>(cccd_data);
 
 	// Check which updates are enabled (from CCCDProperties enum)
 	const bool notify_enabled = (cccd_value & static_cast<uint16_t>(CCCDProperties::kNotifications)) != 0;
@@ -32,7 +31,7 @@ BleError Characteristic::UpdateValue() {
 
 	// Get the value to send
 	const uint8_t* value_data = GetValueData();
-	uint16_t value_size = static_cast<uint16_t>(GetValueSize());
+	auto value_size = static_cast<uint16_t>(GetValueSize());
 
 	if(value_data == nullptr) {
 		return BleError::kSuccess;
@@ -45,7 +44,7 @@ BleError Characteristic::UpdateValue() {
 	if(indicate_enabled) {
 		// Send indication using BTstack's att_server_indicate
 		status = att_server_indicate(connection_handle_, value_attr_.GetHandle(), value_data, value_size);
-	} else if(notify_enabled) {
+	} else { // if(notify_enabled)
 		// Send notification using BTstack's att_server_notify
 		status = att_server_notify(connection_handle_, value_attr_.GetHandle(), value_data, value_size);
 	}
@@ -88,6 +87,8 @@ BleError Characteristic::DispatchBleHciPacket(uint8_t packet_type,
 BleError Characteristic::DispatchEvent(EventId event_id,
                                         const uint8_t* event_data,
                                         uint16_t event_data_size) {
+	(void)event_data_size;
+	// handle on ValueIndicationComplete event
 	switch(event_id) {
 	case EventId::kHandleValueIndicationComplete: {
 		// Extract status from the ATT event
