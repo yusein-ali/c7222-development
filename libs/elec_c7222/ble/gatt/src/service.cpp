@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include "characteristic.hpp"
 
 namespace c7222 {
 
@@ -107,6 +108,26 @@ const Characteristic& Service::GetCharacteristic(size_t index) const {
 	auto it = characteristics_.begin();
 	std::advance(it, static_cast<long>(index));
 	return *it;
+}
+
+std::list<Characteristic*> Service::FindCharacteristicsByProperties(Characteristic::Properties properties) const {
+	std::list<Characteristic*> result;
+	for(auto& characteristic: characteristics_) {
+		if((characteristic.GetProperties() & properties) == properties) {
+			result.push_back(const_cast<Characteristic*>(&characteristic));
+		}
+	}
+	return result;
+}
+
+std::list<Characteristic*> Service::FindCharacteristicsDynamic() const {
+	std::list<Characteristic*> result;
+	for(auto& characteristic: characteristics_) {
+		if(characteristic.IsDynamic()) {
+			result.push_back(const_cast<Characteristic*>(&characteristic));
+		}
+	}
+	return result;
 }
 
 Characteristic* Service::FindCharacteristicByUuid(const Uuid& uuid) {

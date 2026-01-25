@@ -245,7 +245,7 @@ class Service : public MovableOnly {
 	 * @param index Index of the characteristic (0 to GetCharacteristicCount()-1)
 	 * @return Const reference to the characteristic, throws std::out_of_range if invalid
 	 */
-	const Characteristic& GetCharacteristic(size_t index) const;
+	[[nodiscard]] const Characteristic& GetCharacteristic(size_t index) const;
 
 	/**
 	 * @brief Get a characteristic by UUID.
@@ -254,6 +254,51 @@ class Service : public MovableOnly {
 	 */
 	Characteristic* FindCharacteristicByUuid(const Uuid& uuid);
 
+	/**
+	 * @brief Find characteristics that include all specified properties.
+	 *
+	 * @param properties Bitfield of properties to match (logical AND filter)
+	 * @return List of matching characteristic pointers (may be empty)
+	 */
+	std::list<Characteristic*> FindCharacteristicsByProperties(Characteristic::Properties properties) const;
+
+	/**
+	 * @brief Find characteristics that use dynamically assigned value handles.
+	 *
+	 * Dynamic characteristics have a value handle of 0 until the stack assigns one.
+	 * @return List of characteristics with dynamic handles (may be empty)
+	 */
+	std::list<Characteristic*> FindCharacteristicsDynamic() const;
+
+	/**
+	 * @brief Find characteristics that are writable.
+	 *
+	 * Matches characteristics advertising the Write property.
+	 * @return List of writable characteristic pointers (may be empty)
+	 */
+	std::list<Characteristic*> FindCharacteristicsWritable() const {
+		return FindCharacteristicsByProperties(Characteristic::Properties::kWrite);
+	}
+
+	/**
+	 * @brief Find characteristics that are readable.
+	 *
+	 * Matches characteristics advertising the Read property.
+	 * @return List of readable characteristic pointers (may be empty)
+	 */
+	std::list<Characteristic*> FindCharacteristicsReadable() const {
+		return FindCharacteristicsByProperties(Characteristic::Properties::kRead);
+	}
+
+	/**
+	 * @brief Find characteristics that can notify or indicate.
+	 *
+	 * Matches characteristics with Notify and/or Indicate properties set.
+	 * @return List of notifiable or indicatable characteristic pointers (may be empty)
+	 */
+	std::list<Characteristic*> FindCharacteristicsNotifiableOrIndicatable() const {
+		return FindCharacteristicsByProperties(Characteristic::Properties::kNotify | Characteristic::Properties::kIndicate);
+	}
 	/**
 	 * @brief Get a characteristic by UUID (const version).
 	 * @param uuid UUID to search for
