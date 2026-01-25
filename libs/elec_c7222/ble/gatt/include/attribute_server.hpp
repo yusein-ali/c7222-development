@@ -250,20 +250,26 @@ class AttributeServer : public NonCopyableNonMovable {
 	const Service* FindServiceByUuid(const Uuid& uuid) const;
 
 	/**
-	 * @brief Find a characteristic by UUID.
+	 * @brief Find characteristics by UUID.
+	 *
+	 * Multiple characteristics can share a UUID (e.g., replicated instances),
+	 * so this returns all matches in discovery order.
 	 *
 	 * @param uuid Characteristic UUID to search for.
-	 * @return Pointer to the characteristic, or nullptr if not found.
+	 * @return List of matching characteristics (may be empty).
 	 */
-	Characteristic* FindCharacteristicByUuid(const Uuid& uuid);
+	std::list<Characteristic*> FindCharacteristicByUuid(const Uuid& uuid);
 
 	/**
-	 * @brief Find a characteristic by UUID (const version).
+	 * @brief Find characteristics by UUID (const version).
+	 *
+	 * Multiple characteristics can share a UUID (e.g., replicated instances),
+	 * so this returns all matches in discovery order.
 	 *
 	 * @param uuid Characteristic UUID to search for.
-	 * @return Const pointer to the characteristic, or nullptr if not found.
+	 * @return List of matching characteristics (may be empty).
 	 */
-	const Characteristic* FindCharacteristicByUuid(const Uuid& uuid) const;
+	std::list<const Characteristic*> FindCharacteristicByUuid(const Uuid& uuid) const;
 
 	/**
 	 * @brief Find a characteristic by attribute handle.

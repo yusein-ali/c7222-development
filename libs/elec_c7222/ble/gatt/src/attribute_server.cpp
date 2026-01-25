@@ -40,22 +40,26 @@ const Service* AttributeServer::FindServiceByUuid(const Uuid& uuid) const {
 	return it != services_.end() ? &(*it) : nullptr;
 }
 
-Characteristic* AttributeServer::FindCharacteristicByUuid(const Uuid& uuid) {
+std::list<Characteristic*> AttributeServer::FindCharacteristicByUuid(const Uuid& uuid) {
+	std::list<Characteristic*> result;
 	for(auto& service: services_) {
-		if(auto* characteristic = service.FindCharacteristicByUuid(uuid)) {
-			return characteristic;
+		auto* characteristic = service.FindCharacteristicByUuid(uuid);
+		if(characteristic != nullptr) {
+			result.push_back(characteristic);
 		}
 	}
-	return nullptr;
-}
+	return result;
+}	
 
-const Characteristic* AttributeServer::FindCharacteristicByUuid(const Uuid& uuid) const {
+std::list<const Characteristic*> AttributeServer::FindCharacteristicByUuid(const Uuid& uuid) const {
+	std::list<const Characteristic*> result;
 	for(const auto& service: services_) {
-		if(auto* characteristic = service.FindCharacteristicByUuid(uuid)) {
-			return characteristic;
+		auto* characteristic = service.FindCharacteristicByUuid(uuid);
+		if(characteristic != nullptr) {
+			result.push_back(characteristic);
 		}
 	}
-	return nullptr;
+	return result;
 }
 
 Characteristic* AttributeServer::FindCharacteristicByHandle(uint16_t handle) {
