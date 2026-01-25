@@ -28,10 +28,10 @@ set(PICO_BOARD pico2_w CACHE STRING "Board type")
 # set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
-include(pico_sdk_import.cmake)
+include(cmake/pico_sdk_import.cmake)
 # pull other libraries if they do not exist
-include(FREERTOS_KERNEL_import.cmake)
-include(FreeRTOS_CPP11_import.cmake)
+include(cmake/FREERTOS_KERNEL_import.cmake)
+include(cmake/FreeRTOS_CPP11_import.cmake)
 
 project(picoboard_freertos_test C CXX ASM)
 # Global BLE toggle for elec_c7222 modules.
@@ -39,7 +39,7 @@ option(ENABLE_BLE "Enable BLE helpers" ON)
 
 
 # Include FreeRTOS-cpp11 library configuration
-include(FreeRTOS_Cpp11_lib.cmake)
+include(cmake/FreeRTOS_Cpp11_lib.cmake)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
