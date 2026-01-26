@@ -8,6 +8,9 @@ namespace c7222 {
 
 
 bool OnBoardLED::Initialize() {
+	if(initialized_) {
+		return true;
+	}
 #if defined(PICO_DEFAULT_LED_PIN)
 	gpio_init(PICO_DEFAULT_LED_PIN);
 	gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);

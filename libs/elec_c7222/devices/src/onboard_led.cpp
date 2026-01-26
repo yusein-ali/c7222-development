@@ -1,6 +1,8 @@
 // Simulated environment stub for BoardLED.
 #include "onboard_led.hpp"
 
+#include <cassert>
+
 namespace c7222 {
 
 OnBoardLED* OnBoardLED::instance_{nullptr};
@@ -8,6 +10,7 @@ OnBoardLED* OnBoardLED::instance_{nullptr};
 OnBoardLED* OnBoardLED::GetInstance() {
 	if(instance_ == nullptr) {
 		instance_ = new OnBoardLED();
+		assert(instance_ != nullptr && "Cannot allocate new OnBoardLED instance!");
 	}
 	return instance_;
 }

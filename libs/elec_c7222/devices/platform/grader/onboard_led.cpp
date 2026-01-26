@@ -4,6 +4,9 @@
 namespace c7222 {
 
 bool OnBoardLED::Initialize() {
+	if(initialized_) {
+		return true;
+	}
 	initialized_ = true;
 	state_ = false;
 	return true;
