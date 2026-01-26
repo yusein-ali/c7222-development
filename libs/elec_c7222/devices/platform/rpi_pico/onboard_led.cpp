@@ -23,7 +23,7 @@ bool OnBoardLED::Initialize() {
 		initialized_ = false;
 		return false;
 	}
-	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, false);
 	initialized_ = true;
 	state_ = false;
 	return true;
@@ -38,9 +38,9 @@ void OnBoardLED::Set(bool on) {
 		return;
 	}
 #if defined(PICO_DEFAULT_LED_PIN)
-	gpio_put(PICO_DEFAULT_LED_PIN, on ? 1 : 0);
+	gpio_put(PICO_DEFAULT_LED_PIN, on);
 #elif defined(CYW43_WL_GPIO_LED_PIN)
-	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, on ? 1 : 0);
+	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, on);
 #endif
 	state_ = on;
 }
