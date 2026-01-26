@@ -1065,17 +1065,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param data_builder AdvertisementDataBuilder instance containing the payload.
 	 * @note The data from the builder is copied.
 	 */
-	void SetAdvertisingData(const AdvertisementDataBuilder& data_builder) {
-		if(&data_builder == &advertisement_data_builder_) {
-			// Avoid copying from self
-			advertisement_data_builder_.Build();
-			return;
-		}
-		advertisement_data_builder_ = data_builder;
-		bool ok = advertisement_data_builder_.Build();
-		assert(ok && "AdvertisementDataBuilder contains invalid data or is empty");
-		SetAdvertisingData(advertisement_data_builder_.data());
-	}
+	void SetAdvertisingData(const AdvertisementDataBuilder& data_builder);
 
 	/**
 	 * @brief Set legacy advertising data payload from the internal builder.
@@ -1173,14 +1163,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param out Parameters output.
 	 * @return true if parameters are known for the handle.
 	 */
-	bool GetConnectionParameters(ConnectionHandle con_handle, ConnectionParameters& out) const {
-		const auto it = connection_parameters_.find(con_handle);
-		if(it == connection_parameters_.end()) {
-			return false;
-		}
-		out = it->second;
-		return true;
-	}
+	bool GetConnectionParameters(ConnectionHandle con_handle, ConnectionParameters& out) const;
 
 	/**
 	 * @brief Check if advertising is currently enabled.
@@ -1209,13 +1192,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param address Output address.
 	 * @return true if a random address has been set.
 	 */
-	bool GetRandomAddress(BleAddress& address) const {
-		if(!random_address_set_) {
-			return false;
-		}
-		address = random_address_;
-		return true;
-	}
+	bool GetRandomAddress(BleAddress& address) const;
 
 	/**
 	 * @brief Check if a random address has been set.
@@ -1230,13 +1207,7 @@ class Gap : public NonCopyableNonMovable {
 	 * @param params Output parameters.
 	 * @return true if advertising parameters have been set.
 	 */
-	bool GetAdvertisingParameters(AdvertisementParameters& params) const {
-		if(!advertising_params_set_) {
-			return false;
-		}
-		params = advertising_params_;
-		return true;
-	}
+	bool GetAdvertisingParameters(AdvertisementParameters& params) const;
 
 	/**
 	 * @brief Get the advertising data payload.
@@ -1299,12 +1270,7 @@ class Gap : public NonCopyableNonMovable {
 	/**
 	 * @brief Get the singleton instance.
 	 */
-	static Gap* GetInstance() {
-		if(instance_ == nullptr) {
-			instance_ = new Gap();
-		}
-		return instance_;
-	}
+	static Gap* GetInstance();
 
 	/**
 	 * @brief Dispatch a raw HCI packet into the GAP event pipeline.
@@ -1343,7 +1309,7 @@ class Gap : public NonCopyableNonMovable {
 	 *
 	 * Lazily allocated by GetInstance() and never freed.
 	 */
-	inline static Gap* instance_ = nullptr;
+	static Gap* instance_;
 
 	/**
 	 * @brief True when advertising is enabled by the application.
