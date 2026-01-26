@@ -1,28 +1,21 @@
 // Simulated environment stub for BoardLED.
-#include "board_led.hpp"
+#include "onboard_led.hpp"
 
 namespace c7222 {
 
-OnBoardLED& OnBoardLED::GetInstance() {
-	static OnBoardLED instance;
-	return instance;
-}
-
-OnBoardLED::OnBoardLED() = default;
-
 bool OnBoardLED::Initialize() {
-	_initialized = true;
-	_state = false;
+	initialized_ = true;
+	state_ = false;
 	return true;
 }
 
 void OnBoardLED::Set(bool on) {
-	_state = on;
+	state_ = on;
 }
 
 void OnBoardLED::On() { Set(true); }	
 void OnBoardLED::Off() { Set(false); }
 
-void OnBoardLED::Toggle() { Set(!_state); }
+void OnBoardLED::Toggle() { Set(!state_); }
 
 } // namespace c7222
