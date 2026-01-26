@@ -2,19 +2,18 @@
 #include <cstdio>
 
 #include "FreeRTOS.h"
-#include "task.h"
-#include "pico/cyw43_arch.h"
-#include "pico/stdlib.h"
-#include "pico/time.h"
-
-
 #include "advertisement_data.hpp"
 #include "ble.hpp"
 #include "characteristic.hpp"
-#include "gap.hpp"
 #include "freertos_timer.hpp"
+#include "gap.hpp"
 #include "onboard_led.hpp"
 #include "onchip_temperature_sensor.hpp"
+#include "pico/cyw43_arch.h"
+#include "pico/stdlib.h"
+#include "pico/time.h"
+#include "platform.hpp"
+#include "task.h"
 #include "temp_sensor_service.h"
 
 #if (configGENERATE_RUN_TIME_STATS == 1)
@@ -224,6 +223,7 @@ static c7222::OnBoardLED* onboard_led = nullptr;
 static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
 static c7222::FreeRtosTimer app_timer;
 static c7222::Characteristic* temperature_characteristic = nullptr;
+static c7222::Platform* platform = nullptr;
 
 static void timer_callback() {
 	assert(onboard_led != nullptr && "OnBoardLED instance is null in timer callback!");
@@ -290,12 +290,9 @@ static void on_turn_on() {
 [[noreturn]] void ble_app_task(void* params) {
 	(void) params;
 	static uint32_t seconds = 0;
-
-	// Initialize CYW43 Architecture (Starts the SDK background worker)
-	if(cyw43_arch_init()) {
-		printf("CYW43 init failed\n");
-		vTaskDelete(NULL);
-	}
+	platform = c7222::Platform::GetInstance();
+	// Initialize CYW43 Architecture platform (Starts the SDK background worker)
+	platform->Initialize();
 
 	onboard_led = c7222::OnBoardLED::GetInstance();
 	onboard_led->Initialize();
@@ -337,6 +334,13 @@ static void on_turn_on() {
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
 
+	std::cout << "BLE Stack is ON!" << std::endl;
+	const auto ret = app_timer.Start(100);
+	if(!ret) {
+		std::cout << "Failed to start timer!" << std::endl;
+	} else {
+		std::cout << "Timer started and will fire in 100 ticks!" << std::endl;
+	}
 	// Enter infinite loop to keep task alive (or perform other app logic)
 	while(true) {
 		seconds = xTaskGetTickCount() / 1000;
