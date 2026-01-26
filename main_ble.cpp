@@ -1,16 +1,21 @@
-#include <stdio.h>
-
-#include <advertisement_data.hpp>
+#include <cstdint>
+#include <cstdio>
 
 #include "FreeRTOS.h"
-#include "temp_sensor.h"
-#include "attribute.hpp"
-#include "ble.hpp"
-#include "btstack.h"
+#include "task.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 #include "pico/time.h"
-#include "task.h"
+
+
+#include "advertisement_data.hpp"
+#include "ble.hpp"
+#include "characteristic.hpp"
+#include "gap.hpp"
+#include "freertos_timer.hpp"
+#include "onboard_led.hpp"
+#include "onchip_temperature_sensor.hpp"
+#include "temp_sensor_service.h"
 
 #if (configGENERATE_RUN_TIME_STATS == 1)
 extern "C" void vConfigureTimerForRunTimeStats(void) {
@@ -23,7 +28,9 @@ extern "C" unsigned long ulGetRunTimeCounterValue(void) {
 #endif
 
 class GapEventHandler : public c7222::Gap::EventHandler {
-  public:
+   public:
+	virtual ~GapEventHandler() = default;
+
 	void OnScanRequestReceived(uint8_t advertising_handle,
 							   const c7222::BleAddress& scanner_address) const override {
 		(void) scanner_address;
@@ -32,15 +39,18 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 	void OnAdvertisingStart(uint8_t status) const override {
 		// printf("GAP event: AdvertisingStart (status=0x%02X)\n", status);
 	}
-	void OnAdvertisingEnd(uint8_t status, c7222::ConnectionHandle connection_handle) const override {
-		// printf("GAP event: AdvertisingEnd (status=0x%02X, handle=%u)\n", status, connection_handle);
+	void OnAdvertisingEnd(uint8_t status,
+						  c7222::ConnectionHandle connection_handle) const override {
+		// printf("GAP event: AdvertisingEnd (status=0x%02X, handle=%u)\n", status,
+		// connection_handle);
 	}
 	void OnAdvertisingReport(const c7222::Gap::AdvertisingReport& report) const override {
 		printf("GAP event: AdvertisingReport (len=%u, rssi=%d)\n",
 			   report.data_length,
 			   static_cast<int>(report.rssi));
 	}
-	void OnExtendedAdvertisingReport(const c7222::Gap::ExtendedAdvertisingReport& report) const override {
+	void OnExtendedAdvertisingReport(
+		const c7222::Gap::ExtendedAdvertisingReport& report) const override {
 		printf("GAP event: ExtendedAdvertisingReport (len=%u, rssi=%d)\n",
 			   report.data_length,
 			   static_cast<int>(report.rssi));
@@ -50,7 +60,9 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 	}
 	void OnPeriodicAdvertisingSyncEstablished(uint8_t status,
 											  c7222::ConnectionHandle sync_handle) const override {
-		printf("GAP event: PeriodicSyncEstablished (status=0x%02X, handle=%u)\n", status, sync_handle);
+		printf("GAP event: PeriodicSyncEstablished (status=0x%02X, handle=%u)\n",
+			   status,
+			   sync_handle);
 	}
 	void OnPeriodicAdvertisingReport(c7222::ConnectionHandle sync_handle,
 									 int8_t tx_power,
@@ -76,12 +88,14 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 							  uint16_t conn_latency,
 							  uint16_t supervision_timeout) const override {
 		(void) address;
-		printf("GAP event: ConnectionComplete (status=0x%02X, handle=%u, interval=%u, latency=%u, timeout=%u)\n",
-			   status,
-			   con_handle,
-			   conn_interval,
-			   conn_latency,
-			   supervision_timeout);
+		printf(
+			"GAP event: ConnectionComplete (status=0x%02X, handle=%u, interval=%u, latency=%u, "
+			"timeout=%u)\n",
+			status,
+			con_handle,
+			conn_interval,
+			conn_latency,
+			supervision_timeout);
 	}
 	void OnUpdateConnectionParametersRequest(c7222::ConnectionHandle con_handle,
 											 uint16_t min_interval,
@@ -100,12 +114,14 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 											  uint16_t conn_interval,
 											  uint16_t conn_latency,
 											  uint16_t supervision_timeout) const override {
-		printf("GAP event: ConnParamsUpdateComplete (status=0x%02X, handle=%u, interval=%u, latency=%u, timeout=%u)\n",
-			   status,
-			   con_handle,
-			   conn_interval,
-			   conn_latency,
-			   supervision_timeout);
+		printf(
+			"GAP event: ConnParamsUpdateComplete (status=0x%02X, handle=%u, interval=%u, "
+			"latency=%u, timeout=%u)\n",
+			status,
+			con_handle,
+			conn_interval,
+			conn_latency,
+			supervision_timeout);
 	}
 	void OnDisconnectionComplete(uint8_t status,
 								 c7222::ConnectionHandle con_handle,
@@ -141,15 +157,20 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 	void OnDataLengthChange(c7222::ConnectionHandle con_handle,
 							uint16_t tx_size,
 							uint16_t rx_size) const override {
-		printf("GAP event: DataLengthChange (handle=%u, tx=%u, rx=%u)\n", con_handle, tx_size, rx_size);
+		printf("GAP event: DataLengthChange (handle=%u, tx=%u, rx=%u)\n",
+			   con_handle,
+			   tx_size,
+			   rx_size);
 	}
 	void OnPrivacyEnabled() const override {
 		printf("GAP event: PrivacyEnabled\n");
 	}
-	void OnSecurityLevel(c7222::ConnectionHandle con_handle, uint8_t security_level) const override {
+	void OnSecurityLevel(c7222::ConnectionHandle con_handle,
+						 uint8_t security_level) const override {
 		printf("GAP event: SecurityLevel (handle=%u, level=%u)\n", con_handle, security_level);
 	}
-	void OnDedicatedBondingCompleted(uint8_t status, const c7222::BleAddress& address) const override {
+	void OnDedicatedBondingCompleted(uint8_t status,
+									 const c7222::BleAddress& address) const override {
 		(void) address;
 		printf("GAP event: DedicatedBondingCompleted (status=0x%02X)\n", status);
 	}
@@ -162,7 +183,9 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 		printf("GAP event: InquiryComplete (status=0x%02X)\n", status);
 	}
 	void OnRssiMeasurement(c7222::ConnectionHandle con_handle, int8_t rssi) const override {
-		printf("GAP event: RssiMeasurement (handle=%u, rssi=%d)\n", con_handle, static_cast<int>(rssi));
+		printf("GAP event: RssiMeasurement (handle=%u, rssi=%d)\n",
+			   con_handle,
+			   static_cast<int>(rssi));
 	}
 	void OnLocalOobData(bool oob_data_present,
 						const uint8_t* c_192,
@@ -192,17 +215,38 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 		printf("GAP event: PairingComplete (handle=%u, status=0x%02X)\n", con_handle, status);
 	}
 
-	private:
-		c7222::Gap* gap_ = c7222::Gap::GetInstance();
+   private:
+	c7222::Gap* gap_ = c7222::Gap::GetInstance();
 };
 
 static GapEventHandler gap_event_handler;
+static c7222::OnBoardLED* onboard_led = nullptr;
+static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
+static c7222::FreeRtosTimer app_timer;
+static c7222::Characteristic* temperature_characteristic = nullptr;
 
+static void timer_callback() {
+	assert(onboard_led != nullptr && "OnBoardLED instance is null in timer callback!");
+	assert(temp_sensor != nullptr && "OnChipTemperatureSensor instance is null in timer callback!");
+
+	auto temperature_c = temp_sensor->GetCelsius();
+	printf("Timer Callback: T = %.2f C\n", temperature_c);
+
+	onboard_led->Toggle();
+
+	// set the value of the temperature characteristic
+	if(temperature_characteristic != nullptr) {
+		int16_t temp_fixed_point = static_cast<int16_t>(temperature_c * 100);
+		// this must call SetValue with the fixed-point representation
+		// but also notify or indicate if the client has enabled them. 
+		temperature_characteristic->SetValue(temp_fixed_point);
+	}
+}
 
 // -------------------------------------------------------------------------
 // Packet Handler: Receive events from the BLE Stack
 // -------------------------------------------------------------------------
-static void on_turn_on(){
+static void on_turn_on() {
 	printf("Bluetooth Turned On\n");
 	auto* ble = c7222::Ble::GetInstance();
 	auto* gap = ble->GetGap();
@@ -213,7 +257,7 @@ static void on_turn_on(){
 
 	// Generate the packet using the advertisement data class
 	ble->SetAdvertisementFlags(c7222::AdvertisementData::Flags::kLeGeneralDiscoverableMode |
-									c7222::AdvertisementData::Flags::kBrEdrNotSupported);
+							   c7222::AdvertisementData::Flags::kBrEdrNotSupported);
 	ble->SetDeviceName("Pico2_BLE++");
 
 	uint32_t value = 0x12345678;
@@ -240,12 +284,10 @@ static void on_turn_on(){
 	printf("Advertising started as 'Pico2_BLE'...\n");
 }
 
-
-
 // -------------------------------------------------------------------------
 // BLE Application Task
 // -------------------------------------------------------------------------
-void ble_app_task(void* params) {
+[[noreturn]] void ble_app_task(void* params) {
 	(void) params;
 	static uint32_t seconds = 0;
 
@@ -254,7 +296,18 @@ void ble_app_task(void* params) {
 		printf("CYW43 init failed\n");
 		vTaskDelete(NULL);
 	}
-	
+
+	onboard_led = c7222::OnBoardLED::GetInstance();
+	onboard_led->Initialize();
+
+	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
+	temp_sensor->Initialize();
+
+	app_timer.Initialize("AppTimer",
+						 pdMS_TO_TICKS(2000),
+						 c7222::FreeRtosTimer::Type::kPeriodic,
+						 std::bind(&timer_callback));
+
 	auto* ble = c7222::Ble::GetInstance(false);
 	auto* gap = ble->GetGap();
 	auto* attribute_server = ble->EnableAttributeServer(profile_data);
@@ -267,6 +320,20 @@ void ble_app_task(void* params) {
 
 	printf("CYW43 init complete. Setting up BTstack... here!\n");
 
+	// now, let us look for the Temperature Service and its characteristic
+	auto* temp_service = attribute_server->FindServiceByUuid(
+		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
+
+	if(temp_service != nullptr) {
+		std::cout << "Found Temperature Service!" << std::endl;
+		temperature_characteristic = temp_service->FindCharacteristicByUuid(
+			c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_CHARACTERISTIC_TEMPERATURE)));
+	} else {
+		std::cout << "Temperature Service not found!" << std::endl;
+		std::cout << "Not setting up temperature updates." << std::endl;
+		temperature_characteristic = nullptr;
+	}
+
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
 
@@ -274,14 +341,16 @@ void ble_app_task(void* params) {
 	while(true) {
 		seconds = xTaskGetTickCount() / 1000;
 		// Blink LED to show system is alive
-		cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+		onboard_led->Toggle();
 		vTaskDelay(pdMS_TO_TICKS(500));
-		cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+		onboard_led->Toggle();
 		vTaskDelay(pdMS_TO_TICKS(500));
 		// printf("BLE App Task is running...%lu\n", seconds);
 		if(gap->IsAdvertisingEnabled()) {
-			printf("Updating the manuf specific data to %lu\n", seconds);
-			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific, (uint8_t*)&seconds, sizeof(seconds));
+			// printf("Updating the manuf specific data to %lu\n", seconds);
+			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific,
+											   (uint8_t*) &seconds,
+											   sizeof(seconds));
 			adb.Pop();
 			adb.Push(ad);
 			ble->SetAdvertisingData();
@@ -294,7 +363,7 @@ void ble_app_task(void* params) {
 // -------------------------------------------------------------------------
 // Main
 // -------------------------------------------------------------------------
-int main() {
+[[noreturn]] int main() {
 	stdio_init_all();
 	printf("Starting FreeRTOS BLE Example...\n");
 
@@ -308,7 +377,7 @@ int main() {
 	// Should never reach here
 	while(1) {}
 
-	return 0;
+	// return 0;
 }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
