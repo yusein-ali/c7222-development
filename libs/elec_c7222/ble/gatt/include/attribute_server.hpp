@@ -20,6 +20,11 @@ namespace c7222 {
  * It also forwards HCI ATT events to characteristics for indications and
  * flow-control callbacks.
  *
+ * \note This implementation supports a single client connection at a time.
+ * If more than one client attempts to connect, the server will accept all of them
+ * but use only the last connection handle in its responses. So, it is not recommended
+ * for use cases requiring multiple concurrent connections.
+ *
  * ---
  * ### Responsibilities
  *
@@ -365,7 +370,14 @@ class AttributeServer : public NonCopyableNonMovable {
 		return connection_handle_ != 0;
 	}
 
-
+	/**
+	 * @brief Queries whether a client is connected to the server.
+	 *
+	 * An attribute server is connected if it has a non-zero connection handle.
+	 */
+	[[nodiscard]] bool IsConnected() const {
+		return connection_handle_ != 0;
+	}
 
 	/**
 	 * @brief Dispatch HCI ATT events to all characteristics.
