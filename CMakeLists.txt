@@ -25,6 +25,8 @@ endif()
 # ====================================================================================
 
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
+
+include(cmake/pico-compiler-settings.cmake)
 # set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
