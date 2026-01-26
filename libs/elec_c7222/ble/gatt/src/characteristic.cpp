@@ -56,10 +56,10 @@ Characteristic::Characteristic(const Uuid& uuid,
 
 	// Set up read and write callbacks for the value attribute
 	value_attr_.SetReadCallback([this](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
-		return HandleValueRead(offset, buffer, buffer_size);
+		return this->HandleValueRead(offset, buffer, buffer_size);
 	});
 	value_attr_.SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
-		return HandleValueWrite(offset, data, size);
+		return this->HandleValueWrite(offset, data, size);
 	});
 }
 
@@ -98,11 +98,11 @@ Characteristic::Characteristic(Attribute&& decl_attribute,
 		value_attr_.SetHandle(value_handle);
 	}
 
-	value_attr_.SetReadCallback([this](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
-		return HandleValueRead(offset, buffer, buffer_size);
+	value_attr_.SetReadCallback([&](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
+		return this->HandleValueRead(offset, buffer, buffer_size);
 	});
 	value_attr_.SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
-		return HandleValueWrite(offset, data, size);
+		return this->HandleValueWrite(offset, data, size);
 	});
 
 	for(auto& descriptor: descriptor_attrs) {
@@ -124,6 +124,44 @@ Characteristic::Characteristic(Attribute&& decl_attribute,
 			descriptors_.push_back(std::move(descriptor));
 		}
 	}
+}
+
+Characteristic::Characteristic(Characteristic&& other) noexcept
+	: MovableOnly(std::move(other)),
+	  uuid_(std::move(other.uuid_)),
+	  properties_(other.properties_),
+	  connection_handle_(other.connection_handle_),
+	  notification_pending_(other.notification_pending_),
+	  declaration_attr_(std::move(other.declaration_attr_)),
+	  value_attr_(std::move(other.value_attr_)),
+	  cccd_(std::move(other.cccd_)),
+	  sccd_(std::move(other.sccd_)),
+	  extended_properties_(std::move(other.extended_properties_)),
+	  user_description_(std::move(other.user_description_)),
+	  descriptors_(std::move(other.descriptors_)),
+	  event_handlers_(std::move(other.event_handlers_)) {
+	RebindInternalCallbacks();
+}
+
+Characteristic& Characteristic::operator=(Characteristic&& other) noexcept {
+	if(this == &other) {
+		return *this;
+	}
+	MovableOnly::operator=(std::move(other));
+	uuid_ = std::move(other.uuid_);
+	properties_ = other.properties_;
+	connection_handle_ = other.connection_handle_;
+	notification_pending_ = other.notification_pending_;
+	declaration_attr_ = std::move(other.declaration_attr_);
+	value_attr_ = std::move(other.value_attr_);
+	cccd_ = std::move(other.cccd_);
+	sccd_ = std::move(other.sccd_);
+	extended_properties_ = std::move(other.extended_properties_);
+	user_description_ = std::move(other.user_description_);
+	descriptors_ = std::move(other.descriptors_);
+	event_handlers_ = std::move(other.event_handlers_);
+	RebindInternalCallbacks();
+	return *this;
 }
 
 std::optional<Characteristic>
@@ -189,6 +227,25 @@ Characteristic::ParseFromAttributes(std::list<Attribute>& attributes) {
 	return Characteristic(std::move(decl_attribute),
 						  std::move(value_attribute),
 						  std::move(descriptor_attrs));
+}
+
+void Characteristic::RebindInternalCallbacks() {
+	value_attr_.SetReadCallback([this](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
+		return HandleValueRead(offset, buffer, buffer_size);
+	});
+	value_attr_.SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+		return HandleValueWrite(offset, data, size);
+	});
+	if(cccd_) {
+		cccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+			return HandleCccdWrite(offset, data, size);
+		});
+	}
+	if(sccd_) {
+		sccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+			return HandleSccdWrite(offset, data, size);
+		});
+	}
 }
 
 bool Characteristic::IsValid() const {
@@ -661,11 +718,11 @@ std::ostream& operator<<(std::ostream& os, const Characteristic& characteristic)
 }
 // ========== Event Handler Management ==========
 
-void Characteristic::AddEventHandler(EventHandlers& handler) {
+void Characteristic::AddEventHandler(EventHandler& handler) {
 	event_handlers_.push_back(&handler);
 }
 
-bool Characteristic::RemoveEventHandler(const EventHandlers& handler) {
+bool Characteristic::RemoveEventHandler(const EventHandler& handler) {
 	auto it = std::find(event_handlers_.begin(), event_handlers_.end(), &handler);
 	if(it != event_handlers_.end()) {
 		event_handlers_.erase(it);
@@ -680,7 +737,7 @@ void Characteristic::ClearEventHandlers() {
 
 // ========== Internal descriptor write handlers ==========
 
-BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) {
+BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const {
 	if(offset != 0 || data == nullptr || size != 2) {
 		return BleError::kAttErrorInvalidAttrValueLength;
 	}
@@ -732,7 +789,7 @@ BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, u
 	return BleError::kSuccess;	// success
 }
 
-BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) {
+BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const {
 	if(offset != 0 || data == nullptr || size != 2) {
 		return BleError::kAttErrorInvalidAttrValueLength;
 	}
@@ -744,7 +801,7 @@ BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, u
 	}
 
 	uint16_t new_config = *reinterpret_cast<const uint16_t*>(data);
-	sccd_->SetValue(data+offset, size-offset);
+	// sccd_->SetValue(data+offset, size-offset);
 
 	bool old_broadcast = (old_config & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;
 	bool new_broadcast = (new_config & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;

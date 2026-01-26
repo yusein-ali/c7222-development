@@ -318,7 +318,7 @@ class Characteristic final : public MovableOnly {
 	 *
 	 * \note These Handlers are called before the data of the Attributes are updated!
 	 */
-	struct EventHandlers {
+	struct EventHandler {
 		/**
 		 * @brief Called when notifications or indications are enabled by a client.
 		 *
@@ -414,7 +414,7 @@ class Characteristic final : public MovableOnly {
 		 * It provides a default no-op implementation and allows implementing classes
 		 * to define their own destructor behavior if needed.
 		 */
-		virtual ~EventHandlers() = default;
+		virtual ~EventHandler() = default;
 	};
 	///@}
 
@@ -454,13 +454,13 @@ class Characteristic final : public MovableOnly {
 	 * @brief Move constructor.
 	 * Transfers ownership of all internal attributes and descriptors.
 	 */
-	Characteristic(Characteristic&& other) noexcept = default;
+	Characteristic(Characteristic&& other) noexcept;
 
 	/**
 	 * @brief Move assignment operator.
 	 * Transfers ownership of all internal attributes and descriptors.
 	 */
-	Characteristic& operator=(Characteristic&& other) noexcept = default;
+	Characteristic& operator=(Characteristic&& other) noexcept;
 	/**
 	 * \brief Construct a new Characteristic object (deleted).
 	 * Prevents default construction without parameters.
@@ -1183,7 +1183,7 @@ class Characteristic final : public MovableOnly {
 	 *
 	 * @param handler Reference to the EventHandlers structure to register
 	 */
-	void AddEventHandler(EventHandlers& handler);
+	void AddEventHandler(EventHandler& handler);
 
 	/**
 	 * @brief Unregister an event handler from this characteristic.
@@ -1199,7 +1199,7 @@ class Characteristic final : public MovableOnly {
 	 * @note The handler instance is not deleted by this method. Therefore, the caller must delete
 	 * the object if it was dynamically allocated.
 	 */
-	bool RemoveEventHandler(const EventHandlers& handler);
+	bool RemoveEventHandler(const EventHandler& handler);
 
 	/**
 	 * @brief Clear all registered event handlers for this characteristic.
@@ -1213,7 +1213,7 @@ class Characteristic final : public MovableOnly {
 	 * @brief Get the list of registered event handlers.
 	 * @return List of pointers to registered EventHandlers structures
 	 */
-	[[nodiscard]] std::list<EventHandlers*> GetEventHandlers() const {
+	[[nodiscard]] std::list<EventHandler*> GetEventHandlers() const {
 		return event_handlers_;
 	}
 	///@}
@@ -1349,12 +1349,12 @@ class Characteristic final : public MovableOnly {
 	 * @brief CCCD write handler used by the stack dispatcher.
 	 * @note Internal use only.
 	 */
-	BleError HandleCccdWrite(uint16_t offset, const uint8_t* data, uint16_t size);
+	BleError HandleCccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const;
 	/**
 	 * @brief SCCD write handler used by the stack dispatcher.
 	 * @note Internal use only.
 	 */
-	BleError HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size);
+	BleError HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const;
 
 	// Internal helpers for value attribute read/write handling
 	/**
@@ -1370,7 +1370,9 @@ class Characteristic final : public MovableOnly {
 	///@}
 
 	// Event handlers
-	std::list<EventHandlers*> event_handlers_;  ///< Registered event handlers
+	std::list<EventHandler*> event_handlers_;  ///< Registered event handlers
+
+	void RebindInternalCallbacks();
 
 	/**
 	 * @brief Stream insertion operator for Characteristic.
