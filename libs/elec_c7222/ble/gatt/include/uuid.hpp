@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <ostream>
 
+#include <bluetooth_gatt.h>  // For BTstack defined UUIDs
 namespace c7222 {
 
 /**
