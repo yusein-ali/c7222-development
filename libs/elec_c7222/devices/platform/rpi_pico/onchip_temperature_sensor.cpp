@@ -20,12 +20,6 @@ float adc_to_celsius(uint16_t adc_value) {
 
 } // namespace
 
-OnChipTemperatureSensor& OnChipTemperatureSensor::GetInstance() {
-	static OnChipTemperatureSensor instance;
-	return instance;
-}
-
-OnChipTemperatureSensor::OnChipTemperatureSensor() = default;
 
 bool OnChipTemperatureSensor::Initialize() {
 	adc_init();
@@ -35,15 +29,15 @@ bool OnChipTemperatureSensor::Initialize() {
 	return true;
 }
 
-float OnChipTemperatureSensor::ReadCelsius() const {
+float OnChipTemperatureSensor::GetCelsius() const {
 	assert(initialized_ && "Temperature sensor not initialized");
 	adc_select_input(kTempSensorAdcInput);
 	const uint16_t raw = adc_read();
 	return adc_to_celsius(raw);
 }
 
-float OnChipTemperatureSensor::ReadFahrenheit() const {
-	const float celsius = ReadCelsius();
+float OnChipTemperatureSensor::GetFahrenheit() const {
+	const float celsius = GetCelsius();
 	return (celsius * 9.0f / 5.0f) + 32.0f;
 }
 
