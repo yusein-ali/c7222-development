@@ -77,7 +77,7 @@
     "C_Cpp.default.intelliSenseMode": "linux-gcc-arm",
     "clangd.path": "clangd",
     "clangd.arguments": [
-        "--compile-commands-dir=${workspaceFolder}/build",
+        "--compile-commands-dir=${command:cmake.buildDirectory}",
         "--query-driver=${env:USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-g++.exe",
     ],
     "cSpell.diagnosticLevel": "Hint",
