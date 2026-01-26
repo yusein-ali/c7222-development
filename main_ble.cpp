@@ -26,6 +26,13 @@ extern "C" unsigned long ulGetRunTimeCounterValue(void) {
 }
 #endif
 
+static c7222::OnBoardLED* onboard_led = nullptr;
+static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
+static c7222::FreeRtosTimer app_timer;
+static c7222::Characteristic* temperature_characteristic = nullptr;
+static c7222::Platform* platform = nullptr;
+static c7222::AttributeServer* att_server = nullptr;
+
 class GapEventHandler : public c7222::Gap::EventHandler {
    public:
 	virtual ~GapEventHandler() = default;
@@ -95,6 +102,8 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 			conn_interval,
 			conn_latency,
 			supervision_timeout);
+
+		att_server->SetConnectionHandle(con_handle);
 	}
 	void OnUpdateConnectionParametersRequest(c7222::ConnectionHandle con_handle,
 											 uint16_t min_interval,
@@ -219,27 +228,26 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 };
 
 static GapEventHandler gap_event_handler;
-static c7222::OnBoardLED* onboard_led = nullptr;
-static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
-static c7222::FreeRtosTimer app_timer;
-static c7222::Characteristic* temperature_characteristic = nullptr;
-static c7222::Platform* platform = nullptr;
 
 static void timer_callback() {
 	assert(onboard_led != nullptr && "OnBoardLED instance is null in timer callback!");
 	assert(temp_sensor != nullptr && "OnChipTemperatureSensor instance is null in timer callback!");
 
 	auto temperature_c = temp_sensor->GetCelsius();
-	printf("Timer Callback: T = %.2f C\n", temperature_c);
 
 	onboard_led->Toggle();
 
 	// set the value of the temperature characteristic
 	if(temperature_characteristic != nullptr) {
-		int16_t temp_fixed_point = static_cast<int16_t>(temperature_c * 100);
+		auto temp_fixed_point = static_cast<int16_t>(temperature_c * 100);
 		// this must call SetValue with the fixed-point representation
-		// but also notify or indicate if the client has enabled them. 
+		// but also notify or indicate if the client has enabled them.
 		temperature_characteristic->SetValue(temp_fixed_point);
+		printf("Timer Callback: T = %.2f C Value written 0x%04x\n",
+			   temperature_c,
+			   temp_fixed_point);
+	} else {
+		printf("Timer Callback: T = %.2f C\n", temperature_c);
 	}
 }
 
@@ -307,18 +315,18 @@ static void on_turn_on() {
 
 	auto* ble = c7222::Ble::GetInstance(false);
 	auto* gap = ble->GetGap();
-	auto* attribute_server = ble->EnableAttributeServer(profile_data);
+	att_server = ble->EnableAttributeServer(profile_data);
 	auto& adb = ble->GetAdvertisementDataBuilder();
 
 	ble->DumpAttributeServerContext();
 	std::cout << "Attribute server initialized." << std::endl
 			  << "Printing Attribute Server" << std::endl;
-	std::cout << *attribute_server << std::endl;
+	std::cout << *att_server << std::endl;
 
 	printf("CYW43 init complete. Setting up BTstack... here!\n");
 
 	// now, let us look for the Temperature Service and its characteristic
-	auto* temp_service = attribute_server->FindServiceByUuid(
+	auto* temp_service = att_server->FindServiceByUuid(
 		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
 
 	if(temp_service != nullptr) {
@@ -345,10 +353,10 @@ static void on_turn_on() {
 	while(true) {
 		seconds = xTaskGetTickCount() / 1000;
 		// Blink LED to show system is alive
-		onboard_led->Toggle();
-		vTaskDelay(pdMS_TO_TICKS(500));
-		onboard_led->Toggle();
-		vTaskDelay(pdMS_TO_TICKS(500));
+		// onboard_led->Toggle();
+		// vTaskDelay(pdMS_TO_TICKS(500));
+		// onboard_led->Toggle();
+		vTaskDelay(pdMS_TO_TICKS(100));
 		// printf("BLE App Task is running...%lu\n", seconds);
 		if(gap->IsAdvertisingEnabled()) {
 			// printf("Updating the manuf specific data to %lu\n", seconds);
@@ -358,6 +366,7 @@ static void on_turn_on() {
 			adb.Pop();
 			adb.Push(ad);
 			ble->SetAdvertisingData();
+			onboard_led->Toggle();
 		} else {
 			// printf("Not advertising.\n");
 		}
