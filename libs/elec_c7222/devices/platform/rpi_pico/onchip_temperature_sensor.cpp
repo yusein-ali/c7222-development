@@ -22,6 +22,9 @@ float adc_to_celsius(uint16_t adc_value) {
 
 
 bool OnChipTemperatureSensor::Initialize() {
+	if(initialized_) {
+		return true;
+	}
 	adc_init();
 	adc_set_temp_sensor_enabled(true);
 	adc_select_input(kTempSensorAdcInput);

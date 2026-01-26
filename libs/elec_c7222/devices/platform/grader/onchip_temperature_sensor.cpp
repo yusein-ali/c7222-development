@@ -7,6 +7,9 @@ namespace c7222 {
 
 
 bool OnChipTemperatureSensor::Initialize() {
+	if(initialized_) {
+		return true;
+	}
 	initialized_ = true;
 	return true;
 }
