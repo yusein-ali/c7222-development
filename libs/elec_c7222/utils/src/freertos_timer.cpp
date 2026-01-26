@@ -1,11 +1,9 @@
 // FreeRTOS software timer wrapper.
-#include "free_rtos_timer.hpp"
+#include "freertos_timer.hpp"
 
 #include "FreeRTOS.h"
 #include "timers.h"
 
-#include <cstdint>
-#include <utility>
 
 namespace c7222 {
 
@@ -36,6 +34,24 @@ FreeRtosTimer::FreeRtosTimer(const char* name,
 						   auto_reload,
 						   this,
 						   &TimerCallback);
+}
+
+bool FreeRtosTimer::Initialize(const char* name,
+							   std::uint32_t period_ticks,
+							   Type type,
+							   std::function<void()> callback) {
+	if(handle_ != nullptr) {
+		xTimerDelete(static_cast<TimerHandle_t>(handle_), 0);
+		handle_ = nullptr;
+	}
+	callback_ = std::move(callback);
+	const UBaseType_t auto_reload = (type == Type::kPeriodic) ? pdTRUE : pdFALSE;
+	handle_ = xTimerCreate(name,
+						   static_cast<TickType_t>(period_ticks),
+						   auto_reload,
+						   this,
+						   &TimerCallback);
+	return handle_ != nullptr;
 }
 
 FreeRtosTimer::~FreeRtosTimer() {

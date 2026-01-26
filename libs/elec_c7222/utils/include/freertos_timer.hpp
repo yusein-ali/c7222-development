@@ -4,6 +4,7 @@
  */
 #ifndef ELEC_C7222_UTILS_FREE_RTOS_TIMER_HPP
 #define ELEC_C7222_UTILS_FREE_RTOS_TIMER_HPP
+#include "freertos_timer.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -25,6 +26,7 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 		kPeriodic
 	};
 
+	FreeRtosTimer() = default;
 	/**
 	 * @brief Create a FreeRTOS software timer.
 	 * @param name Human-readable timer name.
@@ -36,6 +38,11 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 				  std::uint32_t period_ticks,
 				  Type type,
 				  std::function<void()> callback = nullptr);
+
+	bool Initialize(const char* name,
+					std::uint32_t period_ticks,
+					Type type,
+					std::function<void()> callback);
 
 	/**
 	 * @brief Delete the timer if it was created.
