@@ -48,7 +48,6 @@ bool AdvertisementData::ValidateLength(AdvertisementDataType type, size_t length
 
 bool AdvertisementData::ValidateBuffer(const uint8_t* adv_data, size_t adv_data_size) {
 	size_t index = 0;
-	size_t data_count = 0;
 	// validate size
 	if(adv_data_size == 0 || adv_data_size > kAdvertisementDataLegacyMaxSize) {
 		return false;
