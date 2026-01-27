@@ -148,7 +148,7 @@ Attribute::Attribute(const Uuid& uuid, uint16_t properties, uint16_t handle) {
 
 // Constructor with value data
 Attribute::Attribute(const Uuid& uuid, uint16_t properties, const uint8_t* data, size_t size, uint16_t handle)
-	: uuid_(uuid), properties_(properties), handle_(handle) {
+	: uuid_(uuid), handle_(handle), properties_(properties) {
 	UpdateUuidProperty();
 	if(data != nullptr && size > 0) {
 		if((properties_ & static_cast<uint16_t>(Properties::kDynamic)) != 0) {
