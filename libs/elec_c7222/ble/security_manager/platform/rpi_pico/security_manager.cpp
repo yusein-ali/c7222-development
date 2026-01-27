@@ -1,0 +1,182 @@
+#include "security_manager.hpp"
+
+#include <btstack.h>
+
+namespace c7222 {
+namespace {
+
+io_capability_t ToBtstackIoCapability(SecurityManager::IoCapability capability) {
+	switch(capability) {
+		case SecurityManager::IoCapability::kDisplayOnly:
+			return IO_CAPABILITY_DISPLAY_ONLY;
+		case SecurityManager::IoCapability::kDisplayYesNo:
+			return IO_CAPABILITY_DISPLAY_YES_NO;
+		case SecurityManager::IoCapability::kKeyboardOnly:
+			return IO_CAPABILITY_KEYBOARD_ONLY;
+		case SecurityManager::IoCapability::kNoInputNoOutput:
+			return IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
+		case SecurityManager::IoCapability::kKeyboardDisplay:
+			return IO_CAPABILITY_KEYBOARD_DISPLAY;
+		default:
+			return IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
+	}
+}
+
+uint8_t ToBtstackAuthReq(SecurityManager::AuthenticationRequirement auth) {
+	const uint8_t bits = static_cast<uint8_t>(auth);
+	uint8_t result = 0;
+	if(bits & static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kBonding)) {
+		result |= SM_AUTHREQ_BONDING;
+	}
+	if(bits & static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kMitmProtection)) {
+		result |= SM_AUTHREQ_MITM_PROTECTION;
+	}
+	if(bits & static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kSecureConnections)) {
+		result |= SM_AUTHREQ_SECURE_CONNECTION;
+	}
+	if(bits & static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kKeypressNotifications)) {
+		result |= SM_AUTHREQ_KEYPRESS;
+	}
+	return result;
+}
+
+SecurityManager::PairingStatus ClassifyPairingStatus(uint8_t status_code) {
+	if(status_code == ERROR_CODE_SUCCESS) {
+		return SecurityManager::PairingStatus::kSuccess;
+	}
+	if(status_code == ERROR_CODE_CONNECTION_TIMEOUT) {
+		return SecurityManager::PairingStatus::kTimeout;
+	}
+	if(status_code == ERROR_CODE_UNSUPPORTED_FEATURE_OR_PARAMETER_VALUE) {
+		return SecurityManager::PairingStatus::kUnsupported;
+	}
+	return SecurityManager::PairingStatus::kFailed;
+}
+
+}  // namespace
+
+BleError SecurityManager::ApplyConfiguration() {
+	sm_set_io_capabilities(ToBtstackIoCapability(params_.io_capability));
+	sm_set_authentication_requirements(ToBtstackAuthReq(params_.authentication));
+	sm_set_encryption_key_size_range(params_.min_encryption_key_size, params_.max_encryption_key_size);
+	sm_set_secure_connections_only_mode(params_.secure_connections_only ? 1 : 0);
+
+	if(params_.gatt_client_required_security_level != 0) {
+		gatt_client_set_required_security_level(
+			static_cast<gap_security_level_t>(params_.gatt_client_required_security_level));
+	}
+
+	switch(params_.fixed_passkey_role) {
+		case FixedPasskeyRole::kDisplay:
+			if(params_.fixed_passkey != 0) {
+				sm_use_fixed_passkey_in_display_role(params_.fixed_passkey);
+			}
+			break;
+		case FixedPasskeyRole::kKeyboard:
+			if(params_.fixed_passkey != 0) {
+				// Some BTstack builds do not expose a keyboard-role helper.
+				// Fall back to the display-role helper to keep behavior defined.
+				sm_use_fixed_passkey_in_display_role(params_.fixed_passkey);
+			}
+			break;
+		case FixedPasskeyRole::kNone:
+		default:
+			break;
+	}
+
+	return BleError::kSuccess;
+}
+
+BleError SecurityManager::ConfirmJustWorks(ConnectionHandle con_handle) {
+	sm_just_works_confirm(con_handle);
+	return BleError::kSuccess;
+}
+
+BleError SecurityManager::ConfirmNumericComparison(ConnectionHandle con_handle, bool accept) {
+	if(accept) {
+		sm_numeric_comparison_confirm(con_handle);
+	} else {
+		sm_bonding_decline(con_handle);
+	}
+	return BleError::kSuccess;
+}
+
+BleError SecurityManager::ProvidePasskey(ConnectionHandle con_handle, uint32_t passkey) {
+	sm_passkey_input(con_handle, passkey);
+	return BleError::kSuccess;
+}
+
+BleError SecurityManager::RequestPairing(ConnectionHandle con_handle) {
+	sm_request_pairing(con_handle);
+	return BleError::kSuccess;
+}
+
+BleError SecurityManager::SetAuthorization(ConnectionHandle con_handle, AuthorizationResult result) {
+	if(result == AuthorizationResult::kGranted) {
+		sm_authorization_grant(con_handle);
+		return BleError::kSuccess;
+	}
+	sm_authorization_decline(con_handle);
+	return BleError::kSuccess;
+}
+
+BleError SecurityManager::DispatchBleHciPacket(uint8_t packet_type, const uint8_t* packet, uint16_t size) {
+	(void)size;
+	if(packet_type != HCI_EVENT_PACKET) {
+		return BleError::kUnsupportedFeatureOrParameterValue;
+	}
+
+	switch(hci_event_packet_get_type(packet)) {
+		case SM_EVENT_JUST_WORKS_REQUEST: {
+			const ConnectionHandle con_handle = sm_event_just_works_request_get_handle(packet);
+			DispatchJustWorksRequest(con_handle);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_NUMERIC_COMPARISON_REQUEST: {
+			const ConnectionHandle con_handle = sm_event_numeric_comparison_request_get_handle(packet);
+			const uint32_t number = sm_event_numeric_comparison_request_get_passkey(packet);
+			DispatchNumericComparisonRequest(con_handle, number);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_PASSKEY_DISPLAY_NUMBER: {
+			const ConnectionHandle con_handle = sm_event_passkey_display_number_get_handle(packet);
+			const uint32_t passkey = sm_event_passkey_display_number_get_passkey(packet);
+			DispatchPasskeyDisplay(con_handle, passkey);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_PASSKEY_INPUT_NUMBER: {
+			const ConnectionHandle con_handle = sm_event_passkey_input_number_get_handle(packet);
+			DispatchPasskeyInput(con_handle);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_PAIRING_COMPLETE: {
+			const ConnectionHandle con_handle = sm_event_pairing_complete_get_handle(packet);
+			const uint8_t status_code = sm_event_pairing_complete_get_status(packet);
+			DispatchPairingComplete(con_handle, ClassifyPairingStatus(status_code), status_code);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_REENCRYPTION_COMPLETE: {
+			const ConnectionHandle con_handle = sm_event_reencryption_complete_get_handle(packet);
+			const uint8_t status = sm_event_reencryption_complete_get_status(packet);
+			DispatchReencryptionComplete(con_handle, status);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_AUTHORIZATION_REQUEST: {
+			const ConnectionHandle con_handle = sm_event_authorization_request_get_handle(packet);
+			DispatchAuthorizationRequest(con_handle);
+			return BleError::kSuccess;
+		}
+		case SM_EVENT_AUTHORIZATION_RESULT: {
+			const ConnectionHandle con_handle = sm_event_authorization_result_get_handle(packet);
+			const uint8_t authorized = sm_event_authorization_result_get_authorization_result(packet);
+			DispatchAuthorizationResult(
+				con_handle,
+				authorized ? AuthorizationResult::kGranted : AuthorizationResult::kDenied);
+			return BleError::kSuccess;
+		}
+		default:
+			return BleError::kSuccess;
+	}
+}
+
+}  // namespace c7222
