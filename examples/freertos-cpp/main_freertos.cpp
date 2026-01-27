@@ -121,8 +121,8 @@ int main() {
 	assert(bRet != false);
 	int rc = pico_led_init();
 	hard_assert(rc == PICO_OK);
-  std::cout << "Pico LED initialized\n";
-  auto func = std::bind(&BaseClass::startup, &BaseClass::instance());
+	std::cout << "Pico LED initialized\n";
+	auto func = std::bind(&BaseClass::startup, &BaseClass::instance());
 	// Create the ONE raw task manually
 	// led_thread = new std::thread{led_task};
 	// log_thread = new std::thread{log_task};
@@ -138,25 +138,4 @@ int main() {
 	}
 }
 
-extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
-	// Breakpoint here!
-	// If you hit this, you know 100% that 'pcTaskName' (likely "Startup") ran out of stack.
-	while(1) {}
-}
 
-// #include <stdlib.h>
-
-// extern "C" void* __wrap_malloc(size_t size) {
-// 	return pvPortMalloc(size);
-// }
-// extern "C" void __wrap_free(void* ptr) {
-// 	vPortFree(ptr);
-// }
-// extern "C" void* __wrap_calloc(size_t num, size_t size) {
-// 	size_t total = num * size;
-// 	void* ptr = pvPortMalloc(total);
-// 	if(ptr)
-// 		memset(ptr, 0, total);
-// 	return ptr;
-// }
-// Note: realloc is complex in Heap 4, avoid if possible or implement strictly.
