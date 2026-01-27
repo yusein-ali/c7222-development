@@ -1,7 +1,6 @@
 #ifndef ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_
 #define ELEC_C7222_BLE_GATT_CHARACTERISTIC_HPP_
 
-#include <functional>
 #include <iosfwd>
 #include <list>
 #include <memory>
