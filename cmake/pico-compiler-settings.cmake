@@ -50,3 +50,9 @@ endif()
 set(CMAKE_SYSTEM_NAME PICO CACHE STRING "Target system" FORCE)
 set(CMAKE_SYSTEM_PROCESSOR arm CACHE STRING "Target CPU" FORCE)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY CACHE STRING "Try-compile target type")
+
+
+# Locate the correct size utility from the ARM toolchain
+get_filename_component(PICO_TOOLCHAIN_BIN_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+find_program(CMAKE_SIZE_UTIL NAMES ${PICO_GCC_TRIPLE}-size HINTS ${PICO_TOOLCHAIN_BIN_DIR} REQUIRED)
+message(STATUS "Found size tool: ${CMAKE_SIZE_UTIL}")
