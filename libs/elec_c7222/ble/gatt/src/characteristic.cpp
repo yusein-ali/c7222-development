@@ -1148,6 +1148,34 @@ Characteristic::SecurityLevel Characteristic::GetWriteSecurityLevel() const {
 	return static_cast<SecurityLevel>(bit0 | bit1);
 }
 
+bool Characteristic::ReadRequiresAuthentication() const {
+	const SecurityLevel level = GetReadSecurityLevel();
+	return level == SecurityLevel::kAuthenticationRequired ||
+		   level == SecurityLevel::kAuthorizationRequired;
+}
+
+bool Characteristic::WriteRequiresAuthentication() const {
+	const SecurityLevel level = GetWriteSecurityLevel();
+	return level == SecurityLevel::kAuthenticationRequired ||
+		   level == SecurityLevel::kAuthorizationRequired;
+}
+
+bool Characteristic::ReadRequiresAuthorization() const {
+	return GetReadSecurityLevel() == SecurityLevel::kAuthorizationRequired;
+}
+
+bool Characteristic::WriteRequiresAuthorization() const {
+	return GetWriteSecurityLevel() == SecurityLevel::kAuthorizationRequired;
+}
+
+bool Characteristic::RequiresAuthentication() const {
+	return ReadRequiresAuthentication() || WriteRequiresAuthentication();
+}
+
+bool Characteristic::RequiresAuthorization() const {
+	return ReadRequiresAuthorization() || WriteRequiresAuthorization();
+}
+
 // ========== Permission Checking Functions ==========
 
 bool Characteristic::IsReadPermitted(bool authorized, bool authenticated) const {

@@ -152,6 +152,20 @@ namespace c7222 {
  * side effects.
  *
  * ---
+ * ### Security Queries (Planning Before Connections)
+ *
+ * This class now provides higher-level security query helpers that map directly
+ * to the configured SecurityLevel bits on the value attribute:
+ * - Authentication queries: `ReadRequiresAuthentication()`,
+ *   `WriteRequiresAuthentication()`, `RequiresAuthentication()`
+ * - Authorization queries: `ReadRequiresAuthorization()`,
+ *   `WriteRequiresAuthorization()`, `RequiresAuthorization()`
+ *
+ * These helpers are intended to support service- and server-level security
+ * planning (for example, deciding whether a SecurityManager must be enabled)
+ * before connections are established.
+ *
+ * ---
  * ### Internal/Reserved APIs (do not call from application code)
  *
  * The following methods exist to integrate with the BLE stack and platform glue.
@@ -649,7 +663,6 @@ class Characteristic final : public MovableOnly {
 	/// \name Security Requirement Checks
 	/// Helpers to inspect configured security requirements.
 	///@{
-
 	/**
 	 * @brief Check if characteristic has read permission bits set (requires authorization).
 	 * Read permission bits 0 and 1 indicate security level requirements.
@@ -700,6 +713,50 @@ class Characteristic final : public MovableOnly {
 				static_cast<uint16_t>(Attribute::Properties::kEncryptionKeySizeMask)) >>
 			   12;
 	}
+
+	/**
+	 * @brief Check whether reads require authenticated pairing (MITM).
+	 *
+	 * This returns true when the configured read security level is
+	 * kAuthenticationRequired or kAuthorizationRequired.
+	 */
+	[[nodiscard]] bool ReadRequiresAuthentication() const;
+
+	/**
+	 * @brief Check whether writes require authenticated pairing (MITM).
+	 *
+	 * This returns true when the configured write security level is
+	 * kAuthenticationRequired or kAuthorizationRequired.
+	 */
+	[[nodiscard]] bool WriteRequiresAuthentication() const;
+
+	/**
+	 * @brief Check whether reads require application-level authorization.
+	 *
+	 * Authorization is the highest level and implies authentication.
+	 */
+	[[nodiscard]] bool ReadRequiresAuthorization() const;
+
+	/**
+	 * @brief Check whether writes require application-level authorization.
+	 *
+	 * Authorization is the highest level and implies authentication.
+	 */
+	[[nodiscard]] bool WriteRequiresAuthorization() const;
+
+	/**
+	 * @brief Check whether any access requires authentication.
+	 *
+	 * Returns true if either read or write requires authentication.
+	 */
+	[[nodiscard]] bool RequiresAuthentication() const;
+
+	/**
+	 * @brief Check whether any access requires authorization.
+	 *
+	 * Returns true if either read or write requires authorization.
+	 */
+	[[nodiscard]] bool RequiresAuthorization() const;
 	///@}
 
 	/// \name Security Configuration
