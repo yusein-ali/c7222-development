@@ -130,6 +130,24 @@ std::list<Characteristic*> Service::FindCharacteristicsDynamic() const {
 	return result;
 }
 
+bool Service::HasCharacteristicsRequiringAuthentication() const {
+	for(const auto& characteristic : characteristics_) {
+		if(characteristic.RequiresAuthentication()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Service::HasCharacteristicsRequiringAuthorization() const {
+	for(const auto& characteristic : characteristics_) {
+		if(characteristic.RequiresAuthorization()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 Characteristic* Service::FindCharacteristicByUuid(const Uuid& uuid) {
 	auto it =
 		std::find_if(characteristics_.begin(),

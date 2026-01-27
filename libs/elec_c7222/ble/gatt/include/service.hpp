@@ -62,6 +62,18 @@ namespace c7222 {
  * notification/indication delivery via the characteristic update APIs.
  *
  * ---
+ * ### Security Queries (Planning Before Connections)
+ *
+ * Services expose security query helpers that aggregate characteristic
+ * requirements across the service:
+ * - `HasCharacteristicsRequiringAuthentication()`
+ * - `HasCharacteristicsRequiringAuthorization()`
+ *
+ * These are intended to help higher-level components (e.g., the attribute
+ * server or BLE facade) decide whether a SecurityManager must be enabled and
+ * how it should be configured before connections are established.
+ *
+ * ---
  * ### RPi Pico (BTstack) Integration
  *
  * On the Pico W BLE stack, the GATT database is compiled into a binary
@@ -188,7 +200,7 @@ class Service : public MovableOnly {
 	static std::list<Service> ParseFromAttributes(std::list<Attribute>& attributes);
 	///@}
 
-	/// \name Accessors
+	/// \name Accessors and Lookup
 	///@{
 
 	/**
@@ -268,6 +280,29 @@ class Service : public MovableOnly {
 	 */
 	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsDynamic() const;
 
+	///@}
+
+	/// \name Security Queries
+	///@{
+	/**
+	 * @brief Check whether any characteristic requires authentication.
+	 *
+	 * This is useful during service construction/registration to determine
+	 * whether the service contains security-sensitive characteristics.
+	 */
+	[[nodiscard]] bool HasCharacteristicsRequiringAuthentication() const;
+
+	/**
+	 * @brief Check whether any characteristic requires authorization.
+	 *
+	 * Authorization implies authentication and typically requires an
+	 * application-level decision.
+	 */
+	[[nodiscard]] bool HasCharacteristicsRequiringAuthorization() const;
+	///@}
+
+	/// \name Convenience Queries
+	///@{
 	/**
 	 * @brief Find characteristics that are writable.
 	 *
@@ -297,6 +332,7 @@ class Service : public MovableOnly {
 	[[nodiscard]] std::list<Characteristic*> FindCharacteristicsNotifiableOrIndicatable() const {
 		return FindCharacteristicsByProperties(Characteristic::Properties::kNotify | Characteristic::Properties::kIndicate);
 	}
+
 	/**
 	 * @brief Get a characteristic by UUID (const version).
 	 * @param uuid UUID to search for
@@ -318,6 +354,23 @@ class Service : public MovableOnly {
 	 */
 	[[nodiscard]] const Characteristic* FindCharacteristicByHandle(uint16_t handle) const;
 
+	/**
+	 * @brief Find a service declaration or included service declaration by handle.
+	 * @param handle Attribute handle to search for
+	 * @return Pointer to the attribute if found, nullptr otherwise
+	 */
+	Attribute* FindServiceAttributeByHandle(uint16_t handle);
+
+	/**
+	 * @brief Find a service declaration or included service declaration by handle (const version).
+	 * @param handle Attribute handle to search for
+	 * @return Const pointer to the attribute if found, nullptr otherwise
+	 */
+	[[nodiscard]] const Attribute* FindServiceAttributeByHandle(uint16_t handle) const;
+	///@}
+
+	/// \name Additional Lookup and State
+	///@{
 	/**
 	 * @brief Get the number of included services.
 	 * @return Count of included services
@@ -355,20 +408,6 @@ class Service : public MovableOnly {
 	 * @return true if service UUID is 128-bit
 	 */
 	[[nodiscard]] bool Uses128BitUuid() const { return uuid_.Is128Bit(); }
-
-	/**
-	 * @brief Find a service declaration or included service declaration by handle.
-	 * @param handle Attribute handle to search for
-	 * @return Pointer to the attribute if found, nullptr otherwise
-	 */
-	Attribute* FindServiceAttributeByHandle(uint16_t handle);
-
-	/**
-	 * @brief Find a service declaration or included service declaration by handle (const version).
-	 * @param handle Attribute handle to search for
-	 * @return Const pointer to the attribute if found, nullptr otherwise
-	 */
-	[[nodiscard]] const Attribute* FindServiceAttributeByHandle(uint16_t handle) const;
 
 	/**
 	 * @brief Set the connection handle for all characteristics in this service.
