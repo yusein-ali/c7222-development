@@ -70,6 +70,21 @@ set_target_properties(picoboard_freertos_test PROPERTIES
     CXX_STANDARD_REQUIRED ON
 )
 
+# if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+#     target_compile_options(picoboard_freertos_test PRIVATE -Wall -Wpedantic)
+# endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    file(GLOB_RECURSE ELEC_C7222_SOURCE_FILES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/libs/elec_c7222/*.c"
+        "${CMAKE_SOURCE_DIR}/libs/elec_c7222/*.cpp"
+        "${CMAKE_SOURCE_DIR}/libs/elec_c7222/*.cc"
+    )
+    set_source_files_properties(${ELEC_C7222_SOURCE_FILES} PROPERTIES
+        COMPILE_OPTIONS "-Wall;-Wpedantic"
+    )
+endif()
+
 # Search this source dir for project headers
 target_include_directories(picoboard_freertos_test PRIVATE 
                             ${CMAKE_SOURCE_DIR}
