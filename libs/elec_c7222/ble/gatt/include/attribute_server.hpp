@@ -38,6 +38,16 @@ namespace c7222 {
  *   notifications/indications.
  *
  * ---
+ * ### Security Queries (Planning Before Connections)
+ *
+ * The server now exposes aggregate security checks across all parsed services:
+ * - `HasServicesRequiringAuthentication()`
+ * - `HasServicesRequiringAuthorization()`
+ *
+ * These helpers are intended to guide SecurityManager enablement and
+ * configuration before connections are established.
+ *
+ * ---
  * ### BTstack Integration Details
  *
  * BTstack exposes the ATT server through a C API:
@@ -252,6 +262,22 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * @return Const pointer to the service, or nullptr if not found.
 	 */
 	[[nodiscard]] const Service* FindServiceByUuid(const Uuid& uuid) const;
+
+	/**
+	 * @brief Check whether any service contains characteristics requiring authentication.
+	 *
+	 * This aggregates the per-service checks and is intended to guide
+	 * SecurityManager configuration before connections are established.
+	 */
+	[[nodiscard]] bool HasServicesRequiringAuthentication() const;
+
+	/**
+	 * @brief Check whether any service contains characteristics requiring authorization.
+	 *
+	 * Authorization implies authentication and typically requires
+	 * application-level approval.
+	 */
+	[[nodiscard]] bool HasServicesRequiringAuthorization() const;
 
 	/**
 	 * @brief Find characteristics by UUID.

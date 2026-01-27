@@ -40,6 +40,24 @@ const Service* AttributeServer::FindServiceByUuid(const Uuid& uuid) const {
 	return it != services_.end() ? &(*it) : nullptr;
 }
 
+bool AttributeServer::HasServicesRequiringAuthentication() const {
+	for(const auto& service : services_) {
+		if(service.HasCharacteristicsRequiringAuthentication()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AttributeServer::HasServicesRequiringAuthorization() const {
+	for(const auto& service : services_) {
+		if(service.HasCharacteristicsRequiringAuthorization()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 std::list<Characteristic*> AttributeServer::FindCharacteristicByUuid(const Uuid& uuid) {
 	std::list<Characteristic*> result;
 	for(auto& service: services_) {
