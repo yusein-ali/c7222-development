@@ -15,4 +15,3 @@ target_sources(ELEC_C7222_BLE_GATT INTERFACE
                     ${ELEC_C7222_BLE_GATT_SOURCES_COMMON})
 
 target_include_directories(ELEC_C7222_BLE_GATT INTERFACE "${ELEC_C7222_BLE_GATT_DIR}/include")
-target_include_directories(ELEC_C7222_BLE_GATT INTERFACE "${ELEC_C7222_BLE_GATT_DIR}/platform/rpi_pico/config")
