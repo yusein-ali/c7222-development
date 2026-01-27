@@ -47,8 +47,44 @@ AttributeServer* Ble::EnableAttributeServer(const void* context) {
 	if(attribute_server_ == nullptr) {
 		attribute_server_ = AttributeServer::GetInstance();
 		attribute_server_->Init(context);
+
+		const bool requires_authentication =
+			attribute_server_->HasServicesRequiringAuthentication();
+		const bool requires_authorization =
+			attribute_server_->HasServicesRequiringAuthorization();
+
+		if(requires_authentication || requires_authorization) {
+			assert(security_manager_ != nullptr &&
+				   "SecurityManager is required: AttributeServer contains secured characteristics. "
+				   "Call Ble::EnableSecurityManager() before enabling the attribute server.");
+		}
+
+		if(security_manager_ != nullptr && (requires_authentication || requires_authorization)) {
+			assert(security_manager_->IsConfigured() &&
+				   "SecurityManager must be configured before enabling a secured AttributeServer.");
+
+			const auto sm_params = security_manager_->GetSecurityParameters();
+			const uint8_t auth_bits = static_cast<uint8_t>(sm_params.authentication);
+			const bool sm_has_mitm =
+				(auth_bits &
+				 static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kMitmProtection)) != 0;
+
+			// Authentication/authorization requirements in the GATT DB imply MITM-capable pairing.
+			if(requires_authentication || requires_authorization) {
+				assert(sm_has_mitm &&
+					   "SecurityManager configuration mismatch: secured characteristics require "
+					   "MITM protection. Enable kMitmProtection in SM authentication requirements.");
+			}
+		}
 	}
 	return attribute_server_;
+}
+
+SecurityManager* Ble::EnableSecurityManager() {
+	if(security_manager_ == nullptr) {
+		security_manager_ = SecurityManager::GetInstance();
+	}
+	return security_manager_;
 }
 
 }  // namespace c7222

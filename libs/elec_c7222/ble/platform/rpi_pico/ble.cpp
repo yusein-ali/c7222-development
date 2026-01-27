@@ -34,6 +34,10 @@ BleError Ble::TurnOn() {
 		sm_init();
 		context->sm_initialized = true;
 	}
+	if(security_manager_ != nullptr) {
+		// Re-apply cached security configuration after SM init.
+		security_manager_->Configure(security_manager_->GetSecurityParameters());
+	}
 
 	btstack_packet_callback_registration_t* context_registration = context;
 	hci_add_event_handler(context_registration);
@@ -92,9 +96,15 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 	}
 
 	BleError gap_status = gap_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
-	BleError attribute_server_status = attribute_server_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
-	
-	return static_cast<BleError>(static_cast<int>(gap_status) + static_cast<int>(attribute_server_status));
+	BleError attribute_server_status =
+		attribute_server_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	BleError security_status = BleError::kSuccess;
+	if(security_manager_ != nullptr) {
+		security_status = security_manager_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	}
+
+	return static_cast<BleError>(static_cast<int>(gap_status) + static_cast<int>(attribute_server_status) +
+								 static_cast<int>(security_status));
 }
 
 void Ble::EnableHCILoggingToStdout() {
@@ -123,7 +133,10 @@ void Ble::DumpAttributeServerContext() {
 #endif
 }
 
-Ble::Ble() : gap_(Gap::GetInstance()), attribute_server_(nullptr) {
+Ble::Ble()
+	: gap_(Gap::GetInstance()),
+	  security_manager_(nullptr),
+	  attribute_server_(nullptr) {
 	auto context = new BleContext();
 	context->callback = &ble_packet_handler;
 	context_ = context;

@@ -15,6 +15,7 @@
 #include "ble_error.hpp"
 #include "gap.hpp"
 #include "non_copyable.hpp"
+#include "security_manager.hpp"
 
 namespace c7222 {
 
@@ -50,6 +51,28 @@ class Ble : public NonCopyableNonMovable {
 	const Gap* GetGap() const {
 		return gap_;
 	}
+
+	/**
+	 * @brief Access the underlying Security Manager instance.
+	 */
+	SecurityManager* GetSecurityManager() {
+		return security_manager_;
+	}
+
+	/**
+	 * @brief Access the underlying Security Manager instance (const).
+	 */
+	const SecurityManager* GetSecurityManager() const {
+		return security_manager_;
+	}
+
+	/**
+	 * @brief Enable and access the Security Manager instance.
+	 *
+	 * This mirrors the Attribute Server enable pattern and allows the SM
+	 * to be opt-in rather than constructed eagerly.
+	 */
+	SecurityManager* EnableSecurityManager();
 
 	AttributeServer* EnableAttributeServer(const void* context);
 
@@ -228,6 +251,62 @@ class Ble : public NonCopyableNonMovable {
 		return gap_->GetAdvertisementDataBuilder();
 	}
 
+	// ---------------------------------------------------------------------
+	// Security Manager convenience wrappers
+	// ---------------------------------------------------------------------
+
+	void AddSecurityEventHandler(const SecurityManager::EventHandler& handler) {
+		EnableSecurityManager()->AddEventHandler(handler);
+	}
+	bool RemoveSecurityEventHandler(const SecurityManager::EventHandler& handler) {
+		return security_manager_ != nullptr && security_manager_->RemoveEventHandler(handler);
+	}
+	void ClearSecurityEventHandlers() {
+		if(security_manager_ != nullptr) {
+			security_manager_->ClearEventHandlers();
+		}
+	}
+
+	BleError ConfigureSecurity(const SecurityManager::SecurityParameters& params) {
+		return EnableSecurityManager()->Configure(params);
+	}
+	BleError SetSecurityIoCapability(SecurityManager::IoCapability capability) {
+		return EnableSecurityManager()->SetIoCapability(capability);
+	}
+	BleError SetSecurityAuthenticationRequirements(SecurityManager::AuthenticationRequirement auth) {
+		return EnableSecurityManager()->SetAuthenticationRequirements(auth);
+	}
+	BleError SetSecurityKeySizeRange(uint8_t min_key_size, uint8_t max_key_size) {
+		return EnableSecurityManager()->SetEncryptionKeySizeRange(min_key_size, max_key_size);
+	}
+	BleError SetSecurityBondable(bool bondable) {
+		return EnableSecurityManager()->SetBondable(bondable);
+	}
+	BleError SetSecuritySecureConnectionsOnly(bool enabled) {
+		return EnableSecurityManager()->SetSecureConnectionsOnly(enabled);
+	}
+
+	BleError ConfirmJustWorks(ConnectionHandle con_handle) {
+		return security_manager_ != nullptr ? security_manager_->ConfirmJustWorks(con_handle)
+											: BleError::kCommandDisallowed;
+	}
+	BleError ConfirmNumericComparison(ConnectionHandle con_handle, bool accept) {
+		return security_manager_ != nullptr ? security_manager_->ConfirmNumericComparison(con_handle, accept)
+											: BleError::kCommandDisallowed;
+	}
+	BleError ProvidePasskey(ConnectionHandle con_handle, uint32_t passkey) {
+		return security_manager_ != nullptr ? security_manager_->ProvidePasskey(con_handle, passkey)
+											: BleError::kCommandDisallowed;
+	}
+	BleError RequestPairing(ConnectionHandle con_handle) {
+		return security_manager_ != nullptr ? security_manager_->RequestPairing(con_handle)
+											: BleError::kCommandDisallowed;
+	}
+	BleError SetAuthorization(ConnectionHandle con_handle, SecurityManager::AuthorizationResult result) {
+		return security_manager_ != nullptr ? security_manager_->SetAuthorization(con_handle, result)
+											: BleError::kCommandDisallowed;
+	}
+
 	virtual BleError DispatchBleHciPacket(uint8_t packet_type,
 										  uint8_t channel,
 										  const uint8_t* packet_data,
@@ -252,6 +331,7 @@ class Ble : public NonCopyableNonMovable {
 	std::function<void()> callback_on_ble_stack_off_{};
 
 	Gap* gap_ = nullptr;
+	SecurityManager* security_manager_ = nullptr;
 	AttributeServer* attribute_server_ = nullptr;
 	bool hci_logging_enabled_ = false;
 	bool turned_on_ = false;
