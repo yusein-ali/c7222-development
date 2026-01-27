@@ -72,7 +72,7 @@ std::unique_ptr<std::list<Attribute>> ParseAttributesFromDb(const uint8_t* db) {
 			break;
 		}
 
-		attributes->emplace_back(std::move(ParseEntry(ptr, entry_size)));
+		attributes->emplace_back(ParseEntry(ptr, entry_size));
 		ptr += entry_size;
 	}
 
