@@ -147,7 +147,10 @@ constexpr BleErrorMapEntry kBleErrorMap[] = {
 
 	{BleError::kAttErrorReadNotPermitted, ATT_ERROR_READ_NOT_PERMITTED},
 	{BleError::kAttErrorWriteNotPermitted, ATT_ERROR_WRITE_NOT_PERMITTED},
+	{BleError::kAttErrorInsufficientAuthentication, ATT_ERROR_INSUFFICIENT_AUTHENTICATION},
+	{BleError::kAttErrorInsufficientAuthorization, ATT_ERROR_INSUFFICIENT_AUTHORIZATION},
 	{BleError::kAttErrorInvalidAttrValueLength, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH},
+	{BleError::kAttErrorInsufficientEncryption, ATT_ERROR_INSUFFICIENT_ENCRYPTION},
 
 	{BleError::kGattClientNotConnected, GATT_CLIENT_NOT_CONNECTED},
 	{BleError::kGattClientBusy, GATT_CLIENT_BUSY},
