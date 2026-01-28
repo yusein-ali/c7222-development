@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "attribute_server.hpp"
+#include "ble.hpp"
 #include "gap.hpp"
 
 class GapEventHandler : public c7222::Gap::EventHandler {
@@ -158,7 +159,31 @@ class GapEventHandler : public c7222::Gap::EventHandler {
 	}
 	void OnSecurityLevel(c7222::ConnectionHandle con_handle,
 						 uint8_t security_level) const override {
-		std::printf("GAP event: SecurityLevel (handle=%u, level=%u)\n", con_handle, security_level);
+		const char* level_name = "Unknown";
+		switch(security_level) {
+			case 0:
+				level_name = "No security";
+				break;
+			case 1:
+				level_name = "Encrypted (unauthenticated)";
+				break;
+			case 2:
+				level_name = "Authenticated";
+				break;
+			case 3:
+				level_name = "Authenticated SC";
+				break;
+			default:
+				break;
+		}
+		std::printf("GAP event: SecurityLevel (handle=%u, level=%u, %s)\n",
+					con_handle,
+					security_level,
+					level_name);
+		if(security_level < 2) {
+			std::printf(
+				"GAP warning: security level < 2 (authenticated) - authorization will fail\n");
+		}
 	}
 	void OnDedicatedBondingCompleted(uint8_t status,
 									 const c7222::BleAddress& address) const override {

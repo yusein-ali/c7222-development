@@ -14,6 +14,8 @@
 #include "pico/stdlib.h"
 #include "pico/time.h"
 #include "platform.hpp"
+#include "security_event_handler.hpp"
+#include "security_manager.hpp"
 #include "task.h"
 #include "app_profile.h"
 
@@ -23,8 +25,10 @@ static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
 static c7222::FreeRtosTimer app_timer;
 static c7222::Characteristic* temperature_characteristic = nullptr;
 static c7222::Platform* platform = nullptr;
+static c7222::SecurityManager* security_manager = nullptr;
 static c7222::AttributeServer* att_server = nullptr;
 
+static SecurityEventHandler security_event_handler;
 static GapEventHandler gap_event_handler;
 
 static void timer_callback() {
@@ -40,10 +44,12 @@ static void timer_callback() {
 		auto temp_fixed_point = static_cast<int16_t>(temperature_c * 100);
 		// this must call SetValue with the fixed-point representation
 		// but also notify or indicate if the client has enabled them.
-		temperature_characteristic->SetValue(temp_fixed_point);
-		printf("Timer Callback: T = %.2f C Value written 0x%04x\n",
-			   temperature_c,
-			   temp_fixed_point);
+		if(att_server->IsConnected()) {
+		// 	printf("Timer Callback: T = %.2f C Value written 0x%04x\n",
+		// 		   temperature_c,
+		// 		   temp_fixed_point);
+			temperature_characteristic->SetValue(temp_fixed_point);
+		}
 	} else {
 		printf("Timer Callback: T = %.2f C\n", temperature_c);
 	}
@@ -95,9 +101,10 @@ static void on_turn_on() {
 // -------------------------------------------------------------------------
 [[noreturn]] void ble_app_task(void* params) {
 	(void) params;
+	
 	static uint32_t seconds = 0;
-	platform = c7222::Platform::GetInstance();
 	// Initialize CYW43 Architecture platform (Starts the SDK background worker)
+	platform = c7222::Platform::GetInstance();
 	platform->Initialize();
 
 	onboard_led = c7222::OnBoardLED::GetInstance();
@@ -110,6 +117,21 @@ static void on_turn_on() {
 
 	auto* ble = c7222::Ble::GetInstance(false);
 	auto* gap = ble->GetGap();
+	// security_manager = ble->GetSecurityManager();
+	{
+		c7222::SecurityManager::SecurityParameters sm_params;
+		// Configure Security Manager parameters
+		sm_params.authentication =
+			c7222::SecurityManager::AuthenticationRequirement::kMitmProtection;
+
+		sm_params.io_capability = c7222::SecurityManager::IoCapability::kDisplayOnly;
+		sm_params.gatt_client_required_security_level =
+			c7222::SecurityManager::GattClientSecurityLevel::kLevel2;  // Authenticated + encrypted
+		security_manager = ble->EnableSecurityManager(sm_params);
+		security_event_handler.SetSecurityManager(security_manager);
+		ble->AddSecurityEventHandler(&security_event_handler);
+	}
+
 	att_server = ble->EnableAttributeServer(profile_data);
 	gap_event_handler.SetAttributeServer(att_server);
 	auto& adb = ble->GetAdvertisementDataBuilder();
