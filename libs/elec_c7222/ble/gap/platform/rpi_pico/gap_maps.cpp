@@ -6,6 +6,9 @@
 #include <cstddef>
 
 namespace c7222::btstack_map {
+bool ToBtStack(BleError error, uint8_t& out);
+bool FromBtStackError(uint8_t code, BleError& out);
+
 namespace {
 
 struct EventMapEntry {
