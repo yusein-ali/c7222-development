@@ -26,6 +26,7 @@ endif()
 
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
 set(ELEC_C7222_ENABLE_BLE ON CACHE BOOL "Enable BLE helpers in ELEC_C7222")
+option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 
 include(cmake/pico-compiler-settings.cmake)
 # set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
@@ -117,6 +118,10 @@ target_compile_definitions(${APP_NAME} PRIVATE
     _GLIBCXX_HAS_GTHREADS=1
     _GLIBCXX_USE_C99_STDINT_TR1=1
 )
+
+if(C7222_BLE_DEBUG)
+    target_compile_definitions(${APP_NAME} PRIVATE C7222_BLE_DEBUG=1)
+endif()
 
 # Set the default UART baudrate to 921600 (or any other standard rate)
 add_compile_definitions(PICO_DEFAULT_UART_BAUD_RATE=921600)
