@@ -1,12 +1,20 @@
 #include "characteristic.hpp"
+#include "attribute_server.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <optional>
 
 namespace c7222 {
+
+#if defined(C7222_BLE_DEBUG)
+#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
+#else
+#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
+#endif
 
 Characteristic::Characteristic(const Uuid& uuid,
 							   uint8_t properties,
@@ -739,7 +747,50 @@ void Characteristic::ClearEventHandlers() {
 
 BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const {
 	if(offset != 0 || data == nullptr || size != 2) {
+		C7222_BLE_DEBUG_PRINT("[BLE] CCCD write rejected: invalid length (offset=%u size=%u)\n",
+			static_cast<unsigned>(offset), static_cast<unsigned>(size));
 		return BleError::kAttErrorInvalidAttrValueLength;
+	}
+
+	const auto read_level = GetReadSecurityLevel();
+	const auto write_level = GetWriteSecurityLevel();
+	const auto required_level =
+		static_cast<uint8_t>(read_level) > static_cast<uint8_t>(write_level) ? read_level
+																			 : write_level;
+	const bool requires_sc = ReadRequiresSC() || WriteRequiresSC();
+	auto* server = AttributeServer::GetInstance();
+	const uint8_t security_level =
+		server != nullptr ? server->GetSecurityLevel(connection_handle_) : 0;
+	const bool authorized =
+		server != nullptr ? server->IsAuthorizationGranted(connection_handle_) : false;
+
+	if(required_level != SecurityLevel::kNone) {
+		if(requires_sc && security_level < 3) {
+			C7222_BLE_DEBUG_PRINT("[BLE] CCCD write rejected: SC required (sec=%u)\n",
+				static_cast<unsigned>(security_level));
+			return BleError::kAttErrorInsufficientAuthentication;
+		}
+		if(required_level == SecurityLevel::kEncryptionRequired && security_level < 1) {
+			C7222_BLE_DEBUG_PRINT("[BLE] CCCD write rejected: encryption required (sec=%u)\n",
+				static_cast<unsigned>(security_level));
+			return BleError::kAttErrorInsufficientEncryption;
+		}
+		if(required_level == SecurityLevel::kAuthenticationRequired && security_level < 2) {
+			C7222_BLE_DEBUG_PRINT("[BLE] CCCD write rejected: authentication required (sec=%u)\n",
+				static_cast<unsigned>(security_level));
+			return BleError::kAttErrorInsufficientAuthentication;
+		}
+		if(required_level == SecurityLevel::kAuthorizationRequired) {
+			if(security_level < 2) {
+				C7222_BLE_DEBUG_PRINT("[BLE] CCCD write rejected: authorization required (sec=%u)\n",
+					static_cast<unsigned>(security_level));
+				return BleError::kAttErrorInsufficientAuthentication;
+			}
+			if(!authorized) {
+				C7222_BLE_DEBUG_PRINT("[BLE] CCCD write rejected: authorization not granted\n");
+				return BleError::kAttErrorInsufficientAuthorization;
+			}
+		}
 	}
 
 	uint16_t old_config = 0;
@@ -756,6 +807,14 @@ BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, u
 	bool old_indicate = (old_config & static_cast<uint16_t>(CCCDProperties::kIndications)) != 0;
 	bool new_notify = (new_config & static_cast<uint16_t>(CCCDProperties::kNotifications)) != 0;
 	bool new_indicate = (new_config & static_cast<uint16_t>(CCCDProperties::kIndications)) != 0;
+
+	C7222_BLE_DEBUG_PRINT(
+		"[BLE] CCCD write accepted: handle=0x%04x old=0x%04x new=0x%04x notify=%u indicate=%u\n",
+		static_cast<unsigned>(value_attr_.GetHandle()),
+		static_cast<unsigned>(old_config),
+		static_cast<unsigned>(new_config),
+		static_cast<unsigned>(new_notify),
+		static_cast<unsigned>(new_indicate));
 
 	if(new_notify && !old_notify) {
 		for(auto* handler: event_handlers_) {
@@ -791,7 +850,50 @@ BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, u
 
 BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const {
 	if(offset != 0 || data == nullptr || size != 2) {
+		C7222_BLE_DEBUG_PRINT("[BLE] SCCD write rejected: invalid length (offset=%u size=%u)\n",
+			static_cast<unsigned>(offset), static_cast<unsigned>(size));
 		return BleError::kAttErrorInvalidAttrValueLength;
+	}
+
+	const auto read_level = GetReadSecurityLevel();
+	const auto write_level = GetWriteSecurityLevel();
+	const auto required_level =
+		static_cast<uint8_t>(read_level) > static_cast<uint8_t>(write_level) ? read_level
+																			 : write_level;
+	const bool requires_sc = ReadRequiresSC() || WriteRequiresSC();
+	auto* server = AttributeServer::GetInstance();
+	const uint8_t security_level =
+		server != nullptr ? server->GetSecurityLevel(connection_handle_) : 0;
+	const bool authorized =
+		server != nullptr ? server->IsAuthorizationGranted(connection_handle_) : false;
+
+	if(required_level != SecurityLevel::kNone) {
+		if(requires_sc && security_level < 3) {
+			C7222_BLE_DEBUG_PRINT("[BLE] SCCD write rejected: SC required (sec=%u)\n",
+				static_cast<unsigned>(security_level));
+			return BleError::kAttErrorInsufficientAuthentication;
+		}
+		if(required_level == SecurityLevel::kEncryptionRequired && security_level < 1) {
+			C7222_BLE_DEBUG_PRINT("[BLE] SCCD write rejected: encryption required (sec=%u)\n",
+				static_cast<unsigned>(security_level));
+			return BleError::kAttErrorInsufficientEncryption;
+		}
+		if(required_level == SecurityLevel::kAuthenticationRequired && security_level < 2) {
+			C7222_BLE_DEBUG_PRINT("[BLE] SCCD write rejected: authentication required (sec=%u)\n",
+				static_cast<unsigned>(security_level));
+			return BleError::kAttErrorInsufficientAuthentication;
+		}
+		if(required_level == SecurityLevel::kAuthorizationRequired) {
+			if(security_level < 2) {
+				C7222_BLE_DEBUG_PRINT("[BLE] SCCD write rejected: authorization required (sec=%u)\n",
+					static_cast<unsigned>(security_level));
+				return BleError::kAttErrorInsufficientAuthentication;
+			}
+			if(!authorized) {
+				C7222_BLE_DEBUG_PRINT("[BLE] SCCD write rejected: authorization not granted\n");
+				return BleError::kAttErrorInsufficientAuthorization;
+			}
+		}
 	}
 
 	uint16_t old_config = 0;
@@ -805,6 +907,13 @@ BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, u
 
 	bool old_broadcast = (old_config & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;
 	bool new_broadcast = (new_config & static_cast<uint16_t>(SCCDProperties::kBroadcasts)) != 0;
+
+	C7222_BLE_DEBUG_PRINT(
+		"[BLE] SCCD write accepted: handle=0x%04x old=0x%04x new=0x%04x broadcast=%u\n",
+		static_cast<unsigned>(value_attr_.GetHandle()),
+		static_cast<unsigned>(old_config),
+		static_cast<unsigned>(new_config),
+		static_cast<unsigned>(new_broadcast));
 
 	if(new_broadcast && !old_broadcast) {
 		for(auto* handler: event_handlers_) {
@@ -825,6 +934,10 @@ BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, u
 }
 
 uint16_t Characteristic::HandleValueRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
+	C7222_BLE_DEBUG_PRINT("[BLE] Value read: handle=0x%04x offset=%u max=%u\n",
+		static_cast<unsigned>(value_attr_.GetHandle()),
+		static_cast<unsigned>(offset),
+		static_cast<unsigned>(buffer_size));
 	// Check if read is permitted on this characteristic
 	if((static_cast<uint8_t>(properties_) & static_cast<uint8_t>(Properties::kRead)) == 0) {
 		return static_cast<uint16_t>(BleError::kAttErrorReadNotPermitted);
@@ -859,6 +972,10 @@ uint16_t Characteristic::HandleValueRead(uint16_t offset, uint8_t* buffer, uint1
 }
 
 BleError Characteristic::HandleValueWrite(uint16_t offset, const uint8_t* data, uint16_t size) {
+	C7222_BLE_DEBUG_PRINT("[BLE] Value write: handle=0x%04x offset=%u size=%u\n",
+		static_cast<unsigned>(value_attr_.GetHandle()),
+		static_cast<unsigned>(offset),
+		static_cast<unsigned>(size));
 	// Check if write is permitted on this characteristic
 	uint8_t props = static_cast<uint8_t>(properties_);
 	if((props & static_cast<uint8_t>(Properties::kWrite)) == 0 &&
@@ -1168,12 +1285,24 @@ bool Characteristic::WriteRequiresAuthorization() const {
 	return GetWriteSecurityLevel() == SecurityLevel::kAuthorizationRequired;
 }
 
+bool Characteristic::ReadRequiresEncryption() const {
+	return GetReadSecurityLevel() != SecurityLevel::kNone;
+}
+
+bool Characteristic::WriteRequiresEncryption() const {
+	return GetWriteSecurityLevel() != SecurityLevel::kNone;
+}
+
 bool Characteristic::RequiresAuthentication() const {
 	return ReadRequiresAuthentication() || WriteRequiresAuthentication();
 }
 
 bool Characteristic::RequiresAuthorization() const {
 	return ReadRequiresAuthorization() || WriteRequiresAuthorization();
+}
+
+bool Characteristic::RequiresEncryption() const {
+	return ReadRequiresEncryption() || WriteRequiresEncryption();
 }
 
 // ========== Permission Checking Functions ==========

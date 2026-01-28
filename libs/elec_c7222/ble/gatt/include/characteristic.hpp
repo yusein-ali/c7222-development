@@ -63,6 +63,15 @@ namespace c7222 {
  *   notifications/indications to be transmitted when values update.
  *
  * ---
+ * ### Debug Logging
+ *
+ * Characteristic emits debug prints for value reads/writes and CCCD/SCCD updates
+ * when the compile definition `C7222_BLE_DEBUG` is enabled.
+ *
+ * In this project, you can enable it via CMake:
+ * - `-DC7222_BLE_DEBUG=ON`
+ *
+ * ---
  * ### RPi Pico (BTstack) Integration
  *
  * On the Pico W BLE stack, the GATT database is compiled into a binary
@@ -157,12 +166,23 @@ namespace c7222 {
  * to the configured SecurityLevel bits on the value attribute:
  * - Authentication queries: `ReadRequiresAuthentication()`,
  *   `WriteRequiresAuthentication()`, `RequiresAuthentication()`
+ * - Encryption queries: `ReadRequiresEncryption()`,
+ *   `WriteRequiresEncryption()`, `RequiresEncryption()`
  * - Authorization queries: `ReadRequiresAuthorization()`,
  *   `WriteRequiresAuthorization()`, `RequiresAuthorization()`
  *
  * These helpers are intended to support service- and server-level security
  * planning (for example, deciding whether a SecurityManager must be enabled)
  * before connections are established.
+ *
+ * ---
+ * ### Descriptor Security Enforcement
+ *
+ * CCCD/SCCD writes are validated against the characteristic's security
+ * requirements in `HandleCccdWrite()` / `HandleSccdWrite()`. This ensures
+ * that clients cannot enable notifications/indications or broadcasts unless
+ * the active link meets the required security level (encryption,
+ * authentication, or authorization).
  *
  * ---
  * ### Internal/Reserved APIs (do not call from application code)
@@ -744,6 +764,20 @@ class Characteristic final : public MovableOnly {
 	[[nodiscard]] bool WriteRequiresAuthorization() const;
 
 	/**
+	 * @brief Check whether reads require at least encrypted link security.
+	 *
+	 * Returns true if the read security level is kEncryptionRequired or higher.
+	 */
+	[[nodiscard]] bool ReadRequiresEncryption() const;
+
+	/**
+	 * @brief Check whether writes require at least encrypted link security.
+	 *
+	 * Returns true if the write security level is kEncryptionRequired or higher.
+	 */
+	[[nodiscard]] bool WriteRequiresEncryption() const;
+
+	/**
 	 * @brief Check whether any access requires authentication.
 	 *
 	 * Returns true if either read or write requires authentication.
@@ -756,6 +790,11 @@ class Characteristic final : public MovableOnly {
 	 * Returns true if either read or write requires authorization.
 	 */
 	[[nodiscard]] bool RequiresAuthorization() const;
+
+	/**
+	 * @brief Check whether any access requires at least encrypted link security.
+	 */
+	[[nodiscard]] bool RequiresEncryption() const;
 	///@}
 
 	/// \name Security Configuration
