@@ -210,8 +210,14 @@ std::ostream& operator<<(std::ostream& os, BleError error) {
 			return os << "AttErrorReadNotPermitted";
 		case BleError::kAttErrorWriteNotPermitted:
 			return os << "AttErrorWriteNotPermitted";
+		case BleError::kAttErrorInsufficientAuthentication:
+			return os << "AttErrorInsufficientAuthentication";
+		case BleError::kAttErrorInsufficientAuthorization:
+			return os << "AttErrorInsufficientAuthorization";
 		case BleError::kAttErrorInvalidAttrValueLength:
 			return os << "AttErrorInvalidAttrValueLength";
+		case BleError::kAttErrorInsufficientEncryption:
+			return os << "AttErrorInsufficientEncryption";
 		case BleError::kGattClientNotConnected:
 			return os << "GattClientNotConnected";
 		case BleError::kGattClientBusy:

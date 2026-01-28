@@ -5,7 +5,7 @@ namespace c7222 {
 
 std::ostream& operator<<(std::ostream& os, const BleAddress& addr) {
 	os << "BleAddress(";
-	switch(addr.type()) {
+	switch(addr.GetType()) {
 	case BleAddress::AddressType::kLePublic:
 		os << "LE Public) ";
 		break;
@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& os, const BleAddress& addr) {
 		if(i != 0) {
 			os << ":";
 		}
-		os << static_cast<int>(addr.bytes()[BleAddress::kLength - 1 - i]);
+		os << static_cast<int>(addr.GetBytes()[BleAddress::kLength - 1 - i]);
 	}
 	os << std::dec;
 	return os;
