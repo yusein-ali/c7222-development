@@ -9,6 +9,11 @@
 #include <utility>
 
 namespace c7222 {
+namespace btstack_map {
+extern bool ToBtStack(BleError error, uint8_t& out);
+extern bool FromBtStackError(uint8_t code, BleError& out);
+}
+
 namespace {
 
 // Binary parsing helpers
