@@ -2,6 +2,48 @@
 
 namespace c7222 {
 
+bool SecurityManager::ValidateConfiguration(bool authentication_required,
+											bool authorization_required,
+											bool encryption_required) const {
+	if(params_.min_encryption_key_size > params_.max_encryption_key_size) {
+		return false;
+	}
+
+	if(authentication_required || authorization_required || encryption_required) {
+		if(params_.authentication == AuthenticationRequirement::kNone) {
+			return false;
+		}
+	}
+
+	if(authentication_required || authorization_required) {
+		const uint8_t auth_bits = static_cast<uint8_t>(params_.authentication);
+		const bool has_mitm =
+			(auth_bits &
+			 static_cast<uint8_t>(AuthenticationRequirement::kMitmProtection)) != 0;
+		if(!has_mitm) {
+			return false;
+		}
+	}
+
+	if(authorization_required) {
+		if(params_.io_capability == IoCapability::kDisplayOnly) {
+			return false;
+		}
+	}
+
+	if(params_.secure_connections_only) {
+		const uint8_t auth_bits = static_cast<uint8_t>(params_.authentication);
+		const bool has_sc =
+			(auth_bits &
+			 static_cast<uint8_t>(AuthenticationRequirement::kSecureConnections)) != 0;
+		if(!has_sc) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 BleError SecurityManager::ApplyConfiguration() {
 	return BleError::kSuccess;
 }

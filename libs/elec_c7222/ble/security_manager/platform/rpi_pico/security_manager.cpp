@@ -1,6 +1,8 @@
 #include "security_manager.hpp"
+#include "attribute_server.hpp"
 
 #include <btstack.h>
+#include <btstack_config.h>
 
 namespace c7222 {
 namespace {
@@ -53,7 +55,76 @@ SecurityManager::PairingStatus ClassifyPairingStatus(uint8_t status_code) {
 	return SecurityManager::PairingStatus::kFailed;
 }
 
+uint8_t ExpectedSecurityLevel(const SecurityManager::SecurityParameters& params) {
+	const uint8_t auth_bits = static_cast<uint8_t>(params.authentication);
+	const bool requires_mitm =
+		(auth_bits &
+		 static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kMitmProtection)) != 0;
+	const bool requires_sc =
+		(auth_bits &
+		 static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kSecureConnections)) != 0;
+	if(params.secure_connections_only || requires_sc) {
+		return 3;
+	}
+	if(requires_mitm) {
+		return 2;
+	}
+	return auth_bits == 0 ? 0 : 1;
+}
+
 }  // namespace
+
+bool SecurityManager::ValidateConfiguration(bool authentication_required,
+											bool authorization_required,
+											bool encryption_required) const {
+	if(params_.min_encryption_key_size > params_.max_encryption_key_size) {
+		return false;
+	}
+
+	if(authentication_required || authorization_required || encryption_required) {
+		if(params_.authentication == AuthenticationRequirement::kNone) {
+			return false;
+		}
+	}
+
+	if(authentication_required || authorization_required) {
+		const uint8_t auth_bits = static_cast<uint8_t>(params_.authentication);
+		const bool has_mitm =
+			(auth_bits &
+			 static_cast<uint8_t>(AuthenticationRequirement::kMitmProtection)) != 0;
+		if(!has_mitm) {
+			return false;
+		}
+	}
+
+	if(authorization_required) {
+		if(params_.io_capability == IoCapability::kDisplayOnly) {
+			return false;
+		}
+	}
+
+	if(params_.secure_connections_only) {
+		const uint8_t auth_bits = static_cast<uint8_t>(params_.authentication);
+		const bool has_sc =
+			(auth_bits &
+			 static_cast<uint8_t>(AuthenticationRequirement::kSecureConnections)) != 0;
+		if(!has_sc) {
+			return false;
+		}
+	}
+
+	const uint8_t auth_bits = static_cast<uint8_t>(params_.authentication);
+	const bool bonding_required =
+		(auth_bits &
+		 static_cast<uint8_t>(AuthenticationRequirement::kBonding)) != 0;
+	if(bonding_required) {
+#if !defined(MAX_NR_LE_DEVICE_DB_ENTRIES) && !defined(NVM_LE_DEVICE_DB_ENTRIES)
+		return false;
+#endif
+	}
+
+	return true;
+}
 
 BleError SecurityManager::ApplyConfiguration() {
 	sm_set_io_capabilities(ToBtstackIoCapability(params_.io_capability));
@@ -61,7 +132,8 @@ BleError SecurityManager::ApplyConfiguration() {
 	sm_set_encryption_key_size_range(params_.min_encryption_key_size, params_.max_encryption_key_size);
 	sm_set_secure_connections_only_mode(params_.secure_connections_only ? 1 : 0);
 
-	if(params_.gatt_client_required_security_level != 0) {
+	if(params_.gatt_client_required_security_level !=
+	   SecurityManager::GattClientSecurityLevel::kLevel0) {
 		gatt_client_set_required_security_level(
 			static_cast<gap_security_level_t>(params_.gatt_client_required_security_level));
 	}
@@ -125,8 +197,8 @@ BleError SecurityManager::DispatchBleHciPacket(uint8_t packet_type, const uint8_
 	if(packet_type != HCI_EVENT_PACKET) {
 		return BleError::kUnsupportedFeatureOrParameterValue;
 	}
-
-	switch(hci_event_packet_get_type(packet)) {
+	uint8_t event = hci_event_packet_get_type(packet);
+	switch(event) {
 		case SM_EVENT_JUST_WORKS_REQUEST: {
 			const ConnectionHandle con_handle = sm_event_just_works_request_get_handle(packet);
 			DispatchJustWorksRequest(con_handle);
@@ -152,12 +224,26 @@ BleError SecurityManager::DispatchBleHciPacket(uint8_t packet_type, const uint8_
 		case SM_EVENT_PAIRING_COMPLETE: {
 			const ConnectionHandle con_handle = sm_event_pairing_complete_get_handle(packet);
 			const uint8_t status_code = sm_event_pairing_complete_get_status(packet);
+			if(auto* server = AttributeServer::GetInstance()) {
+				if(status_code != ERROR_CODE_SUCCESS) {
+					server->SetSecurityLevel(con_handle, 0);
+				} else if(server->GetSecurityLevel(con_handle) == 0) {
+					server->SetSecurityLevel(con_handle, ExpectedSecurityLevel(params_));
+				}
+			}
 			DispatchPairingComplete(con_handle, ClassifyPairingStatus(status_code), status_code);
 			return BleError::kSuccess;
 		}
 		case SM_EVENT_REENCRYPTION_COMPLETE: {
 			const ConnectionHandle con_handle = sm_event_reencryption_complete_get_handle(packet);
 			const uint8_t status = sm_event_reencryption_complete_get_status(packet);
+			if(auto* server = AttributeServer::GetInstance()) {
+				if(status != ERROR_CODE_SUCCESS) {
+					server->SetSecurityLevel(con_handle, 0);
+				} else if(server->GetSecurityLevel(con_handle) == 0) {
+					server->SetSecurityLevel(con_handle, ExpectedSecurityLevel(params_));
+				}
+			}
 			DispatchReencryptionComplete(con_handle, status);
 			return BleError::kSuccess;
 		}
@@ -169,6 +255,9 @@ BleError SecurityManager::DispatchBleHciPacket(uint8_t packet_type, const uint8_
 		case SM_EVENT_AUTHORIZATION_RESULT: {
 			const ConnectionHandle con_handle = sm_event_authorization_result_get_handle(packet);
 			const uint8_t authorized = sm_event_authorization_result_get_authorization_result(packet);
+			if(auto* server = AttributeServer::GetInstance()) {
+				server->SetAuthorizationGranted(con_handle, authorized != 0);
+			}
 			DispatchAuthorizationResult(
 				con_handle,
 				authorized ? AuthorizationResult::kGranted : AuthorizationResult::kDenied);

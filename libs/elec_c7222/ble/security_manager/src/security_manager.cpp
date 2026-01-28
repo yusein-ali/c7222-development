@@ -133,7 +133,7 @@ BleError SecurityManager::SetSecureConnectionsOnly(bool enabled) {
 	return err;
 }
 
-BleError SecurityManager::SetGattClientRequiredSecurityLevel(uint8_t level) {
+BleError SecurityManager::SetGattClientRequiredSecurityLevel(GattClientSecurityLevel level) {
 	params_.gatt_client_required_security_level = level;
 	configured_ = true;
 	const BleError err = ApplyConfiguration();
@@ -168,6 +168,8 @@ BleError SecurityManager::ClearFixedPasskey() {
 	return err;
 }
 
+// ValidateConfiguration is platform-specific (implemented in platform layer).
+
 void SecurityManager::AddEventHandler(const EventHandler& handler) {
 	auto it = std::find(handlers_.begin(), handlers_.end(), &handler);
 	if(it == handlers_.end()) {
@@ -178,6 +180,17 @@ void SecurityManager::AddEventHandler(const EventHandler& handler) {
 bool SecurityManager::RemoveEventHandler(const EventHandler& handler) {
 	const auto before = handlers_.size();
 	handlers_.remove(&handler);
+	return handlers_.size() != before;
+}
+void SecurityManager::AddEventHandler(const EventHandler* handler) {
+	auto it = std::find(handlers_.begin(), handlers_.end(), handler);
+	if(it == handlers_.end()) {
+		handlers_.push_back(handler);
+	}
+}
+bool SecurityManager::RemoveEventHandler(const EventHandler* handler) {
+	const auto before = handlers_.size();
+	handlers_.remove(handler);
 	return handlers_.size() != before;
 }
 
