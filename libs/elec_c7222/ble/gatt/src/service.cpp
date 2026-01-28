@@ -139,6 +139,15 @@ bool Service::HasCharacteristicsRequiringAuthentication() const {
 	return false;
 }
 
+bool Service::HasCharacteristicsRequiringEncryption() const {
+	for(const auto& characteristic : characteristics_) {
+		if(characteristic.RequiresEncryption()) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool Service::HasCharacteristicsRequiringAuthorization() const {
 	for(const auto& characteristic : characteristics_) {
 		if(characteristic.RequiresAuthorization()) {

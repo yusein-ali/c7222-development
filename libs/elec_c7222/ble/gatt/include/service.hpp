@@ -67,6 +67,7 @@ namespace c7222 {
  * Services expose security query helpers that aggregate characteristic
  * requirements across the service:
  * - `HasCharacteristicsRequiringAuthentication()`
+ * - `HasCharacteristicsRequiringEncryption()`
  * - `HasCharacteristicsRequiringAuthorization()`
  *
  * These are intended to help higher-level components (e.g., the attribute
@@ -291,6 +292,11 @@ class Service : public MovableOnly {
 	 * whether the service contains security-sensitive characteristics.
 	 */
 	[[nodiscard]] bool HasCharacteristicsRequiringAuthentication() const;
+
+	/**
+	 * @brief Check whether any characteristic requires encrypted link security.
+	 */
+	[[nodiscard]] bool HasCharacteristicsRequiringEncryption() const;
 
 	/**
 	 * @brief Check whether any characteristic requires authorization.
