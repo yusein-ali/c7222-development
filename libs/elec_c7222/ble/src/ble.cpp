@@ -48,41 +48,53 @@ AttributeServer* Ble::EnableAttributeServer(const void* context) {
 		attribute_server_ = AttributeServer::GetInstance();
 		attribute_server_->Init(context);
 
+		const bool requires_encryption = attribute_server_->HasServicesRequiringEncryption();
 		const bool requires_authentication =
 			attribute_server_->HasServicesRequiringAuthentication();
 		const bool requires_authorization =
 			attribute_server_->HasServicesRequiringAuthorization();
 
-		if(requires_authentication || requires_authorization) {
+		if(requires_encryption || requires_authentication || requires_authorization) {
 			assert(security_manager_ != nullptr &&
 				   "SecurityManager is required: AttributeServer contains secured characteristics. "
 				   "Call Ble::EnableSecurityManager() before enabling the attribute server.");
 		}
 
-		if(security_manager_ != nullptr && (requires_authentication || requires_authorization)) {
+		if(security_manager_ != nullptr &&
+		   (requires_encryption || requires_authentication || requires_authorization)) {
 			assert(security_manager_->IsConfigured() &&
 				   "SecurityManager must be configured before enabling a secured AttributeServer.");
-
-			const auto sm_params = security_manager_->GetSecurityParameters();
-			const uint8_t auth_bits = static_cast<uint8_t>(sm_params.authentication);
-			const bool sm_has_mitm =
-				(auth_bits &
-				 static_cast<uint8_t>(SecurityManager::AuthenticationRequirement::kMitmProtection)) != 0;
-
-			// Authentication/authorization requirements in the GATT DB imply MITM-capable pairing.
-			if(requires_authentication || requires_authorization) {
-				assert(sm_has_mitm &&
-					   "SecurityManager configuration mismatch: secured characteristics require "
-					   "MITM protection. Enable kMitmProtection in SM authentication requirements.");
-			}
+			const auto handler_count = security_manager_->GetEventHandlerCount();
+			assert(handler_count > 0 && "SecurityManager must have at least one event handler registered.");
+			assert(security_manager_->ValidateConfiguration(requires_authentication,
+															requires_authorization,
+															requires_encryption) &&
+				   "SecurityManager configuration mismatch: requirements cannot be satisfied "
+				   "with current SecurityManager settings.");
 		}
 	}
 	return attribute_server_;
 }
 
-SecurityManager* Ble::EnableSecurityManager() {
+SecurityManager* Ble::EnableSecurityManager(const SecurityManager::SecurityParameters& params) {
 	if(security_manager_ == nullptr) {
 		security_manager_ = SecurityManager::GetInstance();
+		security_manager_->Configure(params);
+		if(turned_on_) {
+			EnsureSmEventHandlerRegistered();
+		}
+	}
+	if(attribute_server_ != nullptr) {
+		const bool requires_encryption = attribute_server_->HasServicesRequiringEncryption();
+		const bool requires_authentication =
+			attribute_server_->HasServicesRequiringAuthentication();
+		const bool requires_authorization =
+			attribute_server_->HasServicesRequiringAuthorization();
+		assert(security_manager_->ValidateConfiguration(requires_authentication,
+														requires_authorization,
+														requires_encryption) &&
+			   "SecurityManager configuration mismatch: requirements cannot be satisfied "
+			   "with current SecurityManager settings.");
 	}
 	return security_manager_;
 }
