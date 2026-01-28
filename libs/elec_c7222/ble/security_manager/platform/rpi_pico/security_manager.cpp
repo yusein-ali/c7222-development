@@ -3,9 +3,16 @@
 
 #include <btstack.h>
 #include <btstack_config.h>
+#include <cstdio>
 
 namespace c7222 {
 namespace {
+
+#if defined(C7222_BLE_DEBUG)
+#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
+#else
+#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
+#endif
 
 io_capability_t ToBtstackIoCapability(SecurityManager::IoCapability capability) {
 	switch(capability) {
@@ -77,6 +84,10 @@ uint8_t ExpectedSecurityLevel(const SecurityManager::SecurityParameters& params)
 bool SecurityManager::ValidateConfiguration(bool authentication_required,
 											bool authorization_required,
 											bool encryption_required) const {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Validate: auth=%u authz=%u enc=%u\n",
+		static_cast<unsigned>(authentication_required),
+		static_cast<unsigned>(authorization_required),
+		static_cast<unsigned>(encryption_required));
 	if(params_.min_encryption_key_size > params_.max_encryption_key_size) {
 		return false;
 	}
@@ -119,6 +130,7 @@ bool SecurityManager::ValidateConfiguration(bool authentication_required,
 		 static_cast<uint8_t>(AuthenticationRequirement::kBonding)) != 0;
 	if(bonding_required) {
 #if !defined(MAX_NR_LE_DEVICE_DB_ENTRIES) && !defined(NVM_LE_DEVICE_DB_ENTRIES)
+		C7222_BLE_DEBUG_PRINT("[BLE][SM] Validate failed: bonding backend not enabled\n");
 		return false;
 #endif
 	}
@@ -127,6 +139,7 @@ bool SecurityManager::ValidateConfiguration(bool authentication_required,
 }
 
 BleError SecurityManager::ApplyConfiguration() {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Apply configuration\n");
 	sm_set_io_capabilities(ToBtstackIoCapability(params_.io_capability));
 	sm_set_authentication_requirements(ToBtstackAuthReq(params_.authentication));
 	sm_set_encryption_key_size_range(params_.min_encryption_key_size, params_.max_encryption_key_size);
@@ -160,11 +173,16 @@ BleError SecurityManager::ApplyConfiguration() {
 }
 
 BleError SecurityManager::ConfirmJustWorks(ConnectionHandle con_handle) {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Confirm Just Works handle=0x%04x\n",
+		static_cast<unsigned>(con_handle));
 	sm_just_works_confirm(con_handle);
 	return BleError::kSuccess;
 }
 
 BleError SecurityManager::ConfirmNumericComparison(ConnectionHandle con_handle, bool accept) {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Confirm numeric comparison handle=0x%04x accept=%u\n",
+		static_cast<unsigned>(con_handle),
+		static_cast<unsigned>(accept));
 	if(accept) {
 		sm_numeric_comparison_confirm(con_handle);
 	} else {
@@ -174,16 +192,24 @@ BleError SecurityManager::ConfirmNumericComparison(ConnectionHandle con_handle, 
 }
 
 BleError SecurityManager::ProvidePasskey(ConnectionHandle con_handle, uint32_t passkey) {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Provide passkey handle=0x%04x passkey=%u\n",
+		static_cast<unsigned>(con_handle),
+		static_cast<unsigned>(passkey));
 	sm_passkey_input(con_handle, passkey);
 	return BleError::kSuccess;
 }
 
 BleError SecurityManager::RequestPairing(ConnectionHandle con_handle) {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Request pairing handle=0x%04x\n",
+		static_cast<unsigned>(con_handle));
 	sm_request_pairing(con_handle);
 	return BleError::kSuccess;
 }
 
 BleError SecurityManager::SetAuthorization(ConnectionHandle con_handle, AuthorizationResult result) {
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Set authorization handle=0x%04x result=%u\n",
+		static_cast<unsigned>(con_handle),
+		static_cast<unsigned>(result));
 	if(result == AuthorizationResult::kGranted) {
 		sm_authorization_grant(con_handle);
 		return BleError::kSuccess;
@@ -194,10 +220,14 @@ BleError SecurityManager::SetAuthorization(ConnectionHandle con_handle, Authoriz
 
 BleError SecurityManager::DispatchBleHciPacket(uint8_t packet_type, const uint8_t* packet, uint16_t size) {
 	(void)size;
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] Dispatch HCI packet type=0x%02x\n",
+		static_cast<unsigned>(packet_type));
 	if(packet_type != HCI_EVENT_PACKET) {
 		return BleError::kUnsupportedFeatureOrParameterValue;
 	}
 	uint8_t event = hci_event_packet_get_type(packet);
+	C7222_BLE_DEBUG_PRINT("[BLE][SM] HCI event=0x%02x\n",
+		static_cast<unsigned>(event));
 	switch(event) {
 		case SM_EVENT_JUST_WORKS_REQUEST: {
 			const ConnectionHandle con_handle = sm_event_just_works_request_get_handle(packet);
