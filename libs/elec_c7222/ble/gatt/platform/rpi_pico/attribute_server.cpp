@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <utility>
 
 namespace c7222 {
 namespace btstack_map {

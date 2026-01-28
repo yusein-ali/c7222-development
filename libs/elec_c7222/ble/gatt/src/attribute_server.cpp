@@ -1,19 +1,13 @@
 #include "attribute_server.hpp"
+#include "ble_utils.hpp"
 
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
 #include <iterator>
 #include <iomanip>
 #include <iostream>
 
 namespace c7222 {
-
-#if defined(C7222_BLE_DEBUG)
-#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
-#else
-#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
-#endif
 
 AttributeServer* AttributeServer::instance_ = nullptr;
 

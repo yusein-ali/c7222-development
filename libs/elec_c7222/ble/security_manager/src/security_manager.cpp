@@ -1,17 +1,11 @@
 #include "security_manager.hpp"
+#include "ble_utils.hpp"
 
 #include <algorithm>
-#include <cstdio>
 #include <ostream>
 
 namespace c7222 {
 namespace {
-
-#if defined(C7222_BLE_DEBUG)
-#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
-#else
-#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
-#endif
 
 const char* ToString(SecurityManager::IoCapability cap) {
 	switch(cap) {

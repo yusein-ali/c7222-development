@@ -1,8 +1,8 @@
 #include "ble.hpp"
 #include "attribute_server.hpp"
+#include "ble_utils.hpp"
 #include <btstack.h>
 #include <assert.h>
-#include <cstdio>
 
 #include "hci_dump_embedded_stdout.h"
 
@@ -14,12 +14,6 @@ bool FromBtStackError(uint8_t code, BleError& out);
 
 }  // namespace btstack_map
 namespace {
-
-#if defined(C7222_BLE_DEBUG)
-#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
-#else
-#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
-#endif
 
 void ble_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size) {
 	(void)Ble::GetInstance()->DispatchBleHciPacket(packet_type, channel, packet, size);

@@ -1,14 +1,7 @@
 #include "ble.hpp"
-
-#include <cstdio>
+#include "ble_utils.hpp"
 
 namespace c7222 {
-
-#if defined(C7222_BLE_DEBUG)
-#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
-#else
-#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
-#endif
 
 Ble::Ble()
 	: gap_(Gap::GetInstance()),
