@@ -42,10 +42,25 @@ namespace c7222 {
  *
  * The server now exposes aggregate security checks across all parsed services:
  * - `HasServicesRequiringAuthentication()`
+ * - `HasServicesRequiringEncryption()`
  * - `HasServicesRequiringAuthorization()`
  *
  * These helpers are intended to guide SecurityManager enablement and
  * configuration before connections are established.
+ *
+ * ---
+ * ### Connection Security State (Runtime)
+ *
+ * The server caches the active connection handle and the security state
+ * associated with that connection:
+ * - `SetConnectionHandle()` updates the handle propagated to characteristics.
+ * - `SetSecurityLevel()` caches the GAP security level (used by CCCD/SCCD
+ *   authorization checks).
+ * - `SetAuthorizationGranted()` caches per-connection authorization decisions.
+ *
+ * Platform glue (e.g., BTstack packet handlers) should update these values when
+ * GAP/SM events are received so characteristic descriptor writes can be
+ * validated consistently.
  *
  * ---
  * ### BTstack Integration Details
@@ -272,6 +287,11 @@ class AttributeServer : public NonCopyableNonMovable {
 	[[nodiscard]] bool HasServicesRequiringAuthentication() const;
 
 	/**
+	 * @brief Check whether any service contains characteristics requiring encryption.
+	 */
+	[[nodiscard]] bool HasServicesRequiringEncryption() const;
+
+	/**
 	 * @brief Check whether any service contains characteristics requiring authorization.
 	 *
 	 * Authorization implies authentication and typically requires
@@ -378,6 +398,26 @@ class AttributeServer : public NonCopyableNonMovable {
 	 * notifications/indications can be sent from `Characteristic::UpdateValue()`.
 	 */
 	void SetConnectionHandle(uint16_t connection_handle);
+
+	/**
+	 * @brief Update cached security level for the active connection.
+	 */
+	void SetSecurityLevel(uint16_t connection_handle, uint8_t security_level);
+
+	/**
+	 * @brief Get cached security level for the active connection.
+	 */
+	[[nodiscard]] uint8_t GetSecurityLevel(uint16_t connection_handle) const;
+
+	/**
+	 * @brief Update cached authorization result for the active connection.
+	 */
+	void SetAuthorizationGranted(uint16_t connection_handle, bool granted);
+
+	/**
+	 * @brief Get cached authorization result for the active connection.
+	 */
+	[[nodiscard]] bool IsAuthorizationGranted(uint16_t connection_handle) const;
 
 	/**
 	 * @brief Get the current connection handle.
@@ -508,6 +548,10 @@ class AttributeServer : public NonCopyableNonMovable {
 	const void* context_ = nullptr;
 	/// @brief Active connection handle (0 when disconnected).
 	uint16_t connection_handle_ = 0;
+	/// @brief Cached security level for the active connection.
+	uint8_t security_level_ = 0;
+	/// @brief Cached authorization result for the active connection.
+	bool authorization_granted_ = false;
 	/// @brief True after Init() successfully parsed and bound the ATT DB.
 	bool initialized_ = false;
 	///@}

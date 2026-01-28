@@ -2,11 +2,18 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <iterator>
 #include <iomanip>
 #include <iostream>
 
 namespace c7222 {
+
+#if defined(C7222_BLE_DEBUG)
+#define C7222_BLE_DEBUG_PRINT(...) std::printf(__VA_ARGS__)
+#else
+#define C7222_BLE_DEBUG_PRINT(...) do { } while(0)
+#endif
 
 AttributeServer* AttributeServer::instance_ = nullptr;
 
@@ -43,6 +50,15 @@ const Service* AttributeServer::FindServiceByUuid(const Uuid& uuid) const {
 bool AttributeServer::HasServicesRequiringAuthentication() const {
 	for(const auto& service : services_) {
 		if(service.HasCharacteristicsRequiringAuthentication()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AttributeServer::HasServicesRequiringEncryption() const {
+	for(const auto& service : services_) {
+		if(service.HasCharacteristicsRequiringEncryption()) {
 			return true;
 		}
 	}
@@ -106,6 +122,10 @@ const Characteristic* AttributeServer::FindCharacteristicByHandle(uint16_t handl
 
 void AttributeServer::SetConnectionHandle(uint16_t connection_handle) {
 	connection_handle_ = connection_handle;
+	security_level_ = 0;
+	authorization_granted_ = false;
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: connection set handle=0x%04x\n",
+		static_cast<unsigned>(connection_handle_));
 	for(auto& service: services_) {
 		service.SetConnectionHandle(connection_handle);
 	}
@@ -113,14 +133,62 @@ void AttributeServer::SetConnectionHandle(uint16_t connection_handle) {
 
 void AttributeServer::SetDisconnected() {
 	connection_handle_ = 0;
+	security_level_ = 0;
+	authorization_granted_ = false;
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: disconnected\n");
 	for(auto& service: services_) {
 		service.SetConnectionHandle(0);
 	}
 }
 
+void AttributeServer::SetSecurityLevel(uint16_t connection_handle, uint8_t security_level) {
+	if(connection_handle_ == 0 || connection_handle_ != connection_handle) {
+		C7222_BLE_DEBUG_PRINT(
+			"[BLE] AttributeServer: ignoring security level update (conn=0x%04x current=0x%04x)\n",
+			static_cast<unsigned>(connection_handle),
+			static_cast<unsigned>(connection_handle_));
+		return;
+	}
+	security_level_ = security_level;
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: security level=%u (handle=0x%04x)\n",
+		static_cast<unsigned>(security_level_),
+		static_cast<unsigned>(connection_handle_));
+}
+
+uint8_t AttributeServer::GetSecurityLevel(uint16_t connection_handle) const {
+	if(connection_handle_ == 0 || connection_handle_ != connection_handle) {
+		return 0;
+	}
+	return security_level_;
+}
+
+void AttributeServer::SetAuthorizationGranted(uint16_t connection_handle, bool granted) {
+	if(connection_handle_ == 0 || connection_handle_ != connection_handle) {
+		C7222_BLE_DEBUG_PRINT(
+			"[BLE] AttributeServer: ignoring authorization update (conn=0x%04x current=0x%04x)\n",
+			static_cast<unsigned>(connection_handle),
+			static_cast<unsigned>(connection_handle_));
+		return;
+	}
+	authorization_granted_ = granted;
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: authorization=%s (handle=0x%04x)\n",
+		granted ? "granted" : "denied",
+		static_cast<unsigned>(connection_handle_));
+}
+
+bool AttributeServer::IsAuthorizationGranted(uint16_t connection_handle) const {
+	if(connection_handle_ == 0 || connection_handle_ != connection_handle) {
+		return false;
+	}
+	return authorization_granted_;
+}
+
 BleError AttributeServer::DispatchBleHciPacket(uint8_t packet_type,
 											   const uint8_t* packet_data,
 											   uint16_t packet_data_size) {
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: HCI event packet=0x%02x size=%u\n",
+		static_cast<unsigned>(packet_type),
+		static_cast<unsigned>(packet_data_size));
 	for(auto& service: services_) {
 		for(size_t i = 0; i < service.GetCharacteristicCount(); ++i) {
 			service.GetCharacteristic(i).DispatchBleHciPacket(packet_type,
@@ -135,10 +203,15 @@ AttributeServer::ReadResult AttributeServer::ReadAttribute(uint16_t attribute_ha
 														   uint16_t offset,
 														   uint8_t* buffer,
 														   uint16_t buffer_size) {
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read handle=0x%04x offset=%u max=%u\n",
+		static_cast<unsigned>(attribute_handle),
+		static_cast<unsigned>(offset),
+		static_cast<unsigned>(buffer_size));
 	ReadResult result{};
 
 	const Attribute* attribute = FindAttributeByHandle(attribute_handle);
 	if(attribute == nullptr) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read rejected (not found)\n");
 		result.ok = false;
 		result.error = BleError::kAttErrorReadNotPermitted;
 		return result;
@@ -147,12 +220,15 @@ AttributeServer::ReadResult AttributeServer::ReadAttribute(uint16_t attribute_ha
 	const bool read_permitted =
 		(attribute->GetProperties() & static_cast<uint16_t>(Attribute::Properties::kRead)) != 0;
 	if(!read_permitted) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read rejected (not permitted)\n");
 		result.ok = false;
 		result.error = BleError::kAttErrorReadNotPermitted;
 		return result;
 	}
 
 	if(buffer == nullptr) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read size query bytes=%u\n",
+			static_cast<unsigned>(attribute->GetValueSize()));
 		result.bytes = static_cast<uint16_t>(attribute->GetValueSize());
 		return result;
 	}
@@ -162,22 +238,30 @@ AttributeServer::ReadResult AttributeServer::ReadAttribute(uint16_t attribute_ha
 			characteristic->HandleAttributeRead(attribute_handle, offset, buffer, buffer_size);
 		BleError att_error = BleError::kSuccess;
 		if(IsAttErrorCode(bytes, att_error)) {
+			C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read error=%u\n",
+				static_cast<unsigned>(att_error));
 			result.ok = false;
 			result.error = att_error;
 			return result;
 		}
 		result.bytes = bytes;
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read bytes=%u\n",
+			static_cast<unsigned>(result.bytes));
 		return result;
 	}
 
 	const uint16_t bytes = attribute->InvokeReadCallback(offset, buffer, buffer_size);
 	BleError att_error = BleError::kSuccess;
 	if(IsAttErrorCode(bytes, att_error)) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read error=%u\n",
+			static_cast<unsigned>(att_error));
 		result.ok = false;
 		result.error = att_error;
 		return result;
 	}
 	result.bytes = bytes;
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: read bytes=%u\n",
+		static_cast<unsigned>(result.bytes));
 	return result;
 }
 
@@ -185,12 +269,23 @@ BleError AttributeServer::WriteAttribute(uint16_t attribute_handle,
 										 uint16_t offset,
 										 const uint8_t* data,
 										 uint16_t size) {
+	C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: write handle=0x%04x offset=%u size=%u\n",
+		static_cast<unsigned>(attribute_handle),
+		static_cast<unsigned>(offset),
+		static_cast<unsigned>(size));
 	if(auto* characteristic = FindCharacteristicByHandle(attribute_handle)) {
-		return characteristic->HandleAttributeWrite(attribute_handle, offset, data, size);
+		const BleError result =
+			characteristic->HandleAttributeWrite(attribute_handle, offset, data, size);
+		if(result != BleError::kSuccess) {
+			C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: write error=%u\n",
+				static_cast<unsigned>(result));
+		}
+		return result;
 	}
 
 	Attribute* attribute = FindServiceAttributeByHandle(attribute_handle);
 	if(attribute == nullptr) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: write rejected (not found)\n");
 		return BleError::kAttErrorWriteNotPermitted;
 	}
 
@@ -199,10 +294,16 @@ BleError AttributeServer::WriteAttribute(uint16_t attribute_handle,
 		(attribute->GetProperties() &
 		 static_cast<uint16_t>(Attribute::Properties::kWriteWithoutResponse)) != 0;
 	if(!write_permitted) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: write rejected (not permitted)\n");
 		return BleError::kAttErrorWriteNotPermitted;
 	}
 
-	return attribute->InvokeWriteCallback(offset, data, size);
+	const BleError result = attribute->InvokeWriteCallback(offset, data, size);
+	if(result != BleError::kSuccess) {
+		C7222_BLE_DEBUG_PRINT("[BLE] AttributeServer: write error=%u\n",
+			static_cast<unsigned>(result));
+	}
+	return result;
 }
 
 Attribute* AttributeServer::FindServiceAttributeByHandle(uint16_t handle) {
