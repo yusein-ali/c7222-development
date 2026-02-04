@@ -291,6 +291,7 @@ class Attribute : public MovableOnly {
 	 * @param start_handle First attribute handle of the included service
 	 * @param end_handle Last attribute handle of the included service
 	 * @param service_uuid Included service UUID (16-bit or 128-bit)
+	 * @param handle Optional attribute handle (0 = auto-assign)
 	 */
 	static Attribute IncludedServiceDeclaration(uint16_t start_handle,
 												uint16_t end_handle,
@@ -302,6 +303,7 @@ class Attribute : public MovableOnly {
 	 * @param properties Characteristic properties byte (GATT characteristic properties)
 	 * @param value_handle Handle of the characteristic value attribute
 	 * @param characteristic_uuid Characteristic UUID (16-bit or 128-bit)
+	 * @param handle Optional attribute handle (0 = auto-assign)
 	 */
 	static Attribute CharacteristicDeclaration(uint8_t properties,
 											   uint16_t value_handle,
@@ -553,7 +555,8 @@ class Attribute : public MovableOnly {
 	 * @param value The value to store
 	 * @return true if value was set, false if rejected (static attribute)
 	 * @note Uses binary representation; for endian-sensitive types, ensure consistency
-	 * @example SetValue(0x1234) stores as bytes {0x34, 0x12} (little-endian)
+	 * @par Example
+	 * `SetValue(0x1234)` stores as bytes `{0x34, 0x12}` (little-endian).
 	 */
 	template<typename T>
 	bool SetValue(const T& value) {

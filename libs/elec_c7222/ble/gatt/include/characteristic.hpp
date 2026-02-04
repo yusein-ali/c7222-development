@@ -810,9 +810,10 @@ class Characteristic final : public MovableOnly {
 	 *
 	 * @param level Security level (None, Encryption, Authentication, or Authorization)
 	 *
-	 * @example
+	 * @code
 	 * // Require authenticated pairing for reads
 	 * characteristic.SetReadSecurityLevel(Characteristic::SecurityLevel::kAuthenticationRequired);
+	 * @endcode
 	 */
 	void SetReadSecurityLevel(SecurityLevel level);
 
@@ -825,9 +826,10 @@ class Characteristic final : public MovableOnly {
 	 *
 	 * @param level Security level (None, Encryption, Authentication, or Authorization)
 	 *
-	 * @example
+	 * @code
 	 * // Require encryption for writes
 	 * characteristic.SetWriteSecurityLevel(Characteristic::SecurityLevel::kEncryptionRequired);
+	 * @endcode
 	 */
 	void SetWriteSecurityLevel(SecurityLevel level);
 
@@ -896,10 +898,11 @@ class Characteristic final : public MovableOnly {
 	 * @note Secure Connections requirement is checked separately and not included
 	 *       in this logic (caller must verify SC separately if needed)
 	 *
-	 * @example
+	 * @code
 	 * if (characteristic.IsReadPermitted(user_authorized, is_authenticated)) {
 	 *     // Allow read operation
 	 * }
+	 * @endcode
 	 */
 	[[nodiscard]] bool IsReadPermitted(bool authorized, bool authenticated) const;
 
@@ -917,10 +920,11 @@ class Characteristic final : public MovableOnly {
 	 * @note Secure Connections requirement is checked separately and not included
 	 *       in this logic (caller must verify SC separately if needed)
 	 *
-	 * @example
+	 * @code
 	 * if (characteristic.IsWritePermitted(user_authorized, is_authenticated)) {
 	 *     // Allow write operation
 	 * }
+	 * @endcode
 	 */
 	[[nodiscard]] bool IsWritePermitted(bool authorized, bool authenticated) const;
 
@@ -1004,7 +1008,8 @@ class Characteristic final : public MovableOnly {
 	 * @param value The value to store
 	 * @return true if value was set, false if rejected (e.g., static characteristic)
 	 * @note Uses binary representation; for endian-sensitive types, ensure consistency
-	 * @example SetValue<uint16_t>(0x1234) stores as bytes {0x34, 0x12} (little-endian)
+	 * @par Example
+	 * `SetValue<uint16_t>(0x1234)` stores as bytes `{0x34, 0x12}` (little-endian).
 	 */
 	template <typename T>
 	bool SetValue(const T& value) {

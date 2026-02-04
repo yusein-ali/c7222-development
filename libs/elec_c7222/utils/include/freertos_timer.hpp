@@ -1,5 +1,5 @@
 /**
- * @file free_rtos_timer.hpp
+ * @file freertos_timer.hpp
  * @brief C++ wrapper for FreeRTOS software timers.
  */
 #ifndef ELEC_C7222_UTILS_FREE_RTOS_TIMER_HPP

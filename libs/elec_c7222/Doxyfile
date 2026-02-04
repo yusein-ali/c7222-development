@@ -1,0 +1,34 @@
+# Doxygen configuration for libs/elec_c7222
+
+PROJECT_NAME           = "elec_c7222"
+PROJECT_BRIEF          = "Doxygen docs for libs/elec_c7222"
+OUTPUT_DIRECTORY       = docs
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Input
+INPUT                  = .
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp
+
+# If you want to include markdown pages later
+MARKDOWN_SUPPORT       = YES
+
+# Extract docs from code
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+
+# Quiet output
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+
+# Typical C++ settings
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = NO
+OPTIMIZE_FOR_FORTRAN   = NO
+OPTIMIZE_OUTPUT_VHDL   = NO
+
+# Use UTF-8 (default) and disable timestamps for reproducible output
+OUTPUT_LANGUAGE        = English

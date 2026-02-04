@@ -352,8 +352,8 @@ class SecurityManager : public NonCopyableNonMovable {
 		 * @param status_code Stack-specific status value.
 		 */
 		virtual void OnPairingComplete(ConnectionHandle,
-									   PairingStatus,
-									   uint8_t /*status_code*/) const {}
+									   PairingStatus status,
+									   uint8_t status_code) const {}
 		/**
 		 * @brief Called when re-encryption completes.
 		 */

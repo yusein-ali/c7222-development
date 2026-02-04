@@ -1,5 +1,5 @@
 /**
- * @file board_led.hpp
+ * @file onboard_led.hpp
  * @brief Board LED abstraction for the C7222 course.
  */
 #ifndef TEMPLATE_BOARD_LED_HPP

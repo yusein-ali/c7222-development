@@ -420,7 +420,7 @@ class AdvertisementDataBuilder {
 	/**
 	 * @brief Merge another builder into this one, enforcing uniqueness.
 	 *
-	 * @param ad Builder to merge in.
+	 * @param adb Builder to merge in.
 	 * @return Reference to this builder.
 	 */
 	AdvertisementDataBuilder& operator+=(const AdvertisementDataBuilder& adb);
@@ -428,10 +428,10 @@ class AdvertisementDataBuilder {
 	/**
 	 * @brief Return a builder that is the merge of two builders.
 	 *
-	 * @param ad Builder to merge in.
+	 * @param adb Builder to merge in.
 	 * @return Merged builder copy.
 	 */
-	AdvertisementDataBuilder operator+(const AdvertisementDataBuilder& ad);
+	AdvertisementDataBuilder operator+(const AdvertisementDataBuilder& adb);
 
 	/**
 	 * @brief Compare two builders by payload or list contents.

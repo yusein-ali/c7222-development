@@ -256,8 +256,8 @@ AdvertisementDataBuilder& AdvertisementDataBuilder::operator+=(const Advertiseme
 	return *this;
 }
 
-AdvertisementDataBuilder AdvertisementDataBuilder::operator+(const AdvertisementDataBuilder& ad) {
-	this->operator+=(ad);
+AdvertisementDataBuilder AdvertisementDataBuilder::operator+(const AdvertisementDataBuilder& adb) {
+	this->operator+=(adb);
 	return *this;
 }
 
