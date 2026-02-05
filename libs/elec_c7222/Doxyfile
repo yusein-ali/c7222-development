@@ -6,13 +6,23 @@ OUTPUT_DIRECTORY       = docs
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
 
+# Graphs (requires Graphviz dot)
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+UML_LOOK               = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+
 # Input
 INPUT                  = .
 RECURSIVE              = YES
-FILE_PATTERNS          = *.hpp
+FILE_PATTERNS          = *.hpp *.md
 
-# If you want to include markdown pages later
+# Markdown
 MARKDOWN_SUPPORT       = YES
+USE_MDFILE_AS_MAINPAGE = docs/markdown/overview.md
 
 # Extract docs from code
 EXTRACT_ALL            = YES
@@ -30,5 +40,5 @@ OPTIMIZE_OUTPUT_JAVA   = NO
 OPTIMIZE_FOR_FORTRAN   = NO
 OPTIMIZE_OUTPUT_VHDL   = NO
 
-# Use UTF-8 (default) and disable timestamps for reproducible output
+# Output language
 OUTPUT_LANGUAGE        = English

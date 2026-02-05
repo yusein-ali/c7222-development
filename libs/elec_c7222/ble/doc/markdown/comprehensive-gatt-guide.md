@@ -172,7 +172,7 @@ The project uses a custom C++ layer to wrap the raw BTstack ATT callbacks into a
 
 ### The Pipeline
 
-- Binary Blob Initialization: `compile_gatt.py` produces a binary array `att_db`. `AttributeServer::Init` (`libs/elec_c7222/ble/gatt/platform/rpi_pico/attribute_server.cpp`) receives this pointer and registers it with the BTstack core via `att_server_init(...)`.
+- Binary Blob Initialization: `compile_gatt.py` produces a binary array `att_db`. `c7222::AttributeServer::Init` (`libs/elec_c7222/ble/gatt/platform/rpi_pico/attribute_server.cpp`) receives this pointer and registers it with the BTstack core via `att_server_init(...)`.
 - Binary Parsing (BTstack ATT DB -> Attributes):
   - The parser starts at `db + 1` (BTstack reserves the first byte).
   - Each entry begins with `entry_size` (uint16, little-endian). A size of 0 terminates the list.
@@ -181,17 +181,17 @@ The project uses a custom C++ layer to wrap the raw BTstack ATT callbacks into a
   - `ParseEntry()` constructs an `Attribute` from `(uuid, flags, value_ptr, value_len, handle)`.
   - Static attributes keep pointers into the DB blob, so the DB must outlive all parsed objects.
 - Object Assembly (Attributes -> Services/Characteristics):
-  - `InitServices()` calls `Service::ParseFromAttributes()`, which walks the ordered list.
+  - `InitServices()` calls `c7222::Service::ParseFromAttributes()`, which walks the ordered list.
   - Each Service block starts at a Service Declaration attribute and consumes attributes until the next Service Declaration.
-  - Within a Service block, `Characteristic::ParseFromAttributes()` groups:
+  - Within a Service block, `c7222::Characteristic::ParseFromAttributes()` groups:
     - Declaration attribute
     - Value attribute
     - Descriptor attributes (CCCD/SCCD/User Description/Extended Properties/custom)
 - Runtime Routing (ATT -> C++ objects):
   - BTstack calls `att_read_callback` / `att_write_callback`.
   - `AttributeServer` finds the matching handle:
-    - If it belongs to a `Characteristic`, it calls `Characteristic::HandleAttributeRead/Write()`.
-    - Otherwise it calls the service-level `Attribute::InvokeRead/WriteCallback()`.
+    - If it belongs to a `Characteristic`, it calls `c7222::Characteristic::HandleAttributeRead/Write()`.
+    - Otherwise it calls the service-level `c7222::Attribute::InvokeRead/WriteCallback()`.
   - Errors are mapped through `BleError` back to BTstack ATT error codes.
 
 ### Handler Types and Purposes
@@ -202,9 +202,9 @@ There are two main handler families: **low-level attribute callbacks** and **hig
 
 Registered on `Attribute` instances:
 
-- `Attribute::SetReadCallback(ReadCallback)`  
+- `c7222::Attribute::SetReadCallback(ReadCallback)`  
   Purpose: Provide data for reads (or block reads via ATT error codes). Used for dynamic values or service-level attributes.
-- `Attribute::SetWriteCallback(WriteCallback)`  
+- `c7222::Attribute::SetWriteCallback(WriteCallback)`  
   Purpose: Validate/accept writes and optionally update dynamic storage.
 
 Where used:
@@ -219,7 +219,7 @@ Notes:
 
 **2) Characteristic EventHandlers (semantic events)**
 
-Registered via `Characteristic::AddEventHandler(EventHandlers&)`:
+Registered via `c7222::Characteristic::AddEventHandler(EventHandlers&)`:
 
 - `OnUpdatesEnabled(bool is_indication)` / `OnUpdatesDisabled()`  
   Fired on CCCD writes when a client enables/disables notifications/indications.

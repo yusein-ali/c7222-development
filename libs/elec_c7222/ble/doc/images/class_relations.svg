@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <style>
+    .box { fill: #f8f8f8; stroke: #333; stroke-width: 2; }
+    .title { font: 16px sans-serif; font-weight: 700; fill: #111; }
+    .text { font: 13px sans-serif; fill: #111; }
+    .arrow { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .label { font: 12px sans-serif; fill: #333; }
+  </style>
+
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#333" />
+    </marker>
+  </defs>
+
+  <!-- Boxes -->
+  <rect class="box" x="40" y="40" width="200" height="70" rx="6" />
+  <text class="title" x="60" y="70">Ble</text>
+  <text class="text" x="60" y="90">Facade / Singleton</text>
+
+  <rect class="box" x="320" y="40" width="200" height="70" rx="6" />
+  <text class="title" x="340" y="70">Gap</text>
+  <text class="text" x="340" y="90">Advertising / Conn</text>
+
+  <rect class="box" x="600" y="40" width="240" height="70" rx="6" />
+  <text class="title" x="620" y="70">SecurityManager</text>
+  <text class="text" x="620" y="90">Pairing / Auth</text>
+
+  <rect class="box" x="880" y="40" width="260" height="70" rx="6" />
+  <text class="title" x="900" y="70">AttributeServer</text>
+  <text class="text" x="900" y="90">ATT DB / Routing</text>
+
+  <rect class="box" x="880" y="170" width="260" height="70" rx="6" />
+  <text class="title" x="900" y="200">Service</text>
+  <text class="text" x="900" y="220">Groups Characteristics</text>
+
+  <rect class="box" x="880" y="300" width="260" height="70" rx="6" />
+  <text class="title" x="900" y="330">Characteristic</text>
+  <text class="text" x="900" y="350">Value + Descriptors</text>
+
+  <rect class="box" x="880" y="430" width="260" height="70" rx="6" />
+  <text class="title" x="900" y="460">Attribute</text>
+  <text class="text" x="900" y="480">ATT Entry</text>
+
+  <rect class="box" x="40" y="320" width="240" height="70" rx="6" />
+  <text class="title" x="60" y="350">Uuid</text>
+  <text class="text" x="60" y="370">16/128-bit Types</text>
+
+  <rect class="box" x="40" y="450" width="240" height="70" rx="6" />
+  <text class="title" x="60" y="480">BleAddress</text>
+  <text class="text" x="60" y="500">Peer Identity</text>
+
+  <rect class="box" x="40" y="580" width="240" height="70" rx="6" />
+  <text class="title" x="60" y="610">BleError</text>
+  <text class="text" x="60" y="630">Error Mapping</text>
+
+  <!-- Arrows from Ble to modules -->
+  <line class="arrow" x1="240" y1="75" x2="320" y2="75" />
+  <text class="label" x="260" y="65">owns</text>
+
+  <line class="arrow" x1="520" y1="75" x2="600" y2="75" />
+  <text class="label" x="540" y="65">owns</text>
+
+  <line class="arrow" x1="840" y1="75" x2="880" y2="75" />
+  <text class="label" x="850" y="65">owns</text>
+
+  <!-- AttributeServer composition -->
+  <line class="arrow" x1="1010" y1="110" x2="1010" y2="170" />
+  <text class="label" x="1020" y="150">contains</text>
+
+  <line class="arrow" x1="1010" y1="240" x2="1010" y2="300" />
+  <text class="label" x="1020" y="280">contains</text>
+
+  <line class="arrow" x1="1010" y1="370" x2="1010" y2="430" />
+  <text class="label" x="1020" y="410">contains</text>
+
+  <!-- Uuid used by GATT classes -->
+  <line class="arrow" x1="280" y1="355" x2="880" y2="355" />
+  <text class="label" x="300" y="345">uses</text>
+
+  <!-- BleAddress used by GAP/SM -->
+  <line class="arrow" x1="280" y1="485" x2="320" y2="90" />
+  <text class="label" x="300" y="470">used in</text>
+
+  <line class="arrow" x1="280" y1="485" x2="600" y2="90" />
+  <text class="label" x="420" y="460">used in</text>
+
+  <!-- BleError used across -->
+  <line class="arrow" x1="280" y1="615" x2="880" y2="90" />
+  <text class="label" x="300" y="600">error mapping</text>
+</svg>
