@@ -23,7 +23,7 @@ namespace c7222 {
  * 2. Characteristic Value attribute (mandatory)
  * 3. Client Characteristic Configuration Descriptor - CCCD (optional, for
  * notifications/indications)
- * 4. Characteristic User Description (optional)
+ * 4. Characteristic User Description (optional, 0x2901)
  * 5. Additional descriptors (optional)
  *
  * The Characteristic Declaration contains:
@@ -61,6 +61,24 @@ namespace c7222 {
  *   flow control (ATT_EVENT_CAN_SEND_NOW) are processed.
  * - Set a valid connection handle via `SetConnectionHandle()` to allow
  *   notifications/indications to be transmitted when values update.
+ *
+ * ---
+ * ### User Description Descriptor (0x2901)
+ *
+ * This class treats the Characteristic User Description descriptor as a
+ * read-only, application-controlled string. Design principles:
+ * - **Single handler policy:** all User Description descriptors share the same
+ *   internal read handler and the same write handler that always rejects writes.
+ * - **Centralized storage:** the user-facing string is stored in
+ *   `user_description_text_` and served directly by the read handler.
+ * - **Explicit configuration:** `SetUserDescription()` creates the descriptor
+ *   (if needed) and updates the stored text; `SetUserDescriptionText()` updates
+ *   the text only when a descriptor already exists.
+ *
+ * BTstack note: BTstack's .gatt files do not allow setting the User Description
+ * text for a characteristic. The descriptor can be declared (0x2901), but its
+ * contents must be provided by the application at runtime (e.g., via
+ * `SetUserDescription()` / `SetUserDescriptionText()`).
  *
  * ---
  * ### Debug Logging
@@ -435,11 +453,21 @@ class Characteristic final : public MovableOnly {
 		virtual void OnWrite(const std::vector<uint8_t>& data) {
 			(void)data;
 		}
-
+		/**
+		 * @brief Called when a confirmation for an indication is received.
+		 *
+		 * This callback is invoked when a confirmation is received for an
+		 * indication previously sent to a client.
+		 * The status parameter indicates whether the confirmation was successfully
+		 * received or if there was an error (e.g., timeout, disconnect).
+		 *
+		 * @param status true if confirmation was received successfully, false otherwise
+		 * @note Only applicable for characteristics with Indication property.
+		 */		
 		virtual void OnConfirmationReceived(bool status) {
 			(void)status;
 		}
-	private:
+	protected:
 		/**
 		 * @brief Virtual destructor for the EventHandlers interface.
 		 *
@@ -1172,6 +1200,18 @@ class Characteristic final : public MovableOnly {
 	Attribute& SetUserDescription(const std::string& description);
 
 	/**
+	 * @brief Update the user description text if a User Description descriptor exists.
+	 * @param description Human-readable description string
+	 * @return Pointer to the internal description string if the descriptor exists; nullptr otherwise
+	 *
+	 * This does not create the descriptor. It is intended for cases where the
+	 * 0x2901 descriptor already exists (e.g., parsed from the ATT DB) and the
+	 * application wants to update the text at runtime. The descriptor is forced
+	 * read-only and served via the internal read handler.
+	 */
+	const std::string* SetUserDescriptionText(const std::string& description);
+
+	/**
 	 * @brief Check if User Description descriptor is present.
 	 * @return true if user description has been set
 	 */
@@ -1187,6 +1227,17 @@ class Characteristic final : public MovableOnly {
 		return user_description_.get();
 	}
 
+	/**
+	 * @brief Get the user description text.
+	 * @return Reference to the user description text if set; empty string otherwise
+	 *
+	 * This returns the current user description text. If the User Description
+	 * descriptor is not present, it returns an empty string reference.
+	 */
+	const std::string& GetUserDescriptionText() const {
+		static const std::string empty_string;
+		return user_description_ ? user_description_text_ : empty_string;
+	}
 	/**
 	 * @brief Get the User Description descriptor (const version).
 	 * @return Const pointer to User Description Attribute, or nullptr if not set
@@ -1439,6 +1490,7 @@ class Characteristic final : public MovableOnly {
 	std::unique_ptr<Attribute> sccd_;  ///< Server Characteristic Configuration Descriptor
 	std::unique_ptr<Attribute> extended_properties_;  ///< Extended Properties descriptor
 	std::unique_ptr<Attribute> user_description_;	  ///< User Description descriptor
+	std::string user_description_text_;			  ///< User Description text storage
 	std::list<Attribute> descriptors_;				  ///< Additional custom descriptors
 
 	/// \name Internal Attribute Handlers
@@ -1455,13 +1507,23 @@ class Characteristic final : public MovableOnly {
 	 * @note Internal use only.
 	 */
 	BleError HandleSccdWrite(uint16_t offset, const uint8_t* data, uint16_t size) const;
+	/**
+	 * @brief User Description read handler used by the stack dispatcher.
+	 * @note Internal use only.
+	 */
+	uint16_t HandleUserDescriptionRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) const;
+	/**
+	 * @brief User Description write handler used by the stack dispatcher.
+	 * @note Always returns write-not-permitted.
+	 */
+	BleError HandleUserDescriptionWrite(uint16_t offset, const uint8_t* data, uint16_t size) const;
 
 	// Internal helpers for value attribute read/write handling
 	/**
 	 * @brief Value read handler used by the stack dispatcher.
 	 * @note Internal use only.
 	 */
-	uint16_t HandleValueRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size);
+	uint16_t HandleValueRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) const;
 	/**
 	 * @brief Value write handler used by the stack dispatcher.
 	 * @note Internal use only.
@@ -1472,6 +1534,22 @@ class Characteristic final : public MovableOnly {
 	// Event handlers
 	std::list<EventHandler*> event_handlers_;  ///< Registered event handlers
 
+	/**
+	 * @brief Configure the User Description descriptor to be read-only and routed
+	 *        through the shared internal read/write handlers.
+	 */
+	void ConfigureUserDescriptionDescriptor();
+	/**
+	 * @brief Load user description text from the descriptor value into
+	 *        `user_description_text_`.
+	 */
+	void SyncUserDescriptionTextFromAttribute();
+	/**
+	 * @brief Rebind internal callbacks after move operations.
+	 *
+	 * Reinstalls value and descriptor callbacks that capture `this`, ensuring
+	 * the moved-to instance handles reads/writes correctly.
+	 */
 	void RebindInternalCallbacks();
 
 	/**
