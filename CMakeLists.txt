@@ -25,7 +25,7 @@ endif()
 # ====================================================================================
 
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
-set(ELEC_C7222_ENABLE_BLE ON CACHE BOOL "Enable BLE helpers in ELEC_C7222")
+set(C7222_ENABLE_BLE ON CACHE BOOL "Enable BLE helpers in ELEC_C7222")
 option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 
 include(cmake/pico-compiler-settings.cmake)
