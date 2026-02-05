@@ -126,6 +126,11 @@ Characteristic::Characteristic(Attribute&& decl_attribute,
 			descriptors_.push_back(std::move(descriptor));
 		}
 	}
+
+	if(user_description_) {
+		SyncUserDescriptionTextFromAttribute();
+		ConfigureUserDescriptionDescriptor();
+	}
 }
 
 Characteristic::Characteristic(Characteristic&& other) noexcept
@@ -140,6 +145,7 @@ Characteristic::Characteristic(Characteristic&& other) noexcept
 	  sccd_(std::move(other.sccd_)),
 	  extended_properties_(std::move(other.extended_properties_)),
 	  user_description_(std::move(other.user_description_)),
+	  user_description_text_(std::move(other.user_description_text_)),
 	  descriptors_(std::move(other.descriptors_)),
 	  event_handlers_(std::move(other.event_handlers_)) {
 	RebindInternalCallbacks();
@@ -160,6 +166,7 @@ Characteristic& Characteristic::operator=(Characteristic&& other) noexcept {
 	sccd_ = std::move(other.sccd_);
 	extended_properties_ = std::move(other.extended_properties_);
 	user_description_ = std::move(other.user_description_);
+	user_description_text_ = std::move(other.user_description_text_);
 	descriptors_ = std::move(other.descriptors_);
 	event_handlers_ = std::move(other.event_handlers_);
 	RebindInternalCallbacks();
@@ -247,6 +254,9 @@ void Characteristic::RebindInternalCallbacks() {
 		sccd_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
 			return HandleSccdWrite(offset, data, size);
 		});
+	}
+	if(user_description_) {
+		ConfigureUserDescriptionDescriptor();
 	}
 }
 
@@ -450,10 +460,54 @@ Attribute& Characteristic::SetUserDescription(const std::string& description) {
 		user_description_ = std::make_unique<Attribute>(
 			Attribute::CharacteristicUserDescription(description, 0 /* handle assigned later */));
 	}
-	// Update existing description (copy into static storage)
-	std::vector<uint8_t> desc_data(description.begin(), description.end());
+	// Update existing description (copy into static storage + internal string)
+	user_description_text_ = description;
+	std::vector<uint8_t> desc_data(user_description_text_.begin(), user_description_text_.end());
 	user_description_->SetStaticValue(desc_data);
+	ConfigureUserDescriptionDescriptor();
 	return *user_description_;
+}
+
+const std::string* Characteristic::SetUserDescriptionText(const std::string& description) {
+	if(!user_description_) {
+		return nullptr;
+	}
+	user_description_text_ = description;
+	std::vector<uint8_t> desc_data(user_description_text_.begin(), user_description_text_.end());
+	user_description_->SetStaticValue(desc_data);
+	ConfigureUserDescriptionDescriptor();
+	return &user_description_text_;
+}
+
+void Characteristic::ConfigureUserDescriptionDescriptor() {
+	if(!user_description_) {
+		return;
+	}
+	uint16_t props = user_description_->GetProperties();
+	props &= ~static_cast<uint16_t>(Attribute::Properties::kWrite);
+	props &= ~static_cast<uint16_t>(Attribute::Properties::kWriteWithoutResponse);
+	props &= ~static_cast<uint16_t>(Attribute::Properties::kAuthenticatedSignedWrite);
+	user_description_->SetProperties(props);
+	user_description_->SetReadCallback([this](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
+		return HandleUserDescriptionRead(offset, buffer, buffer_size);
+	});
+	user_description_->SetWriteCallback([this](uint16_t offset, const uint8_t* data, uint16_t size) {
+		return HandleUserDescriptionWrite(offset, data, size);
+	});
+}
+
+void Characteristic::SyncUserDescriptionTextFromAttribute() {
+	if(!user_description_) {
+		user_description_text_.clear();
+		return;
+	}
+	const uint8_t* data = user_description_->GetValueData();
+	const size_t size = user_description_->GetValueSize();
+	if(data == nullptr || size == 0) {
+		user_description_text_.clear();
+		return;
+	}
+	user_description_text_.assign(reinterpret_cast<const char*>(data), size);
 }
 
 Attribute& Characteristic::AddDescriptor(const Uuid& uuid,
@@ -927,7 +981,30 @@ BleError Characteristic::HandleSccdWrite(uint16_t offset, const uint8_t* data, u
 	return BleError::kSuccess;	// success
 }
 
-uint16_t Characteristic::HandleValueRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {
+uint16_t Characteristic::HandleUserDescriptionRead(uint16_t offset,
+												   uint8_t* buffer,
+												   uint16_t buffer_size) const {
+	const size_t value_size = user_description_text_.size();
+	if(offset >= value_size) {
+		return 0;
+	}
+	const uint16_t bytes_to_copy =
+		std::min(static_cast<uint16_t>(value_size - offset), buffer_size);
+	if(buffer != nullptr && bytes_to_copy > 0) {
+		const char* data = user_description_text_.data();
+		std::copy(data + offset, data + offset + bytes_to_copy,
+				  reinterpret_cast<char*>(buffer));
+	}
+	return bytes_to_copy;
+}
+
+BleError Characteristic::HandleUserDescriptionWrite(uint16_t /*offset*/,
+													const uint8_t* /*data*/,
+													uint16_t /*size*/) const {
+	return BleError::kAttErrorWriteNotPermitted;
+}
+
+uint16_t Characteristic::HandleValueRead(uint16_t offset, uint8_t* buffer, uint16_t buffer_size) const{
 	C7222_BLE_DEBUG_PRINT("[BLE] Value read: handle=0x%04x offset=%u max=%u\n",
 		static_cast<unsigned>(value_attr_.GetHandle()),
 		static_cast<unsigned>(offset),
