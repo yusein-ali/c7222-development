@@ -62,6 +62,32 @@ BTstack’s standard process:
 
 BTstack provides many standard UUIDs in `bluetooth_gatt.h`. Missing UUIDs can be taken from the Bluetooth SIG assigned numbers.
 
+### Creating a Service from Bluetooth SIG Specs (BTstack documentation excerpt)
+
+**Copied and adapted from BTstack documentation** (doc/BTstack-md/profiles.md, section “Implementing Standard GATT Services”). The wording below is clarified but the steps and example follow BTstack.
+
+1. **Get the service specification** from the Bluetooth SIG website.
+2. **Find the Service Characteristics table** and note the required characteristics and their properties.
+3. **Translate the table into a `.gatt` file** with the correct UUID tokens and properties.
+4. **Implement the server logic** by handling read/write requests for the characteristic handles.
+
+Example (Battery Service):
+
+- The Battery Service has one mandatory characteristic: **Battery Level**.
+- Properties for Battery Level: **Read** (mandatory) and **Notify** (optional).
+
+Example `.gatt` snippet:
+
+```gatt
+// Battery Service v1.0
+PRIMARY_SERVICE, ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE
+CHARACTERISTIC, ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_LEVEL, DYNAMIC | READ | NOTIFY,
+```
+
+BTstack includes most standard UUID tokens in `bluetooth_gatt.h`. If a UUID is missing, you can pull it from the Bluetooth SIG assigned numbers list.
+
+BTstack also ships several pre‑implemented service `.gatt` files. In this project, some examples live under `ble/gatt/platform/rpi_pico/services/`.
+
 ## Project‑Specific GATT File Caveats
 
 ### User Description Descriptor

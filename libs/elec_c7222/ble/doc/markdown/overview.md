@@ -48,6 +48,7 @@ This library wraps BTstack with C++ classes to provide a more structured, object
 
 - The platform layer must forward HCI events into `c7222::Ble::DispatchBleHciPacket()`.
 - `Ble` fans out events to GAP, AttributeServer, and SecurityManager as appropriate.
+- On Raspberry Pi Pico W, BTstack runs its event processing inside a FreeRTOS task, so HCI events are dispatched from the BLE stack task context.
 - On Raspberry Pi Pico W, the platform integration lives in:
   - `libs/elec_c7222/ble/platform/rpi_pico/`
   - `libs/elec_c7222/ble/gap/platform/rpi_pico/`
