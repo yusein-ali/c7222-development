@@ -347,15 +347,15 @@ class Service : public MovableOnly {
 	[[nodiscard]] const Characteristic* FindCharacteristicByUuid(const Uuid& uuid) const;
 
 	/**
-	 * @brief Get a characteristic by handle.
-	 * @param handle Attribute handle (declaration or value)
+	 * @brief Get a characteristic that containes the specfied attribute handle.
+	 * @param handle Attribute handle to be searched for
 	 * @return Pointer to the characteristic if found, nullptr otherwise
 	 */
 	Characteristic* FindCharacteristicByHandle(uint16_t handle);
 
 	/**
-	 * @brief Get a characteristic by handle (const version).
-	 * @param handle Attribute handle (declaration or value)
+	 * @brief Get a characteristic that containes the specfied attribute handle (const version).
+	 * @param handle Attribute handle to be searched for
 	 * @return Const pointer to the characteristic if found, nullptr otherwise
 	 */
 	[[nodiscard]] const Characteristic* FindCharacteristicByHandle(uint16_t handle) const;
