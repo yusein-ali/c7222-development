@@ -105,9 +105,9 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 								   uint16_t packet_data_size) {
 	UNUSED(channel);								
 	UNUSED(packet_data_size);
-	C7222_BLE_DEBUG_PRINT("[BLE] HCI packet type=0x%02x size=%u\n",
-		static_cast<unsigned>(packet_type),
-		static_cast<unsigned>(packet_data_size));
+	// C7222_BLE_DEBUG_PRINT("[BLE] HCI packet type=0x%02x size=%u\n",
+	// 	static_cast<unsigned>(packet_type),
+	// 	static_cast<unsigned>(packet_data_size));
 	assert(gap_ != nullptr && "Gap instance is null in Ble::DispatchBleHciPacket");
 	assert(attribute_server_ != nullptr &&
 		   "AttributeServer instance is null in Ble::DispatchBleHciPacket");
@@ -115,7 +115,7 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 		return BleError::kUnsupportedFeatureOrParameterValue;
 
 	uint8_t event = hci_event_packet_get_type(packet_data);
-	C7222_BLE_DEBUG_PRINT("[BLE] HCI event=0x%02x\n", static_cast<unsigned>(event));
+	// C7222_BLE_DEBUG_PRINT("[BLE] HCI event=0x%02x\n", static_cast<unsigned>(event));
 	if(event == GAP_EVENT_SECURITY_LEVEL) {
 		const auto con_handle =
 			static_cast<ConnectionHandle>(gap_event_security_level_get_handle(packet_data));
