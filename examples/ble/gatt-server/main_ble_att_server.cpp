@@ -4,6 +4,7 @@
 #include "FreeRTOS.h"
 #include "advertisement_data.hpp"
 #include "../common/app_gap.hpp"
+#include "ble_onchip_temperature.hpp"
 #include "ble.hpp"
 #include "characteristic.hpp"
 #include "freertos_timer.hpp"
@@ -24,10 +25,12 @@ static c7222::OnBoardLED* onboard_led = nullptr;
 static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
 static c7222::FreeRtosTimer app_timer;
 static c7222::Characteristic* temperature_characteristic = nullptr;
+static c7222::Characteristic* configuration_characteristic = nullptr;
 static c7222::Platform* platform = nullptr;
 static c7222::SecurityManager* security_manager = nullptr;
 static c7222::AttributeServer* att_server = nullptr;
 
+static BleOnchipTemperature* ble_temperature_manager = nullptr;
 static SecurityEventHandler security_event_handler;
 static GapEventHandler gap_event_handler;
 
@@ -131,17 +134,38 @@ static void on_turn_on() {
 		security_event_handler.SetSecurityManager(security_manager);
 		ble->AddSecurityEventHandler(&security_event_handler);
 	}
-
 	att_server = ble->EnableAttributeServer(profile_data);
 	gap_event_handler.SetAttributeServer(att_server);
 	auto& adb = ble->GetAdvertisementDataBuilder();
+	std::cout << "Attribute server initialized." << std::endl;
 
-	ble->DumpAttributeServerContext();
-	std::cout << "Attribute server initialized." << std::endl
-			  << "Printing Attribute Server" << std::endl;
-	std::cout << *att_server << std::endl;
+	auto* service = att_server->FindServiceByUuid(
+		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
+	if(service != nullptr) {
+		std::cout << "Environmental Sensing Service found in ATT DB." << std::endl << *service
+				  << std::endl;
+	} else {
+		std::cout << "Environmental Sensing Service NOT found in ATT DB!" << std::endl;
+		assert(false);
+	}
 
-	printf("CYW43 init complete. Setting up BTstack... here!\n");
+	configuration_characteristic = att_server->FindCharacteristicByHandle(
+		ATT_CHARACTERISTIC_fc930f88_1a30_45d7_8c17_604c1a036b9f_01_USER_DESCRIPTION_HANDLE);
+
+	if(configuration_characteristic != nullptr) {
+		configuration_characteristic->SetValue((uint16_t) 0x0000);
+		std::cout << "Configuration Characteristic found in ATT DB." << std::endl
+				  << *configuration_characteristic << std::endl;
+	} else {
+		std::cout << "Configuration Characteristic NOT found in ATT DB!" << std::endl;
+		assert(false);
+	}
+
+	if(!configuration_characteristic->HasUserDescription()){
+		std::cout << "Characteristic does not have user description!" << std::endl;
+		assert(false);
+	}
+	configuration_characteristic->SetUserDescription("Configuration");
 
 	// now, let us look for the Temperature Service and its characteristic
 	auto* temp_service = att_server->FindServiceByUuid(
@@ -151,12 +175,22 @@ static void on_turn_on() {
 		std::cout << "Found Temperature Service!" << std::endl;
 		temperature_characteristic = temp_service->FindCharacteristicByUuid(
 			c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_CHARACTERISTIC_TEMPERATURE)));
+		temperature_characteristic->SetUserDescription("Temperature");
 	} else {
 		std::cout << "Temperature Service not found!" << std::endl;
 		std::cout << "Not setting up temperature updates." << std::endl;
 		temperature_characteristic = nullptr;
 	}
 
+	std::cout << "Initializing BleOnchipTemperature manager with characteristics..." << std::endl;
+	ble_temperature_manager = BleOnchipTemperature::GetInstance(temperature_characteristic,
+														   configuration_characteristic);
+	
+
+	std::cout << "Printing Attribute Server" << std::endl;
+	std::cout << *att_server << std::endl;
+
+	printf("CYW43 init complete. Powering up BTstack... here!\n");
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
 
