@@ -115,6 +115,9 @@ int att_write_callback(hci_con_handle_t connection_handle,
 					   uint16_t buffer_size) {
 	(void) connection_handle;
 	(void) transaction_mode;
+	if(attribute_handle == 0) {
+		return 0;
+	}
 	auto* server = AttributeServer::GetInstance();
 	if(server == nullptr) {
 		return ATT_ERROR_UNLIKELY_ERROR;
