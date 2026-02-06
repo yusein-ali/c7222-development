@@ -8,30 +8,9 @@
 #include <cstdint>
 
 #include "characteristic.hpp"
+#include "../common/characteristic_event_handler.hpp"
 #include "non_copyable.hpp"
-
-class TemperatureEventHandler : public c7222::Characteristic::EventHandler {
-public:
-	void OnUpdatesEnabled(bool is_indication) override;
-	void OnUpdatesDisabled() override;
-	void OnIndicationComplete(uint8_t status) override;
-	void OnBroadcastEnabled() override;
-	void OnBroadcastDisabled() override;
-	void OnRead() override;
-	void OnWrite(const std::vector<uint8_t>& data) override;
-	void OnConfirmationReceived(bool status) override;
-
-	void SetCharacteristicName(const std::string& name) {
-		characteristic_name_ = name;
-	}
-
-	std::string GetCharacteristicName() const {
-		return characteristic_name_;
-	}
-
-private: 
-	std::string characteristic_name_;
-};
+// #include "characteristic_event_handler.hpp" // Ensure this is included
 
 class BleOnchipTemperature: public c7222::NonCopyableNonMovable {
 public:
@@ -43,8 +22,8 @@ public:
 	 BleOnchipTemperature();
 	 c7222::Characteristic* temperature_characteristic_;
 	 c7222::Characteristic* configuration_characteristic_;
-	 TemperatureEventHandler temperature_event_handler_;
-	 TemperatureEventHandler configuration_event_handler_;
+	 CharacteristicEventHandler temperature_event_handler_;
+	 CharacteristicEventHandler configuration_event_handler_;
 
 	 static BleOnchipTemperature* instance_;
 };

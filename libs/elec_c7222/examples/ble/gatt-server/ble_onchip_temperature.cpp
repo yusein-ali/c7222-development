@@ -7,53 +7,6 @@
 
 #include "ble_onchip_temperature.hpp"
 
-void TemperatureEventHandler::OnUpdatesEnabled(bool /*is_indication*/) {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnUpdatesEnabled\n", text.c_str());
-}
-
-void TemperatureEventHandler::OnUpdatesDisabled() {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnUpdatesDisabled\n", text.c_str());
-}
-
-void TemperatureEventHandler::OnIndicationComplete(uint8_t /*status*/) {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnIndicationComplete\n", text.c_str());
-}
-
-void TemperatureEventHandler::OnBroadcastEnabled() {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnBroadcastEnabled\n", text.c_str());
-}
-
-void TemperatureEventHandler::OnBroadcastDisabled() {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnBroadcastDisabled\n", text.c_str());
-}
-
-void TemperatureEventHandler::OnRead() {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnRead\n", text.c_str());
-}
-
-void TemperatureEventHandler::OnWrite(const std::vector<uint8_t>& data) {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnWrite\n", text.c_str());
-	for (size_t i = 0; i < data.size(); i += 16) {
-		std::printf("  ");
-		for (size_t j = i; j < i + 16 && j < data.size(); j++) {
-			std::printf("%02x ", data[j]);
-		}
-		std::printf("\n");
-	}
-}
-
-void TemperatureEventHandler::OnConfirmationReceived(bool /*status*/) {
-	std::string text = characteristic_name_.empty() ? "Characteristic Event" : characteristic_name_;
-	std::printf("[%s]: OnConfirmationReceived\n", text.c_str());
-}
-
 BleOnchipTemperature* BleOnchipTemperature::instance_ = nullptr;
 
 BleOnchipTemperature::BleOnchipTemperature()

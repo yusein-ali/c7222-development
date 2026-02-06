@@ -1,4 +1,4 @@
-#include "app_gap.hpp"
+#include "gap_event_handler.hpp"
 
 GapEventHandler::GapEventHandler(c7222::Gap* gap,
 								 c7222::AttributeServer* attribute_server)

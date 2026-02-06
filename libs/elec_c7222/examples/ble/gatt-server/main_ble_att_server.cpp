@@ -3,7 +3,7 @@
 
 #include "FreeRTOS.h"
 #include "advertisement_data.hpp"
-#include "../common/app_gap.hpp"
+#include "gap_event_handler.hpp"
 #include "ble_onchip_temperature.hpp"
 #include "ble.hpp"
 #include "characteristic.hpp"

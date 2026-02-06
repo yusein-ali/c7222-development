@@ -6,13 +6,12 @@
  * lightweight helper to bind the handler to temperature and configuration
  * characteristics in example code.
  */
-#ifndef PICOBLEGATTTEST_BLE_ONCHIP_TEMPERATURE_HPP
-#define PICOBLEGATTTEST_BLE_ONCHIP_TEMPERATURE_HPP
+#ifndef PICOBLEGATTTEST_CHARACTERISTIC_EVENT_HANDLER_HPP
+#define PICOBLEGATTTEST_CHARACTERISTIC_EVENT_HANDLER_HPP
 
 #include <cstdint>
 
 #include "characteristic.hpp"
-#include "non_copyable.hpp"
 
 /**
  * @brief Minimal characteristic event handler for examples.
@@ -60,4 +59,4 @@ private:
 };
 
 
-#endif	// PICOBLEGATTTEST_BLE_ONCHIP_TEMPERATURE_HPP
+#endif	// PICOBLEGATTTEST_CHARACTERISTIC_EVENT_HANDLER_HPP
