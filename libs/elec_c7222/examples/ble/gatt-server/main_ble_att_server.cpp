@@ -1,3 +1,19 @@
+/**
+ * @file main_ble_att_server.cpp
+ * @brief BLE GATT server example with AttributeServer and SecurityManager.
+ *
+ * Demonstrates how to:
+ * - Enable the AttributeServer with a GATT profile database.
+ * - Register GAP and Security Manager event handlers.
+ * - Locate services/characteristics and attach event handlers.
+ * - Periodically update a characteristic value (temperature) using a timer.
+ *
+ * Dependencies:
+ * - `GapEventHandler` logs GAP events and restarts advertising on disconnect.
+ * - `SecurityEventHandler` logs pairing/authorization and performs minimal policy.
+ * - `BleOnchipTemperature` binds `CharacteristicEventHandler` instances to
+ *   temperature/configuration characteristics for event logging.
+ */
 #include <cstdint>
 #include <cstdio>
 
@@ -21,19 +37,36 @@
 #include "app_profile.h"
 
 
+/// On-board LED used as a heartbeat while advertising.
 static c7222::OnBoardLED* onboard_led = nullptr;
+/// Temperature sensor wrapper used to read on-chip temperature.
 static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
+/// Periodic timer used to update the temperature characteristic.
 static c7222::FreeRtosTimer app_timer;
+/// Temperature characteristic handle resolved from the ATT database.
 static c7222::Characteristic* temperature_characteristic = nullptr;
+/// Configuration characteristic handle resolved from the ATT database.
 static c7222::Characteristic* configuration_characteristic = nullptr;
+/// Platform abstraction (initializes CYW43/BTstack).
 static c7222::Platform* platform = nullptr;
+/// SecurityManager instance for pairing/authorization.
 static c7222::SecurityManager* security_manager = nullptr;
+/// AttributeServer instance providing GATT database access.
 static c7222::AttributeServer* att_server = nullptr;
 
+/// Helper that binds characteristic event handlers for logging.
 static BleOnchipTemperature* ble_temperature_manager = nullptr;
+/// Security event handler (minimal example policy).
 static SecurityEventHandler security_event_handler;
+/// GAP event handler (logging + restart advertising).
 static GapEventHandler gap_event_handler;
 
+/**
+ * @brief Periodic timer callback to update temperature value.
+ *
+ * Reads the temperature sensor and writes a fixed-point value (C * 100) into
+ * the temperature characteristic when a connection is active.
+ */
 static void timer_callback() {
 	assert(onboard_led != nullptr && "OnBoardLED instance is null in timer callback!");
 	assert(temp_sensor != nullptr && "OnChipTemperatureSensor instance is null in timer callback!");
@@ -42,15 +75,11 @@ static void timer_callback() {
 
 	onboard_led->Toggle();
 
-	// set the value of the temperature characteristic
+	// Update the temperature characteristic if present.
 	if(temperature_characteristic != nullptr) {
 		auto temp_fixed_point = static_cast<int16_t>(temperature_c * 100);
-		// this must call SetValue with the fixed-point representation
-		// but also notify or indicate if the client has enabled them.
+		// SetValue writes the value and triggers notify/indicate if enabled.
 		if(att_server->IsConnected()) {
-		// 	printf("Timer Callback: T = %.2f C Value written 0x%04x\n",
-		// 		   temperature_c,
-		// 		   temp_fixed_point);
 			temperature_characteristic->SetValue(temp_fixed_point);
 		}
 	} else {
@@ -61,16 +90,21 @@ static void timer_callback() {
 // -------------------------------------------------------------------------
 // Packet Handler: Receive events from the BLE Stack
 // -------------------------------------------------------------------------
+/**
+ * @brief Callback executed when the BLE stack is fully initialized.
+ *
+ * Configures advertising data/parameters and starts advertising.
+ */
 static void on_turn_on() {
 	printf("Bluetooth Turned On\n");
 	auto* ble = c7222::Ble::GetInstance();
 	auto* gap = ble->GetGap();
-	auto& adb = ble->GetAdvertisementDataBuilder();
 
+	// Register GAP event handler for logging.
 	gap->AddEventHandler(gap_event_handler);
 	auto& adv_builder = gap->GetAdvertisementDataBuilder();
 
-	// Generate the packet using the advertisement data class
+	// Generate the packet using the advertisement data class.
 	ble->SetAdvertisementFlags(c7222::AdvertisementData::Flags::kLeGeneralDiscoverableMode |
 							   c7222::AdvertisementData::Flags::kBrEdrNotSupported);
 	ble->SetDeviceName("Pico2_BLE++");
@@ -80,21 +114,15 @@ static void on_turn_on() {
 											 (uint8_t*) &value,
 											 sizeof(value)));
 
-	// ------------------------------------------------
-	// generate the advertisement parameters
-	// ------------------------------------------------
-	// note that the default parameters are fine for most use cases
+	// Configure advertising parameters (200ms to 250ms interval).
 	{
 		c7222::Gap::AdvertisementParameters adv_params;
-		// Set a custom interval: 200ms to 250ms
-		// Interval is in units of 0.625 ms, so 320 * 0.625 = 200ms, 400 * 0.625 = 250ms
 		adv_params.advertising_type = c7222::Gap::AdvertisingType::kAdvInd;
 		adv_params.min_interval = 320;
 		adv_params.max_interval = 400;
-		// 2. Set Advertisement Parameters (Interval: 100ms approx)
 		gap->SetAdvertisingParameters(adv_params);
 	}
-	// Start Advertising
+	// Start advertising.
 	gap->StartAdvertising();
 	printf("Advertising started as 'Pico2_BLE'...\n");
 }
@@ -102,17 +130,25 @@ static void on_turn_on() {
 // -------------------------------------------------------------------------
 // BLE Application Task
 // -------------------------------------------------------------------------
+/**
+ * @brief FreeRTOS task that owns BLE initialization and GATT server setup.
+ *
+ * Initializes platform, security manager, attribute server, resolves
+ * characteristics, and starts advertising. A timer periodically updates
+ * the temperature characteristic when connected.
+ */
 [[noreturn]] void ble_app_task(void* params) {
 	(void) params;
 	
 	static uint32_t seconds = 0;
-	// Initialize CYW43 Architecture platform (Starts the SDK background worker)
+	// Initialize CYW43 Architecture platform (starts the SDK background worker).
 	platform = c7222::Platform::GetInstance();
 	platform->Initialize();
 
 	onboard_led = c7222::OnBoardLED::GetInstance();
 	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
 
+	// Timer used for periodic temperature updates.
 	app_timer.Initialize("AppTimer",
 						 pdMS_TO_TICKS(2000),
 						 c7222::FreeRtosTimer::Type::kPeriodic,
@@ -120,10 +156,9 @@ static void on_turn_on() {
 
 	auto* ble = c7222::Ble::GetInstance(false);
 	auto* gap = ble->GetGap();
-	// security_manager = ble->GetSecurityManager();
+	// Configure and enable Security Manager.
 	{
 		c7222::SecurityManager::SecurityParameters sm_params;
-		// Configure Security Manager parameters
 		sm_params.authentication =
 			c7222::SecurityManager::AuthenticationRequirement::kMitmProtection;
 
@@ -134,11 +169,13 @@ static void on_turn_on() {
 		security_event_handler.SetSecurityManager(security_manager);
 		ble->AddSecurityEventHandler(&security_event_handler);
 	}
+	// Enable AttributeServer with the generated GATT database.
 	att_server = ble->EnableAttributeServer(profile_data);
 	gap_event_handler.SetAttributeServer(att_server);
 	auto& adb = ble->GetAdvertisementDataBuilder();
 	std::cout << "Attribute server initialized." << std::endl;
 
+	// Verify the Environmental Sensing Service exists in the DB.
 	auto* service = att_server->FindServiceByUuid(
 		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
 	if(service != nullptr) {
@@ -149,6 +186,7 @@ static void on_turn_on() {
 		assert(false);
 	}
 
+	// Resolve configuration characteristic by handle and initialize it.
 	configuration_characteristic = att_server->FindCharacteristicByHandle(
 		ATT_CHARACTERISTIC_fc930f88_1a30_45d7_8c17_604c1a036b9f_01_USER_DESCRIPTION_HANDLE);
 
@@ -161,13 +199,14 @@ static void on_turn_on() {
 		assert(false);
 	}
 
+	// Ensure user description descriptor exists and set a friendly label.
 	if(!configuration_characteristic->HasUserDescription()){
 		std::cout << "Characteristic does not have user description!" << std::endl;
 		assert(false);
 	}
 	configuration_characteristic->SetUserDescription("Configuration");
 
-	// now, let us look for the Temperature Service and its characteristic
+	// Resolve the temperature characteristic.
 	auto* temp_service = att_server->FindServiceByUuid(
 		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
 
@@ -182,6 +221,7 @@ static void on_turn_on() {
 		temperature_characteristic = nullptr;
 	}
 
+	// Attach event handlers for the temperature and configuration characteristics.
 	std::cout << "Initializing BleOnchipTemperature manager with characteristics..." << std::endl;
 	ble_temperature_manager = BleOnchipTemperature::GetInstance(temperature_characteristic,
 														   configuration_characteristic);
@@ -191,6 +231,7 @@ static void on_turn_on() {
 	std::cout << *att_server << std::endl;
 
 	printf("CYW43 init complete. Powering up BTstack... here!\n");
+	// Start BLE stack; on_turn_on() will begin advertising.
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
 
@@ -201,17 +242,12 @@ static void on_turn_on() {
 	} else {
 		std::cout << "Timer started and will fire in 100 ticks!" << std::endl;
 	}
-	// Enter infinite loop to keep task alive (or perform other app logic)
+	// Enter infinite loop to keep task alive (and update advertising data).
 	while(true) {
 		seconds = xTaskGetTickCount() / 1000;
-		// Blink LED to show system is alive
-		// onboard_led->Toggle();
-		// vTaskDelay(pdMS_TO_TICKS(500));
-		// onboard_led->Toggle();
 		vTaskDelay(pdMS_TO_TICKS(100));
-		// printf("BLE App Task is running...%lu\n", seconds);
 		if(gap->IsAdvertisingEnabled()) {
-			// printf("Updating the manuf specific data to %lu\n", seconds);
+			// Replace the last advertising element with updated manufacturer data.
 			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific,
 											   (uint8_t*) &seconds,
 											   sizeof(seconds));
@@ -219,8 +255,6 @@ static void on_turn_on() {
 			adb.Push(ad);
 			ble->SetAdvertisingData();
 			onboard_led->Toggle();
-		} else {
-			// printf("Not advertising.\n");
 		}
 	}
 }
@@ -228,21 +262,21 @@ static void on_turn_on() {
 // -------------------------------------------------------------------------
 // Main
 // -------------------------------------------------------------------------
+/**
+ * @brief Program entry point.
+ */
 [[noreturn]] int main() {
 	stdio_init_all();
 	printf("Starting FreeRTOS BLE Example...\n");
 
-	// Create the BLE application task
-	// Stack size 1024 words (4096 bytes) is usually sufficient for basic advertising
+	// Create the BLE application task.
 	xTaskCreate(ble_app_task, "BLE_App", 1024, NULL, tskIDLE_PRIORITY + 1, NULL);
 
-	// Start the Scheduler
+	// Start the scheduler.
 	vTaskStartScheduler();
 
-	// Should never reach here
+	// Should never reach here.
 	while(1) {}
-
-	// return 0;
 }
 
 
