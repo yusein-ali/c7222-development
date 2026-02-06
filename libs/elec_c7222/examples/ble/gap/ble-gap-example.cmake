@@ -30,4 +30,12 @@ if(C7222_EXAMPLE_BLE_GAP)
     )
 
     list(APPEND C7222_ENABLED_EXAMPLES C7222_EXAMPLE_BLE_GAP)
+
+    # Append the gatt files 
+    if(NOT DEFINED APP_GATT_FILES)
+	    message(FATAL_ERROR "APP_GATT_FILES list must be defined before including ble-examples.cmake")
+    endif()
+
+    file(GLOB APP_GATT_FILES_LOCAL "${CMAKE_CURRENT_LIST_DIR}/*.gatt")
+    list(APPEND APP_GATT_FILES ${APP_GATT_FILES_LOCAL})
 endif()

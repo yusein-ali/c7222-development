@@ -28,13 +28,19 @@ set(PICO_BOARD pico2_w CACHE STRING "Board type")
 
 # ====================================================================================
 # OPTIONS
+set(APP_NAME "PicoBleGattTest" CACHE STRING "Application name")
+
 option(C7222_ENABLE_BLE "Enable BLE helpers in ELEC_C7222" ON)
 option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 option(C7222_EXAMPLES_BUILD "Enable C7222 examples build" ON)
-option(C7222_EXAMPLE_FREERTOS_BOARD "Enable C7222 FreeRTOS board example" ON)
+option(C7222_EXAMPLE_FREERTOS_BOARD "Enable C7222 FreeRTOS board example" OFF)
 option(C7222_EXAMPLE_BLE_GAP "Enable C7222 BLE GAP example" OFF)
-option(C7222_EXAMPLE_BLE_GATT_SERVER "Enable C7222 BLE GATT server example" OFF)
+option(C7222_EXAMPLE_BLE_GATT_SERVER "Enable C7222 BLE GATT server example" ON)
 
+# internal list for gatt files
+if(C7222_ENABLE_BLE)
+    set(APP_GATT_FILES "" CACHE INTERNAL "List of .gatt files to compile for the app; populated by examples")
+endif()
 # ====================================================================================
 # COMPILER SETTINGS
 include(cmake/pico-compiler-settings.cmake)
@@ -52,7 +58,6 @@ include(cmake/FreeRTOS_Cpp11_lib.cmake)
 
 # ====================================================================================
 # PROJECT
-set(APP_NAME "PicoBleGattTest" CACHE STRING "Application name")
 project(${APP_NAME} C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
@@ -150,10 +155,12 @@ pico_enable_stdio_usb(${APP_NAME} 0)
 pico_enable_stdio_uart(${APP_NAME}  1)
 pico_add_extra_outputs(${APP_NAME})
 
-file(GLOB APP_GATT_FILES CONFIGURE_DEPENDS "${APP_SOURCE_DIR}/*.gatt")
-foreach(APP_GATT_FILE IN LISTS APP_GATT_FILES)
-    pico_btstack_make_gatt_header(${APP_NAME} PRIVATE "${APP_GATT_FILE}")
-endforeach()
+
+if(C7222_ENABLE_BLE) 
+    foreach(APP_GATT_FILE IN LISTS APP_GATT_FILES)
+        pico_btstack_make_gatt_header(${APP_NAME} PRIVATE "${APP_GATT_FILE}")
+    endforeach()
+endif()
 
 # add url via pico_set_program_url
 
