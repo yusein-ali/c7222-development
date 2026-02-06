@@ -25,12 +25,22 @@ endif()
 # ====================================================================================
 
 set(PICO_BOARD pico2_w CACHE STRING "Board type")
-set(C7222_ENABLE_BLE ON CACHE BOOL "Enable BLE helpers in ELEC_C7222")
-option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 
+# ====================================================================================
+# OPTIONS
+option(C7222_ENABLE_BLE "Enable BLE helpers in ELEC_C7222" ON)
+option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
+option(C7222_EXAMPLES_BUILD "Enable C7222 examples build" ON)
+option(C7222_EXAMPLE_FREERTOS_BOARD "Enable C7222 FreeRTOS board example" ON)
+option(C7222_EXAMPLE_BLE_GAP "Enable C7222 BLE GAP example" OFF)
+option(C7222_EXAMPLE_BLE_GATT_SERVER "Enable C7222 BLE GATT server example" OFF)
+
+# ====================================================================================
+# COMPILER SETTINGS
 include(cmake/pico-compiler-settings.cmake)
 # set(FREERTOS_KERNEL_SMP 1 CACHE BOOL "Disable SMP FreeRTOS port for single-core scheduling")
-
+# ====================================================================================
+# COMPONENTS
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(cmake/pico_sdk_import.cmake)
 # pull other libraries if they do not exist
@@ -40,35 +50,43 @@ include(cmake/FreeRTOS_CPP11_import.cmake)
 # Include FreeRTOS-cpp11 library configuration
 include(cmake/FreeRTOS_Cpp11_lib.cmake)
 
+# ====================================================================================
+# PROJECT
 set(APP_NAME "PicoBleGattTest" CACHE STRING "Application name")
-set(APP_SOURCE_DIR "${CMAKE_SOURCE_DIR}/examples/ble/gatt-server" CACHE PATH "Application source directory")
-
 project(${APP_NAME} C CXX ASM)
-
-
-
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# elec_c7222 helpers
+# ====================================================================================
+# THE LAST COMPNENT: elec_c7222 helpers -- this must be included after defining the project and options
 include(${CMAKE_SOURCE_DIR}/libs/elec_c7222/elec_c7222.cmake)
 
 # Add executable. Default name is the project name, version 0.1
+if(NOT C7222_EXAMPLES_BUILD)
+    # if we are not building examples, just build the app from the main source dir
+     set(APP_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src" CACHE PATH "Application source directory")
+    set(APP_SOURCE_DIR "${CMAKE_SOURCE_DIR}/examples/ble/gatt-server" CACHE PATH "Application source directory")
+    file(GLOB APP_SOURCES
+        "${APP_SOURCE_DIR}/*.cpp"
+        "${APP_SOURCE_DIR}/*.c")
 
-file(GLOB APP_SOURCES
-    "${APP_SOURCE_DIR}/*.cpp"
-    "${APP_SOURCE_DIR}/*.c")
+    message(STATUS "APP_NAME: ${APP_NAME}")
+    message(STATUS "APP_DIR: ${APP_SOURCE_DIR}")
+    message(STATUS "APP_SOURCES: ${APP_SOURCES}")
 
-message(STATUS "APP_NAME: ${APP_NAME}")
-message(STATUS "APP_DIR: ${APP_SOURCE_DIR}")
-message(STATUS "APP_SOURCES: ${APP_SOURCES}")
-
-add_executable(${APP_NAME}
+    add_executable(${APP_NAME}
                     ${APP_SOURCES}
-                    ${FREERTOS_CPP11_SOURCES}
-                )
+                    ${FREERTOS_CPP11_SOURCES})
+else()
+    # if we are building examples, the example library will pull in the app sources
+    add_executable(${APP_NAME}
+                   ${FREERTOS_CPP11_SOURCES})
+endif()
 
+
+# ====================================================================================
+# CONFIGURE COMPILER AND LINKER SETTINGS
 # Set language for C++ sources
 set_source_files_properties(${FREERTOS_CPP11_SOURCES} PROPERTIES LANGUAGE CXX)
 
@@ -89,12 +107,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     )
 endif()
 
-# Search this source dir for project headers
-target_include_directories(${APP_NAME} PRIVATE 
-                            ${CMAKE_SOURCE_DIR}
-                            ${FREERTOS_CPP11_INCLUDE_DIRS}
-                            ${CMAKE_SOURCE_DIR}/libs/elec_c7222/ble/gatt/platform/rpi_pico/config
-                            )
 
 target_link_options(${APP_NAME} PRIVATE
     "LINKER:--wrap=malloc"
@@ -102,6 +114,13 @@ target_link_options(${APP_NAME} PRIVATE
     "LINKER:--wrap=calloc"
     "LINKER:-Map=${CMAKE_BINARY_DIR}/${APP_NAME}.map"
 )
+
+# Search this source dir for project headers
+target_include_directories(${APP_NAME} PRIVATE 
+                            ${CMAKE_SOURCE_DIR}
+                            ${FREERTOS_CPP11_INCLUDE_DIRS}
+                            )
+
 # pull in common dependencies
 target_link_libraries(${APP_NAME} PRIVATE
     pico_stdlib
