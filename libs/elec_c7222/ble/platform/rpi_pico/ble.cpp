@@ -109,8 +109,6 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 	// 	static_cast<unsigned>(packet_type),
 	// 	static_cast<unsigned>(packet_data_size));
 	assert(gap_ != nullptr && "Gap instance is null in Ble::DispatchBleHciPacket");
-	assert(attribute_server_ != nullptr &&
-		   "AttributeServer instance is null in Ble::DispatchBleHciPacket");
 	if(packet_type != HCI_EVENT_PACKET)
 		return BleError::kUnsupportedFeatureOrParameterValue;
 
@@ -150,15 +148,29 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 	}
 	C7222_BLE_DEBUG_PRINT("BLE EVENT 0x%02X\r\n", event);
 	BleError gap_status = gap_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
-	BleError attribute_server_status =
-		attribute_server_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	BleError attribute_server_status = BleError::kSuccess;
+	if(attribute_server_ != nullptr) {
+		attribute_server_status =
+			attribute_server_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
+	}
+
 	BleError security_status = BleError::kSuccess;
 	if(security_manager_ != nullptr) {
 		security_status = security_manager_->DispatchBleHciPacket(packet_type, packet_data, packet_data_size);
 	}
 
-	return static_cast<BleError>(static_cast<int>(gap_status) + static_cast<int>(attribute_server_status) +
-								 static_cast<int>(security_status));
+	if(static_cast<BleError>(static_cast<int>(gap_status) +
+							 static_cast<int>(attribute_server_status) +
+							 static_cast<int>(security_status)) != BleError::kSuccess) {
+		C7222_BLE_DEBUG_PRINT(
+			"[BLE] Error handling HCI packet: gap=%u attribute_server=%u security_manager=%u\n",
+			static_cast<unsigned>(gap_status),
+			static_cast<unsigned>(attribute_server_status),
+			static_cast<unsigned>(security_status));
+		return BleError::kUnspecifiedError;
+	} else {
+		return BleError::kSuccess;
+	}
 }
 
 void Ble::EnableHCILoggingToStdout() {
