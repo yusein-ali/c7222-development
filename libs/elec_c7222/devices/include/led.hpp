@@ -30,7 +30,8 @@ namespace c7222 {
  *  - PullMode::None
  * and optionally sets the pad drive strength.
  *
- * Drive strength is applied in the platform-specific backend via GpioPin.
+ * Some boards use active-low LEDs (logic low turns the LED on). This class
+ * supports that via the active_low flag.
  */
 class Led : public GpioPin {
   public:
@@ -38,13 +39,16 @@ class Led : public GpioPin {
 	 * @brief Construct an LED output pin.
 	 *
 	 * @param pin GPIO number.
-	 * @param initial_on Initial output state (default: false/off).
+	 * @param initial_on Initial LED state (default: false/off).
 	 * @param drive Pad drive strength (default: 4 mA).
+	 * @param active_low If true, LED is active-low (GPIO low = on).
 	 */
 	explicit Led(uint32_t pin,
 	             bool initial_on = false,
-	             DriveStrength drive = DriveStrength::mA4)
-	    : GpioPin(pin, MakeConfig(pin, initial_on, drive)) {}
+	             DriveStrength drive = DriveStrength::mA4,
+	             bool active_low = false)
+	    : GpioPin(pin, MakeConfig(pin, initial_on, drive, active_low)),
+	      _active_low(active_low) {}
 
 	/**
 	 * @brief Disallow generic reconfiguration.
@@ -58,41 +62,53 @@ class Led : public GpioPin {
 	 * @param on true = on, false = off.
 	 */
 	void Set(bool on) {
-		Write(on);
+		Write(PhysicalLevel(on));
 	}
 
 	/**
 	 * @brief Turn the LED on.
 	 */
 	void On() {
-		Write(true);
+		Write(PhysicalLevel(true));
 	}
 
 	/**
 	 * @brief Turn the LED off.
 	 */
 	void Off() {
-		Write(false);
+		Write(PhysicalLevel(false));
 	}
 
 	/**
 	 * @brief Toggle the LED state.
+	 *
+	 * Note: For active-low LEDs, toggling the GPIO level still toggles the LED.
 	 */
 	void Toggle() {
 		GpioPin::Toggle();
 	}
 
   private:
+	bool _active_low{false};
+
+	bool PhysicalLevel(bool led_on) const {
+		// active_low: LED on => GPIO low
+		return _active_low ? !led_on : led_on;
+	}
+
 	/**
 	 * @brief Create a GpioPin::Config for output-only LED usage.
 	 */
-	static Config MakeConfig(uint32_t pin, bool initial_on, DriveStrength drive) {
+	static Config MakeConfig(uint32_t pin,
+	                         bool initial_on,
+	                         DriveStrength drive,
+	                         bool active_low) {
 		Config cfg(static_cast<int32_t>(pin));
 		cfg.direction = Direction::Output;
 		cfg.pull = PullMode::None;
 		cfg.output_type = OutputType::PushPull;
 		cfg.drive = drive;
-		cfg.initial_state = initial_on;
+		cfg.initial_state = active_low ? !initial_on : initial_on;
 		return cfg;
 	}
 };
