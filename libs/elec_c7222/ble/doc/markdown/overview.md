@@ -2,6 +2,48 @@
 
 This library wraps BTstack with C++ classes to provide a more structured, object‑oriented BLE API while keeping BTstack’s behavior and constraints visible. It is intentionally thin: it does not hide the underlying ATT/GATT and HCI concepts, and it expects the application to manage event dispatch and object lifetimes carefully.
 
+## BTstack Configuration (Pico W)
+
+BTstack configuration for this library lives under `ble/platform/rpi_pico/config/`.
+The main configuration file is `btstack_config.h`.
+
+### Enabled Options in `btstack_config.h`
+
+- **FreeRTOS integration**
+  - `HAVE_FREERTOS_TASK_NOTIFICATIONS`
+- **BLE roles**
+  - `ENABLE_LE_PERIPHERAL`
+  - `ENABLE_LE_CENTRAL` (when `RUNNING_AS_CLIENT` is set)
+- **Logging**
+  - `ENABLE_LOG_INFO`
+  - `ENABLE_LOG_ERROR`
+  - `ENABLE_PRINTF_HEXDUMP`
+- **Security and crypto**
+  - `ENABLE_SOFTWARE_AES128`
+  - `ENABLE_MICRO_ECC_FOR_LE_SECURE_CONNECTIONS`
+- **Flow control**
+  - `ENABLE_HCI_CONTROLLER_TO_HOST_FLOW_CONTROL`
+- **HAL/platform features**
+  - `HAVE_EMBEDDED_TIME_MS`
+  - `HAVE_ASSERT`
+- **Resource limits / buffers**
+  - `MAX_ATT_DB_SIZE` (fixed-size ATT DB)
+  - `MAX_NR_HCI_CONNECTIONS`
+  - `MAX_NR_GATT_CLIENTS` (depends on `RUNNING_AS_CLIENT`)
+  - `MAX_NR_SM_LOOKUP_ENTRIES`
+  - `MAX_NR_WHITELIST_ENTRIES`
+  - `MAX_NR_LE_DEVICE_DB_ENTRIES`
+  - `MAX_NR_CONTROLLER_ACL_BUFFERS`
+  - `MAX_NR_CONTROLLER_SCO_PACKETS`
+  - `HCI_OUTGOING_PRE_BUFFER_SIZE`
+  - `HCI_ACL_PAYLOAD_SIZE`
+  - `HCI_ACL_CHUNK_SIZE_ALIGNMENT`
+  - `HCI_HOST_ACL_PACKET_LEN`, `HCI_HOST_ACL_PACKET_NUM`
+  - `HCI_HOST_SCO_PACKET_LEN`, `HCI_HOST_SCO_PACKET_NUM`
+  - `NVM_NUM_DEVICE_DB_ENTRIES`
+  - `NVM_NUM_LINK_KEYS`
+  - `HCI_RESET_RESEND_TIMEOUT_MS`
+
 ## Core Design Goals
 
 - Encapsulate BTstack’s C APIs in C++ classes with clear ownership rules.
@@ -54,6 +96,7 @@ This library wraps BTstack with C++ classes to provide a more structured, object
   - `libs/elec_c7222/ble/gap/platform/rpi_pico/`
   - `libs/elec_c7222/ble/gatt/platform/rpi_pico/`
   - `libs/elec_c7222/ble/security_manager/platform/rpi_pico/`
+
 
 ## Key Limitations and Design Assumptions
 
