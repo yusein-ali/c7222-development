@@ -15,7 +15,9 @@ if(C7222_EXAMPLE_BLE_GAP)
 
     file(GLOB C7222_EXAMPLE_BLE_GAP_SOURCES
         ${CMAKE_CURRENT_LIST_DIR}/*.c
+        ${CMAKE_CURRENT_LIST_DIR}/../common/*.c
         ${CMAKE_CURRENT_LIST_DIR}/*.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/../common/*.cpp
     )
 
     target_sources(C7222_EXAMPLE_BLE_GAP INTERFACE
