@@ -16,9 +16,17 @@ INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES
 
 # Input
-INPUT                  = .
+INPUT                  = docs/markdown \
+                         ble/doc/markdown \
+                         ble/include \
+                         ble/gap/include \
+                         ble/gatt/include \
+                         ble/security_manager/include \
+                         devices/include \
+                         utils/include \
+                         examples
 RECURSIVE              = YES
-FILE_PATTERNS          = *.hpp *.h *.md
+FILE_PATTERNS          = *.hpp *.h *.c *.cpp *.md
 
 # Markdown
 MARKDOWN_SUPPORT       = YES
