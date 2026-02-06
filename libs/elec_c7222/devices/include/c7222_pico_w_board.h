@@ -14,7 +14,7 @@
  *   initialized.
  * - Buttons are configured as inputs with pull-ups enabled.
  * - LEDs are configured as outputs. Note: the current implementation drives
- *   LEDs as **active-low** (see `c7222_pico_w_board_led_set/clear/read`).
+ *   LEDs as **active-low** (see `c7222_pico_w_board_led_on/off/read`).
  */
 #ifndef ELEC_C7222_DEVICES_C7222_PICO_W_BOARD_H_
 #define ELEC_C7222_DEVICES_C7222_PICO_W_BOARD_H_
@@ -34,8 +34,8 @@ enum c7222_led_type {
 	C7222_PICO_W_LED3_RED   = 17,
 	C7222_PICO_W_LED2_GREEN = 18,
 	C7222_PICO_W_LED2_RED   = 19,
-	C7222_PICO_W_LED3_GREEN_2 = 20,
-	C7222_PICO_W_LED3_RED_2   = 21
+	C7222_PICO_W_LED1_GREEN = 20,
+	C7222_PICO_W_LED1_RED   = 21
 };
 
 /**
@@ -115,11 +115,11 @@ bool c7222_pico_w_board_led_read(enum c7222_led_type led);
 /**
  * @brief Turn an LED ON (active-low).
  */
-void c7222_pico_w_board_led_set(enum c7222_led_type led);
+void c7222_pico_w_board_led_on(enum c7222_led_type led);
 /**
  * @brief Turn an LED OFF (active-low).
  */
-void c7222_pico_w_board_led_clear(enum c7222_led_type led);
+void c7222_pico_w_board_led_off(enum c7222_led_type led);
 /**
  * @brief Toggle an LED output.
  */
