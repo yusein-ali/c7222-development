@@ -34,8 +34,8 @@ option(C7222_ENABLE_BLE "Enable BLE helpers in ELEC_C7222" ON)
 option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 option(C7222_EXAMPLES_BUILD "Enable C7222 examples build" ON)
 option(C7222_EXAMPLE_FREERTOS_BOARD "Enable C7222 FreeRTOS board example" OFF)
-option(C7222_EXAMPLE_BLE_GAP "Enable C7222 BLE GAP example" OFF)
-option(C7222_EXAMPLE_BLE_GATT_SERVER "Enable C7222 BLE GATT server example" ON)
+option(C7222_EXAMPLE_BLE_GAP "Enable C7222 BLE GAP example" ON)
+option(C7222_EXAMPLE_BLE_GATT_SERVER "Enable C7222 BLE GATT server example" OFF)
 
 # internal list for gatt files
 if(C7222_ENABLE_BLE)
