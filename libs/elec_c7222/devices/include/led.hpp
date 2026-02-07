@@ -2,8 +2,8 @@
  * @file led.hpp
  * @brief Output-only GPIO abstraction for LEDs.
  */
-#ifndef TEMPLATE_LED_HPP
-#define TEMPLATE_LED_HPP
+#ifndef ELEC_C7222_DEVICES_LED_H_
+#define ELEC_C7222_DEVICES_LED_H_
 
 #include <cstdint>
 
@@ -46,9 +46,7 @@ class Led : public GpioPin {
 	explicit Led(uint32_t pin,
 	             bool initial_on = false,
 	             DriveStrength drive = DriveStrength::mA4,
-	             bool active_low = false)
-	    : GpioPin(pin, MakeConfig(pin, initial_on, drive, active_low)),
-	      _active_low(active_low) {}
+	             bool active_low = false);
 
 	/**
 	 * @brief Disallow generic reconfiguration.
@@ -61,40 +59,29 @@ class Led : public GpioPin {
 	 * @brief Set the LED state.
 	 * @param on true = on, false = off.
 	 */
-	void Set(bool on) {
-		Write(PhysicalLevel(on));
-	}
+	void Set(bool on);
 
 	/**
 	 * @brief Turn the LED on.
 	 */
-	void On() {
-		Write(PhysicalLevel(true));
-	}
+	void On();
 
 	/**
 	 * @brief Turn the LED off.
 	 */
-	void Off() {
-		Write(PhysicalLevel(false));
-	}
+	void Off();
 
 	/**
 	 * @brief Toggle the LED state.
 	 *
 	 * Note: For active-low LEDs, toggling the GPIO level still toggles the LED.
 	 */
-	void Toggle() {
-		GpioPin::Toggle();
-	}
+	void Toggle();
 
   private:
 	bool _active_low{false};
 
-	bool PhysicalLevel(bool led_on) const {
-		// active_low: LED on => GPIO low
-		return _active_low ? !led_on : led_on;
-	}
+	bool PhysicalLevel(bool led_on) const;
 
 	/**
 	 * @brief Create a GpioPin::Config for output-only LED usage.
@@ -102,17 +89,9 @@ class Led : public GpioPin {
 	static Config MakeConfig(uint32_t pin,
 	                         bool initial_on,
 	                         DriveStrength drive,
-	                         bool active_low) {
-		Config cfg(static_cast<int32_t>(pin));
-		cfg.direction = Direction::Output;
-		cfg.pull = PullMode::None;
-		cfg.output_type = OutputType::PushPull;
-		cfg.drive = drive;
-		cfg.initial_state = active_low ? !initial_on : initial_on;
-		return cfg;
-	}
+	                         bool active_low) = delete;
 };
 
 } // namespace c7222
 
-#endif // TEMPLATE_LED_HPP
+#endif  // ELEC_C7222_DEVICES_LED_H_

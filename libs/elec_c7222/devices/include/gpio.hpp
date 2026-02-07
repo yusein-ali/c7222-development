@@ -1,12 +1,21 @@
 /**
  * @file gpio.hpp
  * @brief Generic GPIO pin abstraction with configuration options.
+ *
+ * Platform integration:
+ * - The Raspberry Pico W backend (`platform/rpi_pico/gpio.cpp`) maps this API
+ *   to the Pico SDK (`hardware/gpio.h`). It applies pull configuration,
+ *   direction, output type, and drive strength using `gpio_init`,
+ *   `gpio_set_drive_strength`, and the various `gpio_pull_*` helpers. For
+ *   open-drain output, it switches the pin direction to float the line for
+ *   logic high.
+ * - The grader backend provides a stub implementation to allow tests to
+ *   compile without hardware.
  */
-#ifndef TEMPLATE_GPIO_HPP
-#define TEMPLATE_GPIO_HPP
+#ifndef ELEC_C7222_DEVICES_GPIO_H_
+#define ELEC_C7222_DEVICES_GPIO_H_
 
 #include <cstdint>
-#include <cassert>
 
 /**
  * @namespace c7222
@@ -20,6 +29,10 @@ namespace c7222 {
  * @class GpioPin
  * @brief Generic GPIO pin wrapper with configurable direction, pull mode,
  *        output type, and drive strength.
+ *
+ * This class stores a cached configuration and delegates hardware I/O to the
+ * platform-specific backend. Use `Configure()` to apply a new configuration
+ * and `Write()`/`Read()` to manipulate the pin.
  */
 class GpioPin {
   public:
@@ -60,10 +73,13 @@ class GpioPin {
 	
 	/**
 	 * @brief Configuration structure for GPIO pin setup.
+	 *
+	 * The `Validate()` helper enforces basic constraints (e.g. open-drain
+	 * requires a pull-up or pull-down).
 	 */
 	struct Config {
 
-		int32_t _pin; ///< GPIO pin number (non-negative integer).
+		uint32_t pin_; ///< GPIO pin number (non-negative integer).
 		Direction direction{Direction::Input}; ///< Direction mode (default: Input).
 		PullMode pull{PullMode::None}; ///< Pull mode (default: None).
 		OutputType output_type{OutputType::PushPull}; ///< Output type (default: PushPull).
@@ -73,22 +89,20 @@ class GpioPin {
 		 * @brief Create config with a pin number.
 		 * @param pin GPIO number (non-negative).
 		 */
-		explicit Config(int32_t pin) {
-			assert(pin >= 0);
-			_pin = static_cast<uint32_t>(pin);
-		}
+		explicit Config(int32_t pin);
 		/**
 		 * @brief Validate configuration for basic constraints.
 		 * @return true if configuration is valid.
 		 */
-		bool validate() const {
-			if(output_type == OutputType::OpenDrain && pull == PullMode::None) {
-				return false;
-			}
-			return true;
-		}
+		bool Validate() const;
 	};
 
+	/**
+	 * @brief Create a GPIO pin with default configuration.
+	 *
+	 * The default configuration is input, no pull, push-pull, 4mA drive.
+	 */
+	explicit GpioPin(uint32_t pin);
 	/**
 	 * @brief Create a GPIO pin with the given configuration.
 	 * @param pin GPIO number.
@@ -113,32 +127,34 @@ class GpioPin {
 	bool Read() const;
 	/**
 	 * @brief Toggle the pin output.
+	 *
+	 * The exact behavior is implemented by the platform backend.
 	 */
 	void Toggle();
 
 	/**
 	 * @brief Return the GPIO number.
 	 */
-	uint32_t GetPin() const {
-		return _pin;
-	}
+	uint32_t GetPin() const;
 	/**
 	 * @brief Return the cached configuration.
 	 */
-	Config GetConfig() const {
-		return _config;
-	}
+	Config GetConfig() const;
 
-  private:
+  protected:
 	/**
 	 * @brief Apply internal configuration to the hardware.
+	 *
+	 * Implemented by the platform backend.
 	 */
 	void ApplyConfig();
 
-	uint32_t _pin;
-	Config _config;
+	/// GPIO pin number managed by this instance.
+	uint32_t pin_;
+	/// Cached configuration used to (re)apply platform settings.
+	Config config_;
 };
 
 } // namespace c7222
 
-#endif // TEMPLATE_GPIO_HPP
+#endif  // ELEC_C7222_DEVICES_GPIO_H_

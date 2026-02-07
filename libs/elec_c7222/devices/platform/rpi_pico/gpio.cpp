@@ -22,74 +22,76 @@ static gpio_drive_strength to_drive_strength(GpioPin::DriveStrength drive) {
 	return GPIO_DRIVE_STRENGTH_4MA;
 }
 
-GpioPin::GpioPin(uint32_t pin, const Config& config) : _pin(pin), _config(config) {
-	assert(_config.validate() && "Invalid GPIO configuration");
+GpioPin::GpioPin(uint32_t pin, const Config& config) : pin_(pin), config_(config) {
+	assert(config_.Validate() && "Invalid GPIO configuration");
 	ApplyConfig();
 }
 
 void GpioPin::Configure(const Config& config) {
-	assert(config.validate() && "Invalid GPIO configuration");
-	_config = config;
+	assert(config.Validate() && "Invalid GPIO configuration");
+	config_ = config;
 	ApplyConfig();
 }
 
 
 void GpioPin::Write(bool value) {
-	assert(_config.direction == Direction::Output && "Cannot write to GPIO configured as input");
+	assert(config_.direction == Direction::Output && "Cannot write to GPIO configured as input");
 
-	if(_config.output_type == OutputType::OpenDrain) {
+	if(config_.output_type == OutputType::OpenDrain) {
 		if(value) {
 			// Float the line for logic high in open-drain mode.
-			gpio_set_dir(_pin, GPIO_IN);
+			gpio_set_dir(pin_, GPIO_IN);
 		} else {
-			gpio_put(_pin, 0);
-			gpio_set_dir(_pin, GPIO_OUT);
+			gpio_put(pin_, 0);
+			gpio_set_dir(pin_, GPIO_OUT);
 		}
 	} else {
-		gpio_set_dir(_pin, GPIO_OUT);
-		gpio_put(_pin, value);
+		gpio_set_dir(pin_, GPIO_OUT);
+		gpio_put(pin_, value);
 	}
 }
 
 bool GpioPin::Read() const {
-	return gpio_get(_pin);
+	return gpio_get(pin_);
 }
 
 void GpioPin::Toggle() {
-	Write(!Read());
+	assert(config_.direction == Direction::Output && "Cannot toggle GPIO configured as input");
+
+	gpio_xor_mask(1 << config_.pin_);
 }
 
 void GpioPin::ApplyConfig() {
-	gpio_init(_pin);
+	gpio_init(pin_);
 
-	gpio_set_drive_strength(_pin, to_drive_strength(_config.drive));
+	gpio_set_drive_strength(pin_, to_drive_strength(config_.drive));
 
-	switch(_config.pull) {
+	switch(config_.pull) {
 	case PullMode::None:
-		gpio_disable_pulls(_pin);
+		gpio_disable_pulls(pin_);
 		break;
 	case PullMode::PullUp:
-		gpio_pull_up(_pin);
+		gpio_pull_up(pin_);
 		break;
 	case PullMode::PullDown:
-		gpio_pull_down(_pin);
+		gpio_pull_down(pin_);
 		break;
 	}
 
-	if(_config.direction == Direction::Output) {
-		if(_config.output_type == OutputType::OpenDrain) {
-			if(_config.initial_state) {
-				gpio_set_dir(_pin, GPIO_IN);
+	if(config_.direction == Direction::Output) {
+		if(config_.output_type == OutputType::OpenDrain) {
+			if(config_.initial_state) {
+				gpio_set_dir(pin_, GPIO_IN);
 			} else {
-				gpio_put(_pin, 0);
-				gpio_set_dir(_pin, GPIO_OUT);
+				gpio_put(pin_, 0);
+				gpio_set_dir(pin_, GPIO_OUT);
 			}
 		} else {
-			gpio_set_dir(_pin, GPIO_OUT);
-			gpio_put(_pin, _config.initial_state);
+			gpio_set_dir(pin_, GPIO_OUT);
+			gpio_put(pin_, config_.initial_state);
 		}
 	} else {
-		gpio_set_dir(_pin, GPIO_IN);
+		gpio_set_dir(pin_, GPIO_IN);
 	}
 }
 

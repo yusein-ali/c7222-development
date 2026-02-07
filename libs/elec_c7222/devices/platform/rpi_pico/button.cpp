@@ -3,92 +3,91 @@
 
 #include "hardware/gpio.h"
 
-#include <array>
 #include <cassert>
+#include <list>
+#include <map>
 
 namespace c7222 {
 
 namespace {
 
-// Route GPIO interrupts to Button instances (indexed by GPIO number).
-static std::array<Button*, NUM_BANK0_GPIOS> g_button_by_gpio{};
+// Route GPIO interrupts to Button instances (keyed by GPIO number).
+static std::map<uint32_t, std::list<Button*>> g_buttons_by_gpio{};
 
-// Pico SDK callback (single global callback) that forwards to Button.
+static bool any_handler_for_pin(uint32_t pin) {
+	auto it = g_buttons_by_gpio.find(pin);
+	if(it == g_buttons_by_gpio.end()) {
+		return false;
+	}
+	for(Button* btn : it->second) {
+		if(btn != nullptr && btn->HasHandler()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Pico SDK callback (single global callback) that forwards to Button instances.
 static void pico_gpio_irq_callback(uint gpio, uint32_t events) {
-	Button::IrqTrampoline(static_cast<uint32_t>(gpio), events);
+	auto it = g_buttons_by_gpio.find(static_cast<uint32_t>(gpio));
+	if(it == g_buttons_by_gpio.end()) {
+		return;
+	}
+
+	for(Button* btn : it->second) {
+		if(btn != nullptr) {
+			btn->CallIrqHandler(events);
+		}
+	}
 }
 
 } // namespace
 
-Button::Config Button::MakeConfig(uint32_t pin, PullMode pull) {
-	Config cfg(static_cast<int32_t>(pin));
-	cfg.direction = Direction::Input;
-	cfg.pull = pull;
-	cfg.output_type = OutputType::PushPull;
-	cfg.drive = DriveStrength::mA4;
-	cfg.initial_state = false;
-	return cfg;
-}
-
-Button::Button(uint32_t pin, PullMode pull)
-	: GpioPin(pin, MakeConfig(pin, pull)) {}
-
-void Button::RegisterHandler(Handler handler, void* user_data, bool enable) {
-	_handler = handler;
-	_user_data = user_data;
-
-	if(GetPin() < g_button_by_gpio.size()) {
-		g_button_by_gpio[GetPin()] = this;
-	}
-
-	if(_handler == nullptr) {
-		EnableIrq(false);
-		return;
-	}
-
-	EnableIrq(enable);
-}
-
 void Button::UnregisterHandler() {
+	PlatformUnregister(this);
 	EnableIrq(false);
-	_handler = nullptr;
-	_user_data = nullptr;
-	if(GetPin() < g_button_by_gpio.size()) {
-		g_button_by_gpio[GetPin()] = nullptr;
-	}
+	handler_ = nullptr;
 }
 
 void Button::EnableIrq(bool enable) {
 	// Only falling edge is relevant for the C7222 board buttons.
+	if(enable) {
+		// Enable only if any button on this pin has a handler.
+		if(!any_handler_for_pin(GetPin())) {
+			return;
+		}
+	} else {
+		// Do not disable IRQ if other buttons on the same pin still have handlers.
+		if(any_handler_for_pin(GetPin())) {
+			return;
+		}
+	}
 	gpio_set_irq_enabled_with_callback(GetPin(),
 	                                  GPIO_IRQ_EDGE_FALL,
 	                                  enable,
 	                                  pico_gpio_irq_callback);
 }
 
-bool Button::IsPressed() const {
-	// Active-low by default when using pull-up.
-	return !Read();
-}
-
-void Button::InvokeHandlerFromIrq() {
-	if(_handler != nullptr) {
-		_handler(_user_data);
+void Button::PlatformRegister(Button* button) {
+	if(button == nullptr) {
+		return;
 	}
+	g_buttons_by_gpio[button->GetPin()].push_back(button);
 }
 
-void Button::IrqTrampoline(uint32_t gpio, uint32_t events) {
-	if(gpio >= g_button_by_gpio.size()) {
+void Button::PlatformUnregister(Button* button) {
+	if(button == nullptr) {
+		return;
+	}
+	auto it = g_buttons_by_gpio.find(button->GetPin());
+	if(it == g_buttons_by_gpio.end()) {
 		return;
 	}
 
-	Button* btn = g_button_by_gpio[gpio];
-	if(btn == nullptr) {
-		return;
-	}
-
-	if((events & GPIO_IRQ_EDGE_FALL) != 0u) {
-		btn->InvokeHandlerFromIrq();
+	auto& list = it->second;
+	list.remove(button);
+	if(list.empty()) {
+		g_buttons_by_gpio.erase(it);
 	}
 }
 
