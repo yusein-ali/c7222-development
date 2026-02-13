@@ -15,6 +15,14 @@ set(FREERTOS_CPP11_SOURCE_DIR ${FREERTOS_CPP11_PATH}/FreeRTOS/cpp11_gcc)
 # GLOB all .cpp files in the cpp11_gcc directory
 file(GLOB FREERTOS_CPP11_SOURCES "${FREERTOS_CPP11_SOURCE_DIR}/*.cpp")
 
+# libstdc++ concurrency sources (needed for std::condition_variable)
+set(FREERTOS_CPP11_LIBSTDCPP_DIR ${FREERTOS_CPP11_PATH}/libstdc++_gcc/v13)
+list(APPEND FREERTOS_CPP11_SOURCES
+    "${FREERTOS_CPP11_LIBSTDCPP_DIR}/condition_variable.cc"
+    # "${FREERTOS_CPP11_LIBSTDCPP_DIR}/future.cc"
+    # "${FREERTOS_CPP11_LIBSTDCPP_DIR}/libatomic.c"
+)
+
 # Set include directories as a list
 set(FREERTOS_CPP11_INCLUDE_DIRS
     ${FREERTOS_CPP11_SOURCE_DIR}
