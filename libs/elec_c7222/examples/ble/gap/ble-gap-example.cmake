@@ -1,41 +1,38 @@
-if(NOT DEFINED C7222_EXAMPLE_BLE_GAP)
-    set(C7222_EXAMPLE_BLE_GAP OFF)
-endif()
 if(NOT DEFINED C7222_ENABLE_BLE)
     set(C7222_ENABLE_BLE OFF)
 endif()
 
-message(STATUS "C7222_EXAMPLE_BLE_GAP is defined: ${C7222_EXAMPLE_BLE_GAP}")
-
-if(C7222_EXAMPLE_BLE_GAP)
-    if(NOT C7222_ENABLE_BLE)
-        message(FATAL_ERROR "C7222_EXAMPLE_BLE_GAP requires C7222_ENABLE_BLE=ON")
-    endif()
-    add_library(C7222_EXAMPLE_BLE_GAP INTERFACE)
-
-    file(GLOB C7222_EXAMPLE_BLE_GAP_SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/*.c
-        ${CMAKE_CURRENT_LIST_DIR}/../common/*.c
-        ${CMAKE_CURRENT_LIST_DIR}/*.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/../common/*.cpp
-    )
-
-    target_sources(C7222_EXAMPLE_BLE_GAP INTERFACE
-        ${C7222_EXAMPLE_BLE_GAP_SOURCES}
-    )
-
-    target_include_directories(C7222_EXAMPLE_BLE_GAP INTERFACE
-        ${CMAKE_CURRENT_LIST_DIR}
-        ${CMAKE_CURRENT_LIST_DIR}/../common
-    )
-
-    list(APPEND C7222_ENABLED_EXAMPLES C7222_EXAMPLE_BLE_GAP)
-
-    # Append the gatt files 
-    if(NOT DEFINED APP_GATT_FILES)
-	    message(FATAL_ERROR "APP_GATT_FILES list must be defined before including ble-examples.cmake")
-    endif()
-
-    file(GLOB APP_GATT_FILES_LOCAL "${CMAKE_CURRENT_LIST_DIR}/*.gatt")
-    list(APPEND APP_GATT_FILES ${APP_GATT_FILES_LOCAL})
+if(NOT C7222_ENABLE_BLE)
+    message(STATUS "C7222_EXAMPLES_BUILD requires C7222_ENABLE_BLE=ON for BLE examples. Skipping BLE GAP example...")
+    return()
 endif()
+add_library(C7222_EXAMPLE_BLE_GAP INTERFACE)
+set_property(TARGET C7222_EXAMPLE_BLE_GAP PROPERTY TARGET_NAME "example-ble-gap")
+set_property(TARGET C7222_EXAMPLE_BLE_GAP PROPERTY TARGET_PATH "${CMAKE_CURRENT_LIST_DIR}")
+
+file(GLOB C7222_EXAMPLE_BLE_GAP_SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/*.c
+    ${CMAKE_CURRENT_LIST_DIR}/../common/*.c
+    ${CMAKE_CURRENT_LIST_DIR}/*.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/../common/*.cpp
+)
+
+target_sources(C7222_EXAMPLE_BLE_GAP INTERFACE
+    ${C7222_EXAMPLE_BLE_GAP_SOURCES}
+)
+
+target_include_directories(C7222_EXAMPLE_BLE_GAP INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/../common
+)
+
+list(APPEND C7222_EXAMPLES C7222_EXAMPLE_BLE_GAP)
+
+# Append the gatt files 
+if(NOT DEFINED APP_GATT_FILES)
+	message(FATAL_ERROR "APP_GATT_FILES list must be defined before including ble-examples.cmake")
+endif()
+
+file(GLOB APP_GATT_FILES_LOCAL "${CMAKE_CURRENT_LIST_DIR}/*.gatt")
+list(APPEND APP_GATT_FILES ${APP_GATT_FILES_LOCAL})
+set_property(TARGET C7222_EXAMPLE_BLE_GAP APPEND PROPERTY GATT_FILES ${APP_GATT_FILES_LOCAL})
