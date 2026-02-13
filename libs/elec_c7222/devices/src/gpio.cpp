@@ -4,6 +4,9 @@
 
 namespace c7222 {
 
+GpioIn::Config::Config(uint32_t pin) {
+	pin_ = pin;
+}
 
 bool GpioIn::Config::Validate() const {
 	if(input_events != GpioInputEvent::None && irq_handler == nullptr) {

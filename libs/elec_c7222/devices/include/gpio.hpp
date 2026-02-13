@@ -87,12 +87,21 @@ enum class GpioDriveStrength {
 	mA12  ///< 12 mA drive.
 };
 
+/**
+ * @brief GPIO input event bitmask for IRQ configuration.
+ *
+ * These values are bit flags and can be OR-ed together. Composite values
+ * (BothLevels, BothEdges, All) are provided for convenience.
+ */
 enum class GpioInputEvent : uint32_t {
-	None = 0x00,
-	LevelLow  = 0x01,
-	LevelHigh = 0x02,
-	FallingEdge = 0x04,
-	RisingEdge = 0x08
+	None = 0x00, ///< No events.
+	LevelLow  = 0x01, ///< Trigger on low level.
+	LevelHigh = 0x02, ///< Trigger on high level.
+	BothLevels = 0x03, ///< Trigger on low or high level.
+	FallingEdge = 0x04, ///< Trigger on high-to-low edge.
+	RisingEdge = 0x08, ///< Trigger on low-to-high edge.
+	BothEdges = 0x0c, ///< Trigger on rising or falling edge.
+	All = 0x0f ///< Trigger on all level and edge events.
 };
 
 /**
