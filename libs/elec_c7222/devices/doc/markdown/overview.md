@@ -50,6 +50,53 @@ Defines `PicoWBoard`, which maps logical LED and button IDs to board GPIOs.
 
 7. `platform.hpp`  
 Defines `Platform`, a singleton that coordinates platform initialization and offers convenience accessors for LEDs/buttons.
+8. `pwm.hpp`  
+Defines `PwmOut`, a minimal PWM output wrapper with period and duty-cycle configuration.
+
+**PWM (`PwmOut`)**
+
+`PwmOut` provides a minimal PWM interface suitable for LED dimming and simple duty‑cycle control. It exposes:
+1. Period in microseconds.
+2. Duty cycle as a fraction [0.0, 1.0].
+3. Optional active‑low polarity (useful for the board LEDs).
+
+Ownership rules:
+1. PWM owns the GPIO pin while enabled.
+2. Call `Enable(false)` (or destroy the object) to release the pin back to GPIO.
+3. Do not use `Led` and `PwmOut` on the same pin at the same time.
+
+**PWM Examples**
+
+**1) Basic PWM output**
+
+```cpp
+c7222::PwmOut pwm(15);
+pwm.SetPeriodUs(1000.0f);   // 1 kHz
+pwm.SetDutyCycle(0.25f);    // 25%
+```
+
+**2) Active‑low PWM for a board LED**
+
+```cpp
+c7222::PwmOut pwm(20);
+pwm.SetPeriodUs(2000.0f);
+pwm.SetDutyCycle(0.5f);
+pwm.SetActiveLow(true);
+```
+
+**3) Using Platform convenience**
+
+```cpp
+auto* platform = c7222::Platform::GetInstance();
+platform->Initialize();
+auto pwm = platform->CreateLedPwm(c7222::PicoWBoard::LedId::LED1_GREEN, 128);
+```
+
+**4) Release PWM and return to GPIO**
+
+```cpp
+pwm.Enable(false); // returns pin to GPIO function
+```
 
 **Platform Implementations**
 
