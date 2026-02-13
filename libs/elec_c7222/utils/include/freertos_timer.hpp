@@ -31,7 +31,7 @@ void FreeRtosTimerCallback(void* timer);
  * This class provides a small, ownership-based interface around a FreeRTOS
  * software timer handle. It uses a single internal callback trampoline
  * (`FreeRtosTimerCallback`) to bridge the C callback signature to a stored
- * `std::function<void()>` in the C++ object.
+ * `std::function<void(void*)>` in the C++ object.
  *
  * Design principles:
  * - **RAII ownership:** the class owns a timer handle and deletes it in the
@@ -49,8 +49,9 @@ void FreeRtosTimerCallback(void* timer);
  *   respect to the rest of the system.
  * - Timers are created with a period in **ticks** and a type (one-shot or
  *   periodic). The scheduler triggers the callback when the timer expires.
- * - This class stores a `std::function<void()>` that is invoked by the
- *   C callback trampoline. `SetCallback()` updates that function at runtime.
+ * - This class stores a `std::function<void(void*)>` that is invoked by the
+ *   C callback trampoline with a user-supplied argument. `SetCallback()`
+ *   updates that function at runtime.
  * - Start/Stop/Reset/ChangePeriod map directly to the underlying FreeRTOS
  *   APIs and accept optional `ticks_to_wait` parameters to control command
  *   queue blocking time.
@@ -81,7 +82,7 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	FreeRtosTimer(const char* name,
 				  std::uint32_t period_ticks,
 				  Type type,
-				  std::function<void()> callback = nullptr);
+				  std::function<void(void*)> callback = nullptr);
 
 	/**
 	 * @brief Initialize (or re-initialize) the timer wrapper.
@@ -99,7 +100,7 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	bool Initialize(const char* name,
 					std::uint32_t period_ticks,
 					Type type,
-					std::function<void()> callback);
+					std::function<void(void*)> callback);
 
 	/**
 	 * @brief Delete the timer if it was created.
@@ -115,9 +116,20 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	 *
 	 * @param ticks_to_wait Maximum ticks to block if the timer command queue
 	 *        is full (0 = no wait).
+	 * @param callback_arg Argument passed to the timer callback on expiry.
 	 * @return true if the command was accepted, false otherwise.
 	 */
-	bool Start(std::uint32_t ticks_to_wait = 0);
+	bool Start(std::uint32_t ticks_to_wait = 0, void* callback_arg = nullptr);
+	/**
+	 * @brief Start the timer from ISR context (no immediate yield).
+	 *
+	 * This variant does not expose `higher_priority_task_woken`; any unblocked
+	 * task will run on the next tick/schedule point.
+	 *
+	 * @param callback_arg Argument passed to the timer callback on expiry.
+	 * @return true if the command was accepted, false otherwise.
+	 */
+	bool StartFromISR(void* callback_arg = nullptr);
 	/**
 	 * @brief Stop the timer.
 	 *
@@ -128,6 +140,15 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	 * @return true if the command was accepted, false otherwise.
 	 */
 	bool Stop(std::uint32_t ticks_to_wait = 0);
+
+	/**
+	 * @brief Stop the timer from ISR context (no immediate yield).
+	 *
+	 * Any unblocked task will run on the next tick/schedule point.
+	 *
+	 * @return true if the command was accepted, false otherwise.
+	 */
+	bool StopFromISR();
 	/**
 	 * @brief Reset the timer to start counting from zero.
 	 *
@@ -139,6 +160,15 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	 * @return true if the command was accepted, false otherwise.
 	 */
 	bool Reset(std::uint32_t ticks_to_wait = 0);
+
+	/**
+	 * @brief Reset the timer from ISR context (no immediate yield).
+	 *
+	 * Any unblocked task will run on the next tick/schedule point.
+	 *
+	 * @return true if the command was accepted, false otherwise.
+	 */
+	bool ResetFromISR();
 	/**
 	 * @brief Change the timer period.
 	 *
@@ -153,13 +183,22 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	bool ChangePeriod(std::uint32_t period_ticks, std::uint32_t ticks_to_wait = 0);
 
 	/**
+	 * @brief Change the timer period from ISR context (no immediate yield).
+	 *
+	 * Any unblocked task will run on the next tick/schedule point.
+	 *
+	 * @return true if the command was accepted, false otherwise.
+	 */
+	bool ChangePeriodFromISR(std::uint32_t period_ticks);
+
+	/**
 	 * @brief Register or replace the timer callback.
 	 *
 	 * The callback runs in the FreeRTOS timer service task context. It must be
 	 * short, non-blocking, and thread-safe with respect to shared resources.
 	 * Passing `nullptr` clears the callback.
 	 */
-	void SetCallback(std::function<void()> callback);
+	void SetCallback(std::function<void(void*)> callback);
 
 	/**
 	 * @brief Check if the timer handle is valid.
@@ -187,7 +226,11 @@ class FreeRtosTimer : public NonCopyableNonMovable {
 	 *
 	 * Invoked by the C callback trampoline in the timer service task context.
 	 */
-	std::function<void()> callback_{nullptr};
+	std::function<void(void*)> callback_{nullptr};
+	/**
+	 * @brief User argument passed to the callback on expiry.
+	 */
+	void* callback_arg_{nullptr};
 };
 
 } // namespace c7222
