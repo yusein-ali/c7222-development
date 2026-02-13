@@ -20,8 +20,9 @@
             // Fix for no_flash binaries, where monitor reset halt doesn't do what is expected
             // Also works fine for flash binaries
             "overrideLaunchCommands": [
-                "monitor reset init",
-                "load \"${command:raspberry-pi-pico.launchTargetPath}\""
+                "monitor reset halt",
+                "load \"${command:raspberry-pi-pico.launchTargetPath}\"",
+                "monitor reset init"
             ],
             "openOCDLaunchCommands": [
                 "adapter speed 5000"
@@ -45,6 +46,6 @@
                 "monitor reset init",
                 "load \"${command:raspberry-pi-pico.launchTargetPath}\""
             ]
-        },
+        }
     ]
 }
