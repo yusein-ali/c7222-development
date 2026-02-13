@@ -2,10 +2,11 @@
 
 **Purpose**
 
-The `libs/elec_c7222` library provides shared course infrastructure. It includes two major subsystems:
+The `libs/elec_c7222` library provides shared course infrastructure. It includes three major subsystems:
 
 1. Devices: hardware abstraction for GPIO, LEDs, buttons, and board helpers.
 2. BLE: a C++ wrapper around BTstack with GAP/GATT helpers and profile tooling.
+3. Utils: common utilities (copy/move policy helpers, FreeRTOS timer wrapper, and platform hooks).
 
 ## Navigation
 
@@ -25,3 +26,7 @@ The `libs/elec_c7222` library provides shared course infrastructure. It includes
   3. [GATT/ATT Module](ble/doc/markdown/gatt.md)
   4. [Security Manager Module](ble/doc/markdown/security-manager.md)
 
+**Utils**
+
+- Location: `libs/elec_c7222/utils`
+- Overview: [Utils Overview](utils/doc/markdown/overview.md)

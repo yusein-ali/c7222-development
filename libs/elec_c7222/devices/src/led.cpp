@@ -5,38 +5,40 @@ namespace c7222 {
 
 Led::Led(uint32_t pin,
 		 bool initial_on,
-		 DriveStrength drive,
+		 GpioDriveStrength drive,
 		 bool active_low)
-	: GpioPin(pin),
+	: GpioOut(pin),
 	  _active_low(active_low) {
 	Config cfg(static_cast<int32_t>(pin));
-	cfg.direction = Direction::Output;
-	cfg.pull = PullMode::None;
-	cfg.output_type = OutputType::PushPull;
+	cfg.pull = GpioPullMode::None;
+	cfg.output_type = GpioOutputType::PushPull;
 	cfg.drive = drive;
 	cfg.initial_state = active_low ? !initial_on : initial_on;
-	GpioPin::Configure(cfg);
+	GpioOut::Configure(cfg);
 }
 
+void Led::Reconfigure(bool initial_on, GpioDriveStrength drive, bool active_low) {
+	_active_low = active_low;
+	Config cfg(static_cast<int32_t>(GetPin()));
+	cfg.pull = GpioPullMode::None;
+	cfg.output_type = GpioOutputType::PushPull;
+	cfg.drive = drive;
+	cfg.initial_state = active_low ? !initial_on : initial_on;
+	GpioOut::Configure(cfg);
+}
 void Led::Set(bool on) {
-	Write(PhysicalLevel(on));
+	Write(_active_low ? !on : on);
 }
-
 void Led::On() {
-	Write(PhysicalLevel(true));
+	Write(_active_low ? false : true);
 }
 
 void Led::Off() {
-	Write(PhysicalLevel(false));
+	Write(_active_low ? true : false);
 }
 
 void Led::Toggle() {
-	GpioPin::Toggle();
-}
-
-bool Led::PhysicalLevel(bool led_on) const {
-	// active_low: LED on => GPIO low
-	return _active_low ? !led_on : led_on;
+	GpioOut::Toggle();
 }
 
 } // namespace c7222

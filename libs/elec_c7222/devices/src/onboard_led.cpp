@@ -1,18 +1,17 @@
 // Simulated environment stub for BoardLED.
 #include "onboard_led.hpp"
 
-#include <cassert>
+#include <memory>
 
 namespace c7222 {
 
-OnBoardLED* OnBoardLED::instance_{nullptr};
+std::unique_ptr<OnBoardLED> OnBoardLED::instance_{nullptr};
 
 OnBoardLED* OnBoardLED::GetInstance() {
-	if(instance_ == nullptr) {
-		instance_ = new OnBoardLED();
-		assert(instance_ != nullptr && "Cannot allocate new OnBoardLED instance!");
+	if(!instance_) {
+		instance_ = std::unique_ptr<OnBoardLED>(new OnBoardLED());
 	}
-	return instance_;
+	return instance_.get();
 }
 
 OnBoardLED::OnBoardLED() : initialized_(false), state_(false) {}

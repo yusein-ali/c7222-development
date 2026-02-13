@@ -129,11 +129,13 @@ target_include_directories(${APP_NAME} PRIVATE
 # pull in common dependencies
 target_link_libraries(${APP_NAME} PRIVATE
     pico_stdlib
+    hardware_adc
+    hardware_clocks
+    hardware_pwm
     FreeRTOS-Kernel-Heap4
     pico_btstack_ble
     pico_btstack_cyw43
     pico_cyw43_arch_none
-    hardware_adc
     ELEC_C7222
 )
 

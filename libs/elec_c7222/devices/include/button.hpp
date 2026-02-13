@@ -1,20 +1,17 @@
 /**
  * @file button.hpp
- * @brief Input-only GPIO abstraction for push-buttons with IRQ handler support.
+ * @brief Input-only GPIO abstraction for push-buttons.
  *
  * The Button class wraps a GPIO pin configured as input with pull-up/down and
- * provides a simple IRQ handler mechanism. Platform backends keep a mapping
- * from GPIO pin to one or more Button instances; when an IRQ fires, all
- * registered Button objects for that pin are notified.
+ * provides a small, button-friendly API. It intentionally keeps the interface
+ * focused: construct, read state, and optionally use the base `GpioIn` IRQ
+ * facilities if needed.
  */
 #ifndef C7222_BUTTON_HPP
 #define C7222_BUTTON_HPP
 
 #include <cstdint>
-#include <functional>
-
 #include "gpio.hpp"
-#include "non_copyable.hpp"
 
 /**
  * @namespace c7222
@@ -26,17 +23,24 @@ namespace c7222 {
  * @class Button
  * @brief Input-only GPIO wrapper intended for push-buttons.
  *
- * This class derives from GpioPin but restricts configuration to input mode.
- * It supports registering a handler that is invoked on a falling-edge IRQ.
+ * Design intent:
+ * - **Input-only**: derives from `GpioIn` and deletes `Configure()` to prevent
+ *   reconfiguration into output mode.
+ * - **Simple polling**: `IsPressed()` provides a clear, easy-to-read API for
+ *   beginners. IRQ support is still available through the inherited `GpioIn`
+ *   API when more advanced usage is needed.
  *
- * The platform backend keeps a per-pin list of Button objects. This allows
- * multiple Button instances to observe the same GPIO pin. IRQ enable/disable
- * respects the presence of other handlers on the same pin.
+ * Wiring assumption (C7222 Pico W board):
+ * - Buttons are wired **active-low** with a pull-up, so a press produces a
+ *   HIGH->LOW transition.
+ * - `IsPressed()` returns true when the logical state indicates a press and
+ *   abstracts the active-low wiring from callers.
  *
- * Board assumption (typical for the C7222 Pico W board): the button is wired
- * as active-low with a pull-up, so a press generates a HIGH->LOW transition.
+ * Reconfiguration note:
+ * - If the button pin was temporarily used for PWM, call `Reconfigure()` after
+ *   releasing PWM ownership to restore input configuration.
  */
-class Button : public GpioPin, public NonCopyableNonMovable {
+class Button : public GpioIn {
   public:
 	/**
 	 * @brief Construct a button pin in input mode.
@@ -44,11 +48,11 @@ class Button : public GpioPin, public NonCopyableNonMovable {
 	 * @param pin GPIO number.
 	 * @param pull Pull configuration (default: PullUp).
 	 */
-	explicit Button(uint32_t pin, PullMode pull = PullMode::PullUp);
+	explicit Button(uint32_t pin, GpioPullMode pull = GpioPullMode::PullUp);
 	/**
 	 * @brief Destructor unregisters the button from the platform map.
 	 */
-	virtual ~Button();
+	virtual ~Button() = default;
 
 	/**
 	 * @brief Disallow generic reconfiguration.
@@ -56,61 +60,20 @@ class Button : public GpioPin, public NonCopyableNonMovable {
 	void Configure(const Config& config) = delete;
 
 	/**
-	 * @brief Register a falling-edge IRQ handler.
+	 * @brief Reconfigure the button pull mode.
 	 *
-	 * @param handler Callback to invoke on falling edge (may be empty).
-	 */
-	void RegisterHandler(const std::function<void(uint32_t events)>& handler);
-
-	/**
-	 * @brief Unregister the handler and disable the IRQ.
+	 * This is intended for cases where the pin was temporarily used for PWM
+	 * and then returned to GPIO input control.
 	 *
-	 * Also removes this instance from the platform's per-pin list.
+	 * @param pull Pull configuration (default: PullUp).
 	 */
-	void UnregisterHandler();
-
-	/**
-	 * @brief Enable or disable the falling-edge IRQ.
-	 *
-	 * When disabling, the platform checks if other Button objects on the same
-	 * pin still have handlers; if so, IRQ remains enabled.
-	 */
-	void EnableIrq(bool enable);
+	void Reconfigure(GpioPullMode pull = GpioPullMode::PullUp);
 
 	/**
 	 * @brief Return true if the button is currently pressed (active-low).
 	 */
 	bool IsPressed() const;
 
-	/**
-	 * @brief Compare buttons by pin id.
-	 */
-	bool operator==(const Button& other) const;
-	bool operator!=(const Button& other) const;
-
-	/**
-	 * @brief Call the registered handler from IRQ context.
-	 *
-	 * Used by the platform IRQ dispatcher.
-	 */
-	void CallIrqHandler(uint32_t events) const;
-	/**
-	 * @brief Return true if a handler is currently registered.
-	 */
-	bool HasHandler() const;
-
-  private:
-	/**
-	 * @brief Platform hook to register this instance in the per-pin map.
-	 */
-	static void PlatformRegister(Button* button);
-	/**
-	 * @brief Platform hook to unregister this instance from the per-pin map.
-	 */
-	static void PlatformUnregister(Button* button);
-
-	/// Current IRQ handler for this button.
-	std::function<void(uint32_t events)> handler_{};
 };
 
 } // namespace c7222

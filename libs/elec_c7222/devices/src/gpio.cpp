@@ -4,26 +4,49 @@
 
 namespace c7222 {
 
-GpioPin::Config::Config(int32_t pin) {
-	assert(pin >= 0);
-	pin_ = static_cast<uint32_t>(pin);
-}
 
-bool GpioPin::Config::Validate() const {
-	if(output_type == OutputType::OpenDrain && pull == PullMode::None) {
+bool GpioIn::Config::Validate() const {
+	if(input_events != GpioInputEvent::None && irq_handler == nullptr) {
+		return false;
+	}
+	if(input_events == GpioInputEvent::None && irq_handler != nullptr) {
 		return false;
 	}
 	return true;
 }
 
-GpioPin::GpioPin(uint32_t pin) : GpioPin(pin, Config(static_cast<int32_t>(pin))) {}
-
-uint32_t GpioPin::GetPin() const {
-	return pin_;
+bool GpioIn::Config::operator==(const Config& other) const {
+	return pin_ == other.pin_ &&
+		   pull == other.pull &&
+		   input_events == other.input_events;
 }
 
-GpioPin::Config GpioPin::GetConfig() const {
-	return config_;
+
+
+void GpioIn::CallIrqHandler(uint32_t events) const {
+	uint32_t event_mask = static_cast<uint32_t>(config_.input_events);
+	if(config_.irq_handler && (events & event_mask)) {
+		config_.irq_handler(events);
+	}
 }
 
-} 
+GpioOut::Config::Config(uint32_t pin) {
+	assert(pin >= 0);
+	pin_ = static_cast<uint32_t>(pin);
+}
+
+bool GpioOut::Config::Validate() const {
+	return true;
+}
+
+bool GpioOut::Config::operator==(const Config& other) const {
+	return pin_ == other.pin_ &&
+		   pull == other.pull &&
+		   output_type == other.output_type &&
+		   drive == other.drive &&
+		   initial_state == other.initial_state;
+}
+
+
+
+}  // namespace c7222

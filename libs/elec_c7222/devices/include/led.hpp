@@ -9,31 +9,34 @@
 
 #include "gpio.hpp"
 
-/**
- * @namespace c7222
- * @brief C7222 course abstractions namespace.
- *
- * This namespace is shared by all hardware abstractions used in the course.
- */
 namespace c7222 {
 
 /**
  * @class Led
  * @brief Output-only GPIO wrapper intended for LEDs.
  *
- * This class derives from GpioPin and enforces an output-only configuration.
- * It provides a small LED-friendly API (On/Off/Toggle).
+ * Design intent:
+ * - **Output-only**: derives from `GpioOut` and deletes `Configure()` to
+ *   prevent accidental reconfiguration into input mode.
+ * - **LED-friendly API**: exposes `On()`, `Off()`, `Set()`, and `Toggle()`
+ *   instead of raw GPIO writes.
  *
- * The constructor configures the pin as:
- *  - Direction::Output
- *  - OutputType::PushPull
- *  - PullMode::None
- * and optionally sets the pad drive strength.
+ * Default configuration:
+ * - OutputType::PushPull
+ * - PullMode::None
+ * - Drive strength configurable (default 4 mA)
  *
- * Some boards use active-low LEDs (logic low turns the LED on). This class
- * supports that via the active_low flag.
+ * Active-low support:
+ * - Some boards (including the C7222 Pico W board LEDs) are wired active-low
+ *   so a GPIO low turns the LED on.
+ * - The `active_low` flag controls the logical-to-physical mapping so callers
+ *   can use `On()`/`Off()` without worrying about wiring.
+ *
+ * Reconfiguration note:
+ * - If the LED pin was temporarily used for PWM, call `Reconfigure()` after
+ *   releasing PWM ownership to restore LED-safe GPIO settings.
  */
-class Led : public GpioPin {
+class Led : public GpioOut {
   public:
 	/**
 	 * @brief Construct an LED output pin.
@@ -45,7 +48,7 @@ class Led : public GpioPin {
 	 */
 	explicit Led(uint32_t pin,
 	             bool initial_on = false,
-	             DriveStrength drive = DriveStrength::mA4,
+	             GpioDriveStrength drive = GpioDriveStrength::mA4,
 	             bool active_low = false);
 
 	/**
@@ -54,6 +57,20 @@ class Led : public GpioPin {
 	 * This prevents accidentally switching the LED pin into input mode.
 	 */
 	void Configure(const Config& config) = delete;
+
+	/**
+	 * @brief Reconfigure LED output settings.
+	 *
+	 * This is intended for cases where the pin was temporarily used for PWM
+	 * and then returned to GPIO control. It only exposes LED-safe settings.
+	 *
+	 * @param initial_on Initial LED state (default: false/off).
+	 * @param drive Pad drive strength (default: 4 mA).
+	 * @param active_low If true, LED is active-low (GPIO low = on).
+	 */
+	void Reconfigure(bool initial_on = false,
+	                 GpioDriveStrength drive = GpioDriveStrength::mA4,
+	                 bool active_low = false);
 
 	/**
 	 * @brief Set the LED state.
@@ -80,16 +97,6 @@ class Led : public GpioPin {
 
   private:
 	bool _active_low{false};
-
-	bool PhysicalLevel(bool led_on) const;
-
-	/**
-	 * @brief Create a GpioPin::Config for output-only LED usage.
-	 */
-	static Config MakeConfig(uint32_t pin,
-	                         bool initial_on,
-	                         DriveStrength drive,
-	                         bool active_low) = delete;
 };
 
 } // namespace c7222

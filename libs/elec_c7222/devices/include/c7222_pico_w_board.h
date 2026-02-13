@@ -1,12 +1,16 @@
 /**
  * @file c7222_pico_w_board.h
- * @brief Pico W board-level GPIO layout and helpers.
+ * @brief Pico W board-level GPIO layout and helpers (C API).
  *
  * This header defines the GPIO layout for LEDs and buttons on the C7222 Pico W
  * board and provides C-style helper functions for initializing and accessing
  * those pins, plus a thin C wrapper for the Pico W on-board LED. The
  * implementation is in
  * `libs/elec_c7222/devices/platform/rpi_pico/c7222_pico_w_board.c`.
+ *
+ * Note: This header is intended for **C** code. For C++ projects, prefer the
+ * `c7222_pico_w_board.hpp` API and its associated classes (`PicoWBoard`,
+ * `Led`, and `Button`).
  *
  * ## Usage assumptions (from the implementation)
  * - Call @ref c7222_pico_w_board_init_gpio() once before using any of the LED or

@@ -1,9 +1,15 @@
 /**
  * @file onchip_temperature_sensor.hpp
  * @brief RP2040 on-chip temperature sensor wrapper.
+ *
+ * This class provides a minimal, beginner-friendly API for reading the
+ * RP2040's built-in temperature sensor via the ADC. The platform backend
+ * handles the ADC configuration and conversion logic.
  */
 #ifndef TEMPLATE_ONCHIP_TEMPERATURE_SENSOR_HPP
 #define TEMPLATE_ONCHIP_TEMPERATURE_SENSOR_HPP
+
+#include <memory>
 
 #include "non_copyable.hpp"
 namespace c7222 {
@@ -11,6 +17,18 @@ namespace c7222 {
 /**
  * @class OnChipTemperatureSensor
  * @brief Reads the RP2040 on-chip temperature sensor via the ADC.
+ *
+ * Design intent:
+ * - **Singleton access**: only one on-chip sensor exists, so a singleton is used.
+ * - **Explicit initialization**: call `Initialize()` once before reading.
+ *   The Platform does not auto-initialize this device.
+ *
+ * Example:
+ * @code{.cpp}
+ * auto* sensor = c7222::OnChipTemperatureSensor::GetInstance();
+ * sensor->Initialize();
+ * float temp_c = sensor->GetCelsius();
+ * @endcode
  */
 class OnChipTemperatureSensor : public NonCopyableNonMovable {
    public:
@@ -43,11 +61,26 @@ class OnChipTemperatureSensor : public NonCopyableNonMovable {
 	bool IsInitialized() const {
 		return initialized_;
 	}
+	/**
+	 * @brief Destructor.
+	 *
+	 * Public to allow std::unique_ptr default deleter.
+	 */
+	~OnChipTemperatureSensor() = default;
 
    private:
+	/**
+	 * @brief Private constructor for singleton usage.
+	 */
 	OnChipTemperatureSensor();
-	static OnChipTemperatureSensor* instance_;
+	/**
+	 * @brief Singleton instance (lazy-initialized).
+	 */
+	static std::unique_ptr<OnChipTemperatureSensor> instance_;
 
+	/**
+	 * @brief True after successful `Initialize()`.
+	 */
 	bool initialized_{false};
 };
 
