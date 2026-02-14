@@ -4,7 +4,7 @@ name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
+    branches: ["documentation"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,6 +28,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Doxygen and Graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Install MkDocs dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mkdocs mkdocs-material
+
+      - name: Generate Doxygen HTML
+        run: doxygen Doxyfile
+
+      - name: Build MkDocs site
+        run: mkdocs build
+
+      - name: Merge Doxygen site into MkDocs site
+        run: |
+          mkdir -p site/api
+          cp -R doc/elec-c7222/html/. site/api/
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
