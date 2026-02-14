@@ -3,9 +3,13 @@ build_local
 cmake-build*/
 tools/gdb_printers/
 doc/**/html/
+doc/**/xml/
+site/
 **/__pycache__/
 
-.cache
+.venv/
+.cache/
+
 *.elf
 *.bin
 *.hex

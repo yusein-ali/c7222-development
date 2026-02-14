@@ -2,7 +2,7 @@
 
 This guide walks through first-time setup for this repository in VS Code with CMake Tools and the Raspberry Pi Pico extension.
 
-For full build details (toolchain assumptions, options, and build variants), see [`building.md`](building.md).
+For full build details (toolchain assumptions, options, and build variants), see the Build Guide (`building.md`).
 
 ## 1. Clone The Repository
 
@@ -47,7 +47,7 @@ This project configures FreeRTOS runtime stats/trace support for detailed RTOS v
 
 ## 4. What CMake Presets Are
 
-CMake presets are named, version-controlled configuration profiles stored in [`CMakePresets.json`](../../CMakePresets.json).
+CMake presets are named, version-controlled configuration profiles stored in `CMakePresets.json`.
 
 In this repository:
 
@@ -137,6 +137,8 @@ In this repository, `launch.json` uses Pico extension command variables such as:
 
 This allows launch configurations to resolve correct ELF path, GDB binary, target config, and SVD without hard-coding per-machine values.
 
+For runtime debug logs, use a serial port monitor extension and connect to the active UART at `921600` baud.
+
 ### 8.3 OpenOCD And Launch Configurations
 
 Provided debug configurations include:
@@ -164,6 +166,4 @@ For daily use, this sequence is effective:
 
 ## 11. Next Reading
 
-- Build details: [`building.md`](building.md)
-- Repository overview: [`../../README.md`](../../README.md)
-- Library docs overview: [`../../libs/elec_c7222/docs/markdown/overview.md`](../../libs/elec_c7222/docs/markdown/overview.md)
+- Build details: `building.md`

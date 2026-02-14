@@ -4,7 +4,7 @@ This document explains how the CMake build is structured in this repository, whi
 
 ## 1. Build System Overview
 
-The project uses a single top-level [`CMakeLists.txt`](../../CMakeLists.txt) to:
+The project uses a single top-level `CMakeLists.txt` to:
 
 - initialize Pico SDK/toolchain integration
 - import external dependencies (FreeRTOS Kernel and FreeRTOS-cpp11)
@@ -17,7 +17,7 @@ The default board is configured as:
 
 Toolchain defaults are aligned with Pico VS Code extension paths via:
 
-- [`cmake/pico-compiler-settings.cmake`](../../cmake/pico-compiler-settings.cmake)
+- `cmake/pico-compiler-settings.cmake`
 
 ## 2. Key CMake Options
 
@@ -46,7 +46,7 @@ Additional cache variables:
 
 Imported via:
 
-- [`cmake/FREERTOS_KERNEL_import.cmake`](../../cmake/FREERTOS_KERNEL_import.cmake)
+- `cmake/FREERTOS_KERNEL_import.cmake`
 
 Behavior:
 
@@ -59,8 +59,8 @@ Behavior:
 
 Imported/configured via:
 
-- [`cmake/FreeRTOS_CPP11_import.cmake`](../../cmake/FreeRTOS_CPP11_import.cmake)
-- [`cmake/FreeRTOS_Cpp11_lib.cmake`](../../cmake/FreeRTOS_Cpp11_lib.cmake)
+- `cmake/FreeRTOS_CPP11_import.cmake`
+- `cmake/FreeRTOS_Cpp11_lib.cmake`
 
 Behavior:
 
@@ -134,7 +134,7 @@ Default UART stdio behavior:
 
 When `C7222_EXAMPLES_BUILD=ON`, examples are loaded from:
 
-- [`libs/elec_c7222/examples/examples.cmake`](../../libs/elec_c7222/examples/examples.cmake)
+- `libs/elec_c7222/examples/examples.cmake`
 
 Current set includes:
 
@@ -150,7 +150,7 @@ BLE examples may append `.gatt` files to `GATT_FILES` for header generation.
 
 When `C7222_GETTING_STARTED_BUILD=ON`, targets are loaded from:
 
-- [`getting-started/getting-started.cmake`](../../getting-started/getting-started.cmake)
+- `getting-started/getting-started.cmake`
 
 Targets:
 

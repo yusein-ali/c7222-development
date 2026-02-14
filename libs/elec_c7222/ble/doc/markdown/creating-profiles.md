@@ -2,7 +2,7 @@
 
 This note summarizes the BTstack GATT Server guidance (from `doc/BTstack-md/profiles.md`, section "GATT Server") and adds **GATT‑file‑specific** caveats used in this project.
 
-Warning: a detailed GATT guide is available in [comprehensive-gatt-guide.md](comprehensive-gatt-guide.md). Refer to it for deeper explanations and edge cases.
+Warning: a detailed GATT guide is available in \ref md_libs_2elec__c7222_2ble_2doc_2markdown_2comprehensive-gatt-guide "comprehensive-gatt-guide.md". Refer to it for deeper explanations and edge cases.
 
 ## BTstack GATT Server Basics
 

@@ -1,5 +1,11 @@
 # ELEC-C7222 Embedded Development Project
 
+<div style="display:none">
+\subpage md_doc_2markdown_2getting-started "Getting Started"
+\subpage md_doc_2markdown_2building "Building The Project"
+\subpage md_libs_2elec__c7222_2docs_2markdown_2overview "ELEC-C7222 Library Overview"
+</div>
+
 ## Overview
 
 This repository is a Raspberry Pi Pico 2 W focused embedded development workspace for:

@@ -1,5 +1,13 @@
 # BLE Library Design Overview
 
+<div style="display:none">
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gap
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gatt
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2security-manager
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2creating-profiles
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2comprehensive-gatt-guide
+</div>
+
 This library wraps BTstack with C++ classes to provide a more structured, object‑oriented BLE API while keeping BTstack’s behavior and constraints visible. It is intentionally thin: it does not hide the underlying ATT/GATT and HCI concepts, and it expects the application to manage event dispatch and object lifetimes carefully.
 
 ## BTstack Configuration (Pico W)
@@ -54,9 +62,9 @@ The main configuration file is `btstack_config.h`.
 ## Top‑Level Architecture
 
 - `c7222::Ble` is the top‑level singleton facade and owns access to the other singletons.
-- `c7222::Gap` handles advertising, connection state, and GAP events. See [gap.md](gap.md).
-- `c7222::AttributeServer` parses the ATT database and routes attribute reads/writes. See [gatt.md](gatt.md).
-- `c7222::SecurityManager` configures pairing/encryption and dispatches security events. See [security-manager.md](security-manager.md).
+- `c7222::Gap` handles advertising, connection state, and GAP events. See \ref md_libs_2elec__c7222_2ble_2doc_2markdown_2gap "gap.md".
+- `c7222::AttributeServer` parses the ATT database and routes attribute reads/writes. See \ref md_libs_2elec__c7222_2ble_2doc_2markdown_2gatt "gatt.md".
+- `c7222::SecurityManager` configures pairing/encryption and dispatches security events. See \ref md_libs_2elec__c7222_2ble_2doc_2markdown_2security-manager "security-manager.md".
 - Utility types (e.g., `BleAddress`, `BleError`, `Uuid`) provide shared protocol data types and error mapping.
 
 ## Singleton Model and Threading
@@ -67,7 +75,7 @@ The main configuration file is `btstack_config.h`.
 
 ## ATT/GATT Database Flow
 
-- BTstack uses a compiled ATT database (`att_db.h/att_db.c`) generated from `.gatt` files. See [creating-profiles.md](creating-profiles.md) for the project’s GATT‑file guidance.
+- BTstack uses a compiled ATT database (`att_db.h/att_db.c`) generated from `.gatt` files. See \ref md_libs_2elec__c7222_2ble_2doc_2markdown_2creating-profiles "creating-profiles.md" for the project’s GATT‑file guidance.
 - `c7222::AttributeServer::Init(context)` expects a platform‑specific context pointer. On Pico W, this is the ATT database blob.
 - `AttributeServer` parses the ATT database into `Service`, `Characteristic`, and `Attribute` objects.
 - Static attributes reference bytes inside the ATT database blob. That blob must remain valid for the lifetime of the server.

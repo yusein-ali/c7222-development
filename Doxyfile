@@ -3,8 +3,9 @@
 PROJECT_NAME           = "ELEC-C7222"
 PROJECT_BRIEF          = "Libraries for ELEC C7222 Course Work"
 OUTPUT_DIRECTORY       = doc/elec-c7222
-GENERATE_HTML          = YES
+GENERATE_XML           = NO
 GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
 
 # Graphs (requires Graphviz dot)
 HAVE_DOT               = YES
@@ -31,6 +32,10 @@ INPUT                  = README.md \
                          libs/elec_c7222/utils/include \
                          libs/elec_c7222/examples
 RECURSIVE              = YES
+EXCLUDE                = doc/markdown/api-reference.md \
+                         doc/index.md
+EXCLUDE_PATTERNS       = */doc/markdown/api-reference.md \
+                         */doc/index.md
 IMAGE_PATH             = libs/elec_c7222/devices/doc/images \
                          libs/elec_c7222/ble/doc/images
 FILE_PATTERNS          = *.hpp *.h *.c *.cpp *.md *.png *.jpg *.jpeg *.svg *.gif
@@ -57,3 +62,4 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 
 # Output language
 OUTPUT_LANGUAGE        = English
+GENERATE_TREEVIEW      = YES
