@@ -1,10 +1,10 @@
-**Devices Overview**
+# Devices Overview
 
 This document introduces the ELEC_C7222 devices layer, its design principles, and how to use it across the two supported platforms. It is intended to help students and teaching staff understand what each device abstraction does, how platform-specific behavior is isolated, and how to use the APIs correctly.
 
 For board-level interfaces and pin assignments, see [Board Reference](c7222_board.md).
 
-**Purpose**
+## Purpose
 
 The devices module provides a small, consistent set of abstractions for GPIO, LEDs, buttons, on-board LED control, and the on-chip temperature sensor. It aims to:
 
@@ -12,7 +12,7 @@ The devices module provides a small, consistent set of abstractions for GPIO, LE
 2. Keep APIs beginner-friendly and explicit.
 3. Offer the same logical behavior across the real Pico W platform and the grader (simulated) platform.
 
-**Design Principles**
+## Design Principles
 
 1. **Separation of Roles**
 `GpioIn` and `GpioOut` are distinct classes. Input-only and output-only operations are deliberately separated to prevent misuse and reduce ambiguous configuration.
@@ -26,7 +26,7 @@ Platform initialization is explicit (`Platform::Initialize()`). Device initializ
 4. **Platform Isolation**
 Platform-dependent behavior is confined to `platform/rpi_pico` (real hardware) and `platform/grader` (simulated). Device headers and `src/` code remain platform-agnostic.
 
-**Platform-Agnostic Layer (Common API)**
+## Platform-Agnostic Layer (Common API)
 
 Key headers in `libs/elec_c7222/devices/include`:
 
@@ -53,7 +53,7 @@ Defines `Platform`, a singleton that coordinates platform initialization and off
 8. `pwm.hpp`  
 Defines `PwmOut`, a minimal PWM output wrapper with period and duty-cycle configuration.
 
-**PWM (`PwmOut`)**
+## PWM (`PwmOut`)
 
 `PwmOut` provides a minimal PWM interface suitable for LED dimming and simple duty‑cycle control. It exposes:
 1. Period in microseconds.
@@ -65,9 +65,9 @@ Ownership rules:
 2. Call `Enable(false)` (or destroy the object) to release the pin back to GPIO.
 3. Do not use `Led` and `PwmOut` on the same pin at the same time.
 
-**PWM Examples**
+## PWM Examples
 
-**1) Basic PWM output**
+### Basic PWM Output
 
 ```cpp
 c7222::PwmOut pwm(15);
@@ -75,7 +75,7 @@ pwm.SetPeriodUs(1000.0f);   // 1 kHz
 pwm.SetDutyCycle(0.25f);    // 25%
 ```
 
-**2) Active‑low PWM for a board LED**
+### Active-Low PWM for a Board LED
 
 ```cpp
 c7222::PwmOut pwm(20);
@@ -84,7 +84,7 @@ pwm.SetDutyCycle(0.5f);
 pwm.SetActiveLow(true);
 ```
 
-**3) Using Platform convenience**
+### Using Platform Convenience
 
 ```cpp
 auto* platform = c7222::Platform::GetInstance();
@@ -92,15 +92,15 @@ platform->Initialize();
 auto pwm = platform->CreateLedPwm(c7222::PicoWBoard::LedId::LED1_GREEN, 128);
 ```
 
-**4) Release PWM and return to GPIO**
+### Release PWM and Return to GPIO
 
 ```cpp
 pwm.Enable(false); // returns pin to GPIO function
 ```
 
-**Platform Implementations**
+## Platform Implementations
 
-**1) Raspberry Pi Pico W (hardware)**
+### Raspberry Pi Pico W (Hardware)
 
 Located in `libs/elec_c7222/devices/platform/rpi_pico/`.
 
@@ -109,7 +109,7 @@ Located in `libs/elec_c7222/devices/platform/rpi_pico/`.
 - `onchip_temperature_sensor.cpp` configures the ADC and reads temperature values.
 - `platform.cpp` performs architecture initialization (e.g., CYW43) and exposes device accessors.
 
-**2) Grader Platform (simulated)**
+### Grader Platform (Simulated)
 
 Located in `libs/elec_c7222/devices/platform/grader/`.
 
@@ -117,16 +117,16 @@ Located in `libs/elec_c7222/devices/platform/grader/`.
 - `onboard_led.cpp` and `onchip_temperature_sensor.cpp` return simulated results.
 - `platform.cpp` mirrors the interface and init flow without hardware dependencies.
 
-**Usage Examples**
+## Usage Examples
 
-**1) Basic Platform Initialization**
+### Basic Platform Initialization
 
 ```cpp
 auto* platform = c7222::Platform::GetInstance();
 platform->Initialize();
 ```
 
-**2) On-Board LED (explicit initialization)**
+### On-Board LED (Explicit Initialization)
 
 ```cpp
 auto* led = c7222::OnBoardLED::GetInstance();
@@ -134,7 +134,7 @@ led->Initialize();
 led->On();
 ```
 
-**3) Temperature Sensor (explicit initialization)**
+### Temperature Sensor (Explicit Initialization)
 
 ```cpp
 auto* sensor = c7222::OnChipTemperatureSensor::GetInstance();
@@ -142,7 +142,7 @@ sensor->Initialize();
 float temp_c = sensor->GetCelsius();
 ```
 
-**4) PicoWBoard LEDs and Buttons**
+### PicoWBoard LEDs and Buttons
 
 ```cpp
 auto* platform = c7222::Platform::GetInstance();
@@ -156,7 +156,7 @@ platform->ToggleLed(c7222::PicoWBoard::LedId::LED1_GREEN);
 bool pressed = platform->IsButtonPressed(c7222::PicoWBoard::ButtonId::BUTTON_B1);
 ```
 
-**5) GPIO Direct Usage**
+### GPIO Direct Usage
 
 ```cpp
 c7222::GpioOut out_pin(15);
@@ -166,12 +166,12 @@ c7222::GpioIn in_pin(14);
 bool level = in_pin.Read();
 ```
 
-**Notes and Constraints**
+## Notes and Constraints
 
 1. Assertions are used heavily to enforce valid configuration and single-pin ownership. This assumes debug builds. Release builds will not enforce these checks.
 2. `OnBoardLED` and `OnChipTemperatureSensor` are not auto-initialized. Users must call `Initialize()` explicitly.
 3. `PicoWBoard` construction performs its own initialization, so it should only be created after platform initialization.
 
-**C API Note**
+## C API Note
 
 There is also a simple C-only API for board GPIOs in `c7222_pico_w_board.h`. It is intended for **C code**; C++ users should prefer the `c7222_pico_w_board.hpp` API and device classes.

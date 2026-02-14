@@ -1,4 +1,4 @@
-# Examples
+# LEC-C7222 Library Examples
 
 This document describes the example applications shipped with `libs/elec_c7222` and how to build them. The examples are intended for teaching and validation of the library on Raspberry Pico W platforms.
 

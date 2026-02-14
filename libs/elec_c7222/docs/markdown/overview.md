@@ -1,4 +1,4 @@
-# Project Documentation Overview
+# ELEC-C7222 Library Overview
 
 **Purpose**
 
@@ -13,20 +13,20 @@ The `libs/elec_c7222` library provides shared course infrastructure. It includes
 **Devices**
 
 - Location: `libs/elec_c7222/devices`
-- Overview: [Devices Overview](devices/doc/markdown/overview.md)
-- Board Reference: [C7222 Board Reference](devices/doc/markdown/c7222_board.md)
+- Overview: [Devices Overview](../../devices/doc/markdown/overview.md)
+- Board Reference: [C7222 Board Reference](../../devices/doc/markdown/c7222_board.md)
 
 **BLE**
 
 - Location: `libs/elec_c7222/ble`
-- Overview: [BLE Overview](ble/doc/markdown/overview.md)
+- Overview: [BLE Overview](../../ble/doc/markdown/overview.md)
 - Guides:
-  1. [Creating GATT Profiles](ble/doc/markdown/creating-profiles.md)
-  2. [GAP Module](ble/doc/markdown/gap.md)
-  3. [GATT/ATT Module](ble/doc/markdown/gatt.md)
-  4. [Security Manager Module](ble/doc/markdown/security-manager.md)
+  1. [Creating GATT Profiles](../../ble/doc/markdown/creating-profiles.md)
+  2. [GAP Module](../../ble/doc/markdown/gap.md)
+  3. [GATT/ATT Module](../../ble/doc/markdown/gatt.md)
+  4. [Security Manager Module](../../ble/doc/markdown/security-manager.md)
 
 **Utils**
 
 - Location: `libs/elec_c7222/utils`
-- Overview: [Utils Overview](utils/doc/markdown/overview.md)
+- Overview: [Utils Overview](../../utils/doc/markdown/overview.md)

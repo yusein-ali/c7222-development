@@ -1,0 +1,59 @@
+# Doxygen configuration for repository root (merged single output)
+
+PROJECT_NAME           = "ELEC-C7222"
+PROJECT_BRIEF          = "Libraries for ELEC C7222 Course Work"
+OUTPUT_DIRECTORY       = doc/elec-c7222
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+# Graphs (requires Graphviz dot)
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+UML_LOOK               = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+
+# Input
+INPUT                  = README.md \
+                         doc/markdown \
+                         getting-started \
+                         libs/elec_c7222/docs/markdown \
+                         libs/elec_c7222/devices/doc/markdown \
+                         libs/elec_c7222/ble/doc/markdown \
+                         libs/elec_c7222/utils/doc/markdown \
+                         libs/elec_c7222/ble/include \
+                         libs/elec_c7222/ble/gap/include \
+                         libs/elec_c7222/ble/gatt/include \
+                         libs/elec_c7222/ble/security_manager/include \
+                         libs/elec_c7222/devices/include \
+                         libs/elec_c7222/utils/include \
+                         libs/elec_c7222/examples
+RECURSIVE              = YES
+IMAGE_PATH             = libs/elec_c7222/devices/doc/images \
+                         libs/elec_c7222/ble/doc/images
+FILE_PATTERNS          = *.hpp *.h *.c *.cpp *.md *.png *.jpg *.jpeg *.svg *.gif
+
+# Markdown
+MARKDOWN_SUPPORT       = YES
+USE_MDFILE_AS_MAINPAGE = README.md
+
+# Extract docs from code
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+
+# Quiet output
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+
+# Typical C++ settings
+OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_JAVA   = NO
+OPTIMIZE_FOR_FORTRAN   = NO
+OPTIMIZE_OUTPUT_VHDL   = NO
+
+# Output language
+OUTPUT_LANGUAGE        = English

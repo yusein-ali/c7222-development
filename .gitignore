@@ -2,6 +2,7 @@ build
 build_local
 cmake-build*/
 tools/gdb_printers/
+doc/**/html/
 **/__pycache__/
 
 .cache
