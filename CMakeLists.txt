@@ -33,6 +33,7 @@ set(PROJECT_NAME "ELEC-C7222-CPP-LIB" CACHE STRING "Project name")
 option(C7222_ENABLE_BLE "Enable BLE helpers in ELEC_C7222" ON)
 option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 option(C7222_EXAMPLES_BUILD "Enable C7222 examples build" ON)
+option(C7222_GETTING_STARTED_BUILD "Enable getting-started build targets" ON)
 
 # internal list for gatt files
 if(C7222_ENABLE_BLE)
@@ -63,6 +64,7 @@ pico_sdk_init()
 # ====================================================================================
 # THE LAST COMPNENT: elec_c7222 helpers -- this must be included after defining the project and options
 include(${CMAKE_SOURCE_DIR}/libs/elec_c7222/elec_c7222.cmake)
+include(${CMAKE_SOURCE_DIR}/getting-started/getting-started.cmake)
 
 # Add executable. Default name is the project name, version 0.1
 if(NOT C7222_EXAMPLES_BUILD)
@@ -91,7 +93,12 @@ if(NOT C7222_EXAMPLES_BUILD)
     list(APPEND APP_LIBS ${APP_LIB})
 else()
     # if we are building examples, the example library will pull in the app sources
-    set(APP_LIBS ${C7222_EXAMPLES})
+    set(APP_LIBS "")
+    list(APPEND APP_LIBS ${C7222_EXAMPLES})
+endif()
+
+if(C7222_GETTING_STARTED_BUILD)
+    list(APPEND APP_LIBS ${C7222_GETTING_STARTED})
 endif()
 
 
