@@ -154,7 +154,7 @@ For each entry in `APP_LIBS`, root CMake:
 5. Enables Pico outputs (`.elf`, `.uf2`, etc.) via `pico_add_extra_outputs`
 6. If BLE and `GATT_FILES` are present, runs `pico_btstack_make_gatt_header`
 
-### BLE `.gatt` → generated header
+### 5.1 BLE `.gatt` → generated header
 
 When an app/example interface library defines the `GATT_FILES` property, the root CMake iterates over those `.gatt` files and invokes the Pico SDK helper:
 
@@ -162,8 +162,7 @@ When an app/example interface library defines the `GATT_FILES` property, the roo
 
 This generates a C header representation of the GATT database and wires it into the build of the executable target.
 
-
-This means each app/example inherits a consistent platform/runtime baseline while contributing only its own sources through the interface library.
+Overall, each app/example inherits a consistent platform/runtime baseline while contributing only its own sources through the interface library.
 
 Default UART stdio behavior:
 
@@ -187,7 +186,7 @@ Current set includes:
 
 BLE examples may append `.gatt` files to `GATT_FILES` for header generation.
 
-#### How to add a new example target
+#### 6.1.1 How to add a new example target
 
 Examples are registered as `INTERFACE` libraries and then collected into the global `C7222_EXAMPLES` list.
 
