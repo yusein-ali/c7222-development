@@ -1,9 +1,4 @@
 /**
- * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-/**
  * @file main_freertos.cpp
  * @brief C++ FreeRTOS LED test for Pico 2 W using `std::thread`.
  *
@@ -48,19 +43,6 @@
 
 using namespace std::chrono_literals;
 
-/**
- * @brief Initialize the board-specific LED backend.
- *
- * Supports either direct GPIO LED control (`PICO_DEFAULT_LED_PIN`) or the
- * CYW43-controlled LED path used on Pico W style boards.
- *
- * Usage:
- * - Call once in `main()` before creating worker threads.
- * - Validate with `hard_assert(rc == PICO_OK)` as shown in this file.
- *
- * @return `PICO_OK` on success, CYW43 init status on Pico W path, or
- *         `PICO_ERROR_GENERIC` if no supported LED backend is available.
- */
 int pico_led_init() {
 #if defined(PICO_DEFAULT_LED_PIN)
 	gpio_init(PICO_DEFAULT_LED_PIN);
@@ -197,7 +179,7 @@ public:
       led_thread.detach();
       log_thread = std::thread{log_task};
       log_thread.detach();
-      // The tasks can actually start, run, and signal "I'm alive",
+      // The taks can actually start, run, and signal "I'm alive",
       // so wait_for_start() will succeed.
 
       // D. Delete this startup task (cleanup)
@@ -252,3 +234,4 @@ int main() {
 		tight_loop_contents();
 	}
 }
+
