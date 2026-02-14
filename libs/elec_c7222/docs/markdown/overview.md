@@ -1,6 +1,11 @@
 # ELEC-C7222 Library Overview
 
-**Purpose**
+<div style="display:none">
+\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2overview
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2overview
+\subpage md_libs_2elec__c7222_2utils_2doc_2markdown_2overview
+\subpage md_libs_2elec__c7222_2docs_2markdown_2examples
+</div>
 
 The `libs/elec_c7222` library provides shared course infrastructure. It includes three major subsystems:
 

@@ -1,0 +1,20 @@
+site_name: "ELEC-C7222 Library Documentation"
+theme:
+  name: material
+docs_dir: doc
+exclude_docs: |
+  BTstack-md/README.md
+  elec-c7222/**
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: markdown/getting-started.md
+  - Build: markdown/building.md
+  - API Reference: markdown/api-reference.md
+
+validation:
+  links:
+    not_found: ignore
