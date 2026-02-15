@@ -2,25 +2,25 @@
 #include "pwm.hpp"
 
 #include <cassert>
-#include <map>
 
 namespace c7222 {
-namespace {
-static std::map<uint32_t, PwmOut*> pwm_out_to_object_map{};
-} // namespace
+extern "C" {
+bool c7222_grader_register_pwm_out(uint32_t pin, PwmOut* pwm_out);
+void c7222_grader_unregister_pwm_out(uint32_t pin);
+void c7222_grader_apply_pwm_config(uint32_t pin, const PwmOut::Config* config);
+}
 
 PwmOut::PwmOut(uint32_t pin, const Config& config) : pin_(pin), config_(config) {
 	assert(config_.Validate() && "Invalid PWM configuration");
-	auto it = pwm_out_to_object_map.find(GetPin());
-	assert(it == pwm_out_to_object_map.end() && "GPIO pin already in use by another PwmOut instance");
-	pwm_out_to_object_map[GetPin()] = this;
+	const bool registered = c7222_grader_register_pwm_out(GetPin(), this);
+	assert(registered && "GPIO pin already in use by another PwmOut instance");
 	if(config.enabled) {
 		ApplyConfig();
 	}
 }
 
 PwmOut::~PwmOut() {
-	pwm_out_to_object_map.erase(GetPin());
+	c7222_grader_unregister_pwm_out(GetPin());
 }
 
 void PwmOut::Configure(const Config& config) {
@@ -46,6 +46,7 @@ void PwmOut::Enable(bool on) {
 
 void PwmOut::ApplyConfig() {
 	assert(config_.Validate() && "Invalid PWM configuration");
+	c7222_grader_apply_pwm_config(GetPin(), &config_);
 }
 
 } // namespace c7222
