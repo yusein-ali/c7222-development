@@ -24,12 +24,14 @@ INPUT                  = README.md \
                          libs/elec_c7222/devices/doc/markdown \
                          libs/elec_c7222/ble/doc/markdown \
                          libs/elec_c7222/utils/doc/markdown \
+                         libs/elec_c7222/freertos_wrappers/doc \
                          libs/elec_c7222/ble/include \
                          libs/elec_c7222/ble/gap/include \
                          libs/elec_c7222/ble/gatt/include \
                          libs/elec_c7222/ble/security_manager/include \
                          libs/elec_c7222/devices/include \
                          libs/elec_c7222/utils/include \
+                         libs/elec_c7222/freertos_wrappers/include \
                          libs/elec_c7222/examples
 RECURSIVE              = YES
 EXCLUDE                = doc/markdown/api-reference.md \

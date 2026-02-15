@@ -3,15 +3,17 @@
 <div style="display:none">
 \subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2overview
 \subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2overview
+\subpage md_libs_2elec__c7222_2freertos__wrappers_2doc_2overview
 \subpage md_libs_2elec__c7222_2utils_2doc_2markdown_2overview
 \subpage md_libs_2elec__c7222_2docs_2markdown_2examples
 </div>
 
-The `libs/elec_c7222` library provides shared course infrastructure. It includes three major subsystems:
+The `libs/elec_c7222` library provides shared course infrastructure. It includes four major subsystems:
 
 1. Devices: hardware abstraction for GPIO, LEDs, buttons, and board helpers.
 2. BLE: a C++ wrapper around BTstack with GAP/GATT helpers and profile tooling.
-3. Utils: common utilities (copy/move policy helpers, FreeRTOS timer wrapper, and platform hooks).
+3. FreeRTOS Wrappers: C++ wrappers for FreeRTOS primitives with platform-specific implementations.
+4. Utils: common utilities such as copy/move policy helpers.
 
 ## Navigation
 
@@ -35,3 +37,8 @@ The `libs/elec_c7222` library provides shared course infrastructure. It includes
 
 - Location: `libs/elec_c7222/utils`
 - Overview: [Utils Overview](../../utils/doc/markdown/overview.md)
+
+**FreeRTOS Wrappers**
+
+- Location: `libs/elec_c7222/freertos_wrappers`
+- Overview: [FreeRTOS Wrappers Overview](../../freertos_wrappers/doc/overview.md)
