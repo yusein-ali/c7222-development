@@ -80,7 +80,6 @@ if(NOT C7222_EXAMPLES_BUILD)
 
 
     add_library(APP_LIB INTERFACE)
-    target_add_library(${APP_NAME} INTERFACE)
     target_sources(APP_LIB INTERFACE 
                     ${APP_SOURCES})
 
