@@ -19,6 +19,19 @@ Toolchain defaults are aligned with Pico VS Code extension paths via:
 
 - `cmake/pico-compiler-settings.cmake`
 
+### 1.1 Platform selection: `rpi_pico` vs `grader`
+
+Several parts of the library (BLE, GAP, GATT, Security Manager, and some device code) select platform-specific source files based on whether `PICO_SDK_PATH` is available:
+
+- If `PICO_SDK_PATH` is defined and non-empty, platform sources are taken from `platform/rpi_pico/`.
+- Otherwise, the build falls back to `platform/grader/`.
+
+This pattern is used in:
+
+- `libs/elec_c7222/ble/ble.cmake` and its submodules (`gap.cmake`, `gatt.cmake`, `security_manager.cmake`)
+- `libs/elec_c7222/devices/devices.cmake`
+- `libs/elec_c7222/utils/utils.cmake`
+
 ## 2. Key CMake Options
 
 Main options defined in the root CMake:
@@ -103,6 +116,25 @@ The root CMake builds a unified `APP_LIBS` list:
 
 Then it iterates over `APP_LIBS` and creates one executable per interface library.
 
+### 4.3 ELEC_C7222 library composition
+
+The helper library is defined in:
+
+- `libs/elec_c7222/elec_c7222.cmake`
+
+It creates the interface target:
+
+- `ELEC_C7222`
+
+and links the main subcomponents:
+
+- `ELEC_C7222_DEVICES` (from `libs/elec_c7222/devices/devices.cmake`)
+- `ELEC_C7222_UTILS` (from `libs/elec_c7222/utils/utils.cmake`)
+- optionally `ELEC_C7222_BLE` (from `libs/elec_c7222/ble/ble.cmake`) when `C7222_ENABLE_BLE=ON`
+
+Most apps/examples only need to link against `ELEC_C7222` to inherit the full library stack.
+
+
 ## 5. How Executables Are Generated
 
 For each entry in `APP_LIBS`, root CMake:
@@ -122,7 +154,15 @@ For each entry in `APP_LIBS`, root CMake:
 5. Enables Pico outputs (`.elf`, `.uf2`, etc.) via `pico_add_extra_outputs`
 6. If BLE and `GATT_FILES` are present, runs `pico_btstack_make_gatt_header`
 
-This means each app/example inherits a consistent platform/runtime baseline while contributing only its own sources through the interface library.
+### 5.1 BLE `.gatt` → generated header
+
+When an app/example interface library defines the `GATT_FILES` property, the root CMake iterates over those `.gatt` files and invokes the Pico SDK helper:
+
+- `pico_btstack_make_gatt_header(<TARGET_NAME> PRIVATE "<file.gatt>")`
+
+This generates a C header representation of the GATT database and wires it into the build of the executable target.
+
+Overall, each app/example inherits a consistent platform/runtime baseline while contributing only its own sources through the interface library.
 
 Default UART stdio behavior:
 
@@ -145,6 +185,34 @@ Current set includes:
   - `example-ble-gatt-server`
 
 BLE examples may append `.gatt` files to `GATT_FILES` for header generation.
+
+#### 6.1.1 How to add a new example target
+
+Examples are registered as `INTERFACE` libraries and then collected into the global `C7222_EXAMPLES` list.
+
+A typical example `.cmake` file does the following:
+
+1) Create an interface library:
+- `add_library(<EXAMPLE_LIB> INTERFACE)`
+
+2) Set required metadata properties (used by the root executable-generation loop):
+- `TARGET_NAME`: the final executable name
+- `TARGET_PATH`: directory path for diagnostics/logging
+
+3) Add sources/includes:
+- `target_sources(<EXAMPLE_LIB> INTERFACE ...)`
+- `target_include_directories(<EXAMPLE_LIB> INTERFACE ...)`
+
+4) (Optional) Register `.gatt` files:
+- append them to the target property `GATT_FILES`
+
+5) Add the example to the global list:
+- `list(APPEND C7222_EXAMPLES <EXAMPLE_LIB>)`
+
+See existing examples for the exact pattern:
+- `libs/elec_c7222/examples/ble/gatt-server/ble-gatt-server-example.cmake`
+- `libs/elec_c7222/examples/ble/gap/ble-gap-example.cmake`
+
 
 ### 6.2 Getting Started
 
