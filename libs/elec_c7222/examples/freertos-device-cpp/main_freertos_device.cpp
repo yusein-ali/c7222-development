@@ -14,7 +14,8 @@
  * - Board LEDs (LED1_GREEN, LED2_RED, LED2_GREEN) via `Led` and `SafeLed`.
  * - Board buttons (BUTTON_B1, BUTTON_B2) via `Button`/GPIO IRQ and polling helpers.
  * - PWM output for LED3_RED via `PwmOut` to demonstrate duty-cycle control.
- * - FreeRTOS software timer (`FreeRtosTimer`) to defer ISR work to task context.
+ * - FreeRTOS wrapper classes (`FreeRtosTimer`, `FreeRtosTask`) to defer ISR work
+ *   to task context and use wrapper delay/scheduler helpers.
  *
  * Concurrency and synchronization:
  * - `std::thread` is used to create FreeRTOS tasks through FreeRTOS-CPP11 integration.
@@ -56,19 +57,14 @@
 
 #include <cstdio>
 
+#include "freertos_task.hpp"
 #include "freertos_timer.hpp"
 #include "gpio.hpp"
-#include "pico/stdlib.h"
 #include "platform.hpp"
 
 #include "button_event.hpp"
-#include "projdefs.h"
 #include "pwm.hpp"
 #include "safe_led.hpp"
-
-
-#include "FreeRTOS.h"
-#include "freertos_timer.hpp"
 
 /**
  * @brief One-shot timer used to defer GPIO IRQ handling to the timer task.
@@ -134,7 +130,10 @@ void button1_irq_handler(uint32_t events){
 [[noreturn]] void button1_monitor(void* param){
 	(void)param;
 	auto platform = c7222::Platform::GetInstance();
-	dispatcher_timer = new c7222::FreeRtosTimer("Button1Dispatcher", pdMS_TO_TICKS(10), c7222::FreeRtosTimer::Type::kOneShot, button1_irq_dispatcher);
+	dispatcher_timer = new c7222::FreeRtosTimer("Button1Dispatcher",
+												 c7222::FreeRtosTask::MsToTicks(10),
+												 c7222::FreeRtosTimer::Type::kOneShot,
+												 button1_irq_dispatcher);
 	
 	platform->EnableButtonIrq(c7222::PicoWBoard::ButtonId::BUTTON_B1, c7222::GpioInputEvent::BothEdges, button1_irq_handler);	
 	
@@ -201,7 +200,7 @@ void button1_irq_handler(uint32_t events){
 			}
 			button_pressed = b2;
 		}
-		vTaskDelay(pdMS_TO_TICKS(100));
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(100));
 	}
 }
 
@@ -216,14 +215,14 @@ void button1_irq_handler(uint32_t events){
 	bool led_acquired;
 	printf("[SYS]: Started!\r\n");
 	for(;;) {
-		vTaskDelay(pdMS_TO_TICKS(500));
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(500));
 		led_acquired = system_led->AcquireFor(500);
 		if(led_acquired){
 			system_led->On();
 		} else {
 			printf("[SYS] Cannot acquire the led!\r\n");
 		}
-		vTaskDelay(pdMS_TO_TICKS(500));
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(500));
 		if(led_acquired){
 			system_led->Off();
 			system_led->Release();
@@ -235,12 +234,11 @@ void button1_irq_handler(uint32_t events){
  * @brief Program entry point.
  */
 [[noreturn]] int main() {
-	stdio_init_all();
-	std::printf("Starting FreeRTOS C++ devices examples...\n");
-
 	// Create the platform singleton and initialize architecture (CYW43, etc).
 	auto* platform = c7222::Platform::GetInstance();
 	platform->Initialize();
+
+	std::printf("Starting FreeRTOS C++ devices examples...\n");
 	// Initialize the on-board LED and wrap it in a SafeLed for thread-safe access.
 	system_led = new c7222::SafeLed(c7222::PicoWBoard::LedId::LED1_GREEN);
 
@@ -256,7 +254,7 @@ void button1_irq_handler(uint32_t events){
 	// button2_monitor_thread.detach();
 	// system_monitor_thread.detach();
 
-	vTaskStartScheduler();
+	c7222::FreeRtosTask::StartScheduler();
 
 	while(1) {}
 }

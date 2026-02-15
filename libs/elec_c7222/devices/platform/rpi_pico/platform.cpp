@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 
 #include "c7222_pico_w_board.hpp"
@@ -17,6 +18,7 @@ bool Platform::EnsureArchInitialized() {
 	if (arch_initialized_) {
 		return true;
 	}
+	stdio_init_all();
 	if (cyw43_arch_init() != 0) {
 		arch_initialized_ = false;
 		return false;

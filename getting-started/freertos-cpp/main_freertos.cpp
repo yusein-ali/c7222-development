@@ -21,7 +21,6 @@
  *   threading APIs map to FreeRTOS primitives.
  */
 
-#include "pico/stdlib.h"
 #include <assert.h>
 #include <chrono>
 #include <new>
@@ -30,9 +29,8 @@
 #include <thread>
 #include <functional>
 
-#include <FreeRTOS.h>
-#include <task.h>
 
+#include "pico/stdlib.h"
 #ifdef CYW43_WL_GPIO_LED_PIN
 #include "pico/cyw43_arch.h"
 #endif
