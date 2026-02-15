@@ -127,6 +127,22 @@ void FreeRtosTask::Yield() {
 	c7222_grader_yield();
 }
 
+std::uint32_t FreeRtosTask::GetTickCount() {
+	return 0;
+}
+
+void FreeRtosTask::StartScheduler() {
+	// No-op for grader platform.
+}
+
+std::uint32_t FreeRtosTask::MsToTicks(std::uint32_t milliseconds) {
+	return milliseconds;
+}
+
+std::uint32_t FreeRtosTask::IdlePriority() {
+	return 0;
+}
+
 void FreeRtosTask::RunTaskBody() {
 	if(task_function_) {
 		task_function_(task_arg_);

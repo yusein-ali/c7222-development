@@ -128,6 +128,22 @@ void FreeRtosTask::Yield() {
 	taskYIELD();
 }
 
+std::uint32_t FreeRtosTask::GetTickCount() {
+	return static_cast<std::uint32_t>(xTaskGetTickCount());
+}
+
+void FreeRtosTask::StartScheduler() {
+	vTaskStartScheduler();
+}
+
+std::uint32_t FreeRtosTask::MsToTicks(std::uint32_t milliseconds) {
+	return static_cast<std::uint32_t>(pdMS_TO_TICKS(milliseconds));
+}
+
+std::uint32_t FreeRtosTask::IdlePriority() {
+	return static_cast<std::uint32_t>(tskIDLE_PRIORITY);
+}
+
 void FreeRtosTask::RunTaskBody() {
 	if(task_function_) {
 		task_function_(task_arg_);

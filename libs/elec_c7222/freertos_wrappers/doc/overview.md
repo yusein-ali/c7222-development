@@ -75,6 +75,46 @@ Notes:
 - The task function is stored as `std::function<void(void*)>`.
 - Keep referenced data alive for the task lifetime.
 
+#### Static current-thread and scheduler helpers
+
+`FreeRtosTask` also provides static utilities for operations tied to the
+current execution context and scheduler:
+
+- `Delay(ticks)`: block the current task for a number of ticks.
+- `Yield()`: yield the CPU from the current task.
+- `GetTickCount()`: read the current scheduler tick counter.
+- `MsToTicks(ms)`: convert milliseconds to scheduler ticks.
+- `IdlePriority()`: return the platform idle-priority baseline.
+- `StartScheduler()`: start the scheduler (typically from `main`).
+
+These helpers let examples avoid direct `FreeRTOS.h` macro/API calls in
+application code while preserving FreeRTOS semantics.
+
+Typical usage:
+
+```cpp
+#include "freertos_task.hpp"
+
+[[noreturn]] void worker_task(void* arg) {
+	(void)arg;
+	while(true) {
+		// Do periodic work.
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(100));
+	}
+}
+
+int main() {
+	static c7222::FreeRtosTask worker;
+	(void)worker.Initialize("Worker",
+							1024,
+							c7222::FreeRtosTask::IdlePriority() + 1,
+							worker_task,
+							nullptr);
+	c7222::FreeRtosTask::StartScheduler();
+	for(;;) {}
+}
+```
+
 ### `FreeRtosBinarySemaphore`
 
 Use for event signaling (single token available/unavailable).

@@ -82,6 +82,14 @@ class FreeRtosTask : public NonCopyableNonMovable {
 	static void Delay(std::uint32_t ticks);
 	/** @brief Yield current task. */
 	static void Yield();
+	/** @brief @return Current scheduler tick count. */
+	static std::uint32_t GetTickCount();
+	/** @brief Start the scheduler. */
+	static void StartScheduler();
+	/** @brief Convert milliseconds to scheduler ticks. */
+	static std::uint32_t MsToTicks(std::uint32_t milliseconds);
+	/** @brief @return Idle task priority. */
+	static std::uint32_t IdlePriority();
 
 	/**
 	 * @brief Internal bridge used by platform task-entry trampolines.
