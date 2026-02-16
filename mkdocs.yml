@@ -4,6 +4,7 @@ theme:
 docs_dir: doc
 exclude_docs: |
   BTstack-md/**
+  FreeRTOS-Kernel-Book/**
   elec-c7222/**
 
 plugins:
