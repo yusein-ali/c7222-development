@@ -17,8 +17,7 @@ INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES
 
 # Input
-INPUT                  = README.md \
-                         doc/markdown \
+INPUT                  = doc/markdown \
                          getting-started \
                          libs/elec_c7222/docs/markdown \
                          libs/elec_c7222/devices/doc/markdown \
@@ -35,8 +34,10 @@ INPUT                  = README.md \
                          libs/elec_c7222/examples
 RECURSIVE              = YES
 EXCLUDE                = doc/markdown/api-reference.md \
+                         doc/markdown/index.md \
                          doc/index.md
 EXCLUDE_PATTERNS       = */doc/markdown/api-reference.md \
+                         */doc/markdown/index.md \
                          */doc/index.md
 IMAGE_PATH             = libs/elec_c7222/devices/doc/images \
                          libs/elec_c7222/ble/doc/images
@@ -44,7 +45,7 @@ FILE_PATTERNS          = *.hpp *.h *.c *.cpp *.md *.png *.jpg *.jpeg *.svg *.gif
 
 # Markdown
 MARKDOWN_SUPPORT       = YES
-USE_MDFILE_AS_MAINPAGE = README.md
+USE_MDFILE_AS_MAINPAGE = doc/markdown/mainpage.md
 
 # Extract docs from code
 EXTRACT_ALL            = YES

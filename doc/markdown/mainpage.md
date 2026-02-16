@@ -149,3 +149,10 @@ This repository is licensed under the terms described in the [`LICENSE`](LICENSE
 - **Reza Heidari** (Head TA in 2026) contributed to the project.
 
 Comments, feedback, and suggestions are welcome.
+
+<div style="display:none">
+<!-- Doxygen subpages (not used by GitHub) -->
+\subpage md_doc_2markdown_2getting-started "Getting Started"
+\subpage md_doc_2markdown_2building "Building The Project"
+\subpage md_libs_2elec__c7222_2docs_2markdown_2overview "ELEC-C7222 Library Overview"
+</div>
