@@ -6,6 +6,8 @@
 \subpage md_libs_2elec__c7222_2docs_2markdown_2overview "ELEC-C7222 Library Overview"
 </div>
 
+Complete documentation is available at: https://yusein-ali.github.io/c7222-development/
+
 ## Overview
 
 This repository is a Raspberry Pi Pico 2 W focused embedded development workspace for:
@@ -26,6 +28,7 @@ The project is intended to:
 - Demonstrate both classic FreeRTOS C tasking and modern C++ threading workflows on top of FreeRTOS.
 - Offer course-ready reusable components (`elec_c7222`) for device access and Bluetooth workflows.
 - Keep important external documentation available locally in Markdown form for offline and IDE-native reading.
+
 
 ## Design Principles
 
@@ -132,6 +135,10 @@ For detailed, step-by-step instructions, use the local guides:
 
 - Build guide: [`doc/markdown/building.md`](doc/markdown/building.md)
 - Getting started guide: [`doc/markdown/getting-started.md`](doc/markdown/getting-started.md)
+
+## License
+
+This repository is licensed under the terms described in the [`LICENSE`](LICENSE) file.
 
 ## Credits
 
