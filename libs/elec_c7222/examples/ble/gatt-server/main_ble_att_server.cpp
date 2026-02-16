@@ -13,16 +13,18 @@
  * - `SecurityEventHandler` logs pairing/authorization and performs minimal policy.
  * - `BleOnchipTemperature` binds `CharacteristicEventHandler` instances to
  *   temperature/configuration characteristics for event logging.
+ * - `c7222::FreeRtosTask` and `c7222::FreeRtosTimer` wrappers are used for
+ *   task lifecycle and periodic callback scheduling.
  */
 #include <cstdint>
 #include <cstdio>
 
-#include "FreeRTOS.h"
 #include "advertisement_data.hpp"
 #include "gap_event_handler.hpp"
 #include "ble_onchip_temperature.hpp"
 #include "ble.hpp"
 #include "characteristic.hpp"
+#include "freertos_task.hpp"
 #include "freertos_timer.hpp"
 #include "gap.hpp"
 #include "onboard_led.hpp"
@@ -33,7 +35,6 @@
 #include "platform.hpp"
 #include "security_event_handler.hpp"
 #include "security_manager.hpp"
-#include "task.h"
 #include "app_profile.h"
 
 
@@ -150,7 +151,7 @@ static void on_turn_on() {
 
 	// Timer used for periodic temperature updates.
 	app_timer.Initialize("AppTimer",
-						 pdMS_TO_TICKS(2000),
+						 c7222::FreeRtosTask::MsToTicks(2000),
 						 c7222::FreeRtosTimer::Type::kPeriodic,
 						 std::bind(&timer_callback));
 
@@ -244,8 +245,8 @@ static void on_turn_on() {
 	}
 	// Enter infinite loop to keep task alive (and update advertising data).
 	while(true) {
-		seconds = xTaskGetTickCount() / 1000;
-		vTaskDelay(pdMS_TO_TICKS(100));
+		seconds = c7222::FreeRtosTask::GetTickCount() / 1000;
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(100));
 		if(gap->IsAdvertisingEnabled()) {
 			// Replace the last advertising element with updated manufacturer data.
 			auto ad = c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific,
@@ -270,13 +271,16 @@ static void on_turn_on() {
 	printf("Starting FreeRTOS BLE Example...\n");
 
 	// Create the BLE application task.
-	xTaskCreate(ble_app_task, "BLE_App", 1024, NULL, tskIDLE_PRIORITY + 1, NULL);
+	static c7222::FreeRtosTask ble_task;
+	(void)ble_task.Initialize("BLE_App",
+							  1024,
+							  c7222::FreeRtosTask::IdlePriority() + 1,
+							  ble_app_task,
+							  nullptr);
 
 	// Start the scheduler.
-	vTaskStartScheduler();
+	c7222::FreeRtosTask::StartScheduler();
 
 	// Should never reach here.
 	while(1) {}
 }
-
-

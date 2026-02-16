@@ -1,4 +1,4 @@
-# Examples
+# ELEC-C7222 Library Examples
 
 This document describes the example applications shipped with `libs/elec_c7222` and how to build them. The examples are intended for teaching and validation of the library on Raspberry Pico W platforms.
 
@@ -9,9 +9,9 @@ The examples are organized under `libs/elec_c7222/examples` and are built throug
 Examples currently provided:
 
 - **FreeRTOS board validation** (`freertos-board-example`): exercises GPIO, LEDs, buttons, interrupts, and FreeRTOS primitives using the `c7222_pico_w_board` API. Intended for first-time hardware validation.
-- **FreeRTOS device C++ example** (`freertos-device-cpp`): demonstrates C++ device wrappers, SafeLed/ButtonEvent helpers, and ISR-to-task dispatch using a FreeRtosTimer.
-- **BLE GAP example** (`ble/gap`): focuses on GAP only. It initializes the BLE stack, configures advertising, registers a GAP event handler, and periodically updates manufacturer data.
-- **BLE GATT server example** (`ble/gatt-server`): demonstrates an AttributeServer with a GATT profile, Security Manager configuration, characteristic discovery, and periodic temperature updates.
+- **FreeRTOS device C++ example** (`freertos-device-cpp`): demonstrates C++ device wrappers, SafeLed/ButtonEvent helpers, and ISR-to-task dispatch using FreeRTOS wrapper classes (`FreeRtosTimer`, `FreeRtosTask`).
+- **BLE GAP example** (`ble/gap`): focuses on GAP only. It initializes the BLE stack, configures advertising, registers a GAP event handler, and periodically updates manufacturer data using FreeRTOS wrapper classes (`FreeRtosTask`).
+- **BLE GATT server example** (`ble/gatt-server`): demonstrates an AttributeServer with a GATT profile, Security Manager configuration, characteristic discovery, and periodic temperature updates using FreeRTOS wrapper classes (`FreeRtosTask`, `FreeRtosTimer`).
 
 ## Build selection model
 

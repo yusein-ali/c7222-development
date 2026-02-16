@@ -1,5 +1,5 @@
 /**
- * @file app_gap.hpp
+ * @file gap_event_handler.hpp
  * @brief Minimal GAP event handler used by BLE examples.
  *
  * This header declares a small helper class that implements

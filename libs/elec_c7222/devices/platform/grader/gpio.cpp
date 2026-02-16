@@ -1,24 +1,30 @@
 // Simulated environment stub implementation.
 #include "gpio.hpp"
 #include <cassert>
-#include <map>
 
 namespace c7222 {
-namespace {
-static std::map<uint32_t, GpioIn*> gpio_in_to_object_map{};
-static std::map<uint32_t, GpioOut*> gpio_out_to_object_map{};
-} // namespace
+extern "C" {
+bool c7222_grader_register_gpio_in(uint32_t pin, GpioIn* gpio_in);
+void c7222_grader_unregister_gpio_in(uint32_t pin);
+void c7222_grader_apply_gpio_in_config(uint32_t pin, const GpioIn::Config* config);
+bool c7222_grader_read_gpio_in(uint32_t pin, GpioPullMode pull);
+
+bool c7222_grader_register_gpio_out(uint32_t pin, GpioOut* gpio_out);
+void c7222_grader_unregister_gpio_out(uint32_t pin);
+void c7222_grader_apply_gpio_out_config(uint32_t pin, const GpioOut::Config* config);
+void c7222_grader_write_gpio_out(uint32_t pin, bool level);
+void c7222_grader_toggle_gpio_out(uint32_t pin);
+}
 
 GpioIn::GpioIn(uint32_t pin, const Config& config) : pin_(pin), config_(config) {
 	assert(config_.Validate() && "Invalid GPIO configuration");
-	auto it = gpio_in_to_object_map.find(GetPin());
-	assert(it == gpio_in_to_object_map.end() && "GPIO pin already in use by another GpioIn instance");
-	gpio_in_to_object_map[GetPin()] = this;
+	const bool registered = c7222_grader_register_gpio_in(GetPin(), this);
+	assert(registered && "GPIO pin already in use by another GpioIn instance");
 	ApplyConfig();
 }
 
 GpioIn::~GpioIn() {
-	gpio_in_to_object_map.erase(GetPin());
+	c7222_grader_unregister_gpio_in(GetPin());
 }
 
 void GpioIn::Configure(const Config& config) {
@@ -40,21 +46,22 @@ void GpioIn::DisableIrq() {
 }
 
 bool GpioIn::Read() const {
-	return false;
+	return c7222_grader_read_gpio_in(GetPin(), config_.pull);
 }
 
-void GpioIn::ApplyConfig() {}
+void GpioIn::ApplyConfig() {
+	c7222_grader_apply_gpio_in_config(GetPin(), &config_);
+}
 
 GpioOut::GpioOut(uint32_t pin, const Config& config) : pin_(pin), config_(config) {
 	assert(config_.Validate() && "Invalid GPIO configuration");
-	auto it = gpio_out_to_object_map.find(GetPin());
-	assert(it == gpio_out_to_object_map.end() && "GPIO pin already in use by another GpioOut instance");
-	gpio_out_to_object_map[GetPin()] = this;
+	const bool registered = c7222_grader_register_gpio_out(GetPin(), this);
+	assert(registered && "GPIO pin already in use by another GpioOut instance");
 	ApplyConfig();
 }
 
 GpioOut::~GpioOut() {
-	gpio_out_to_object_map.erase(GetPin());
+	c7222_grader_unregister_gpio_out(GetPin());
 }
 
 void GpioOut::Configure(const Config& config) {
@@ -63,10 +70,16 @@ void GpioOut::Configure(const Config& config) {
 	ApplyConfig();
 }
 
-void GpioOut::Write(bool) {}
+void GpioOut::Write(bool value) {
+	c7222_grader_write_gpio_out(GetPin(), value);
+}
 
-void GpioOut::Toggle() {}
+void GpioOut::Toggle() {
+	c7222_grader_toggle_gpio_out(GetPin());
+}
 
-void GpioOut::ApplyConfig() {}
+void GpioOut::ApplyConfig() {
+	c7222_grader_apply_gpio_out_config(GetPin(), &config_);
+}
 
 } // namespace c7222

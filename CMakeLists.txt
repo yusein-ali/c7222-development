@@ -33,6 +33,8 @@ set(PROJECT_NAME "ELEC-C7222-CPP-LIB" CACHE STRING "Project name")
 option(C7222_ENABLE_BLE "Enable BLE helpers in ELEC_C7222" ON)
 option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 option(C7222_EXAMPLES_BUILD "Enable C7222 examples build" ON)
+option(C7222_GETTING_STARTED_BUILD "Enable getting-started build targets" ON)
+option(C7222_EXPORT_PICO_UF2 "Export UF2 image copy in build/images after build" ON)
 
 # internal list for gatt files
 if(C7222_ENABLE_BLE)
@@ -63,6 +65,7 @@ pico_sdk_init()
 # ====================================================================================
 # THE LAST COMPNENT: elec_c7222 helpers -- this must be included after defining the project and options
 include(${CMAKE_SOURCE_DIR}/libs/elec_c7222/elec_c7222.cmake)
+include(${CMAKE_SOURCE_DIR}/getting-started/getting-started.cmake)
 
 # Add executable. Default name is the project name, version 0.1
 if(NOT C7222_EXAMPLES_BUILD)
@@ -78,7 +81,6 @@ if(NOT C7222_EXAMPLES_BUILD)
 
 
     add_library(APP_LIB INTERFACE)
-    target_add_library(${APP_NAME} INTERFACE)
     target_sources(APP_LIB INTERFACE 
                     ${APP_SOURCES})
 
@@ -91,7 +93,12 @@ if(NOT C7222_EXAMPLES_BUILD)
     list(APPEND APP_LIBS ${APP_LIB})
 else()
     # if we are building examples, the example library will pull in the app sources
-    set(APP_LIBS ${C7222_EXAMPLES})
+    set(APP_LIBS "")
+    list(APPEND APP_LIBS ${C7222_EXAMPLES})
+endif()
+
+if(C7222_GETTING_STARTED_BUILD)
+    list(APPEND APP_LIBS ${C7222_GETTING_STARTED})
 endif()
 
 
@@ -186,6 +193,18 @@ foreach(_lib IN LISTS APP_LIBS)
     pico_enable_stdio_usb(${APP_NAME} 0)
     pico_enable_stdio_uart(${APP_NAME}  1)
     pico_add_extra_outputs(${APP_NAME})
+
+    if(C7222_EXPORT_PICO_UF2)
+        set(EXPORTED_UF2_DIR "${CMAKE_BINARY_DIR}/images")
+        set(EXPORTED_UF2_PATH "${EXPORTED_UF2_DIR}/${APP_NAME}.uf2")
+        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${EXPORTED_UF2_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.uf2"
+                "${EXPORTED_UF2_PATH}"
+            COMMAND ${CMAKE_COMMAND} -E echo "UF2 image: ${EXPORTED_UF2_PATH}"
+        )
+    endif()
 
 
     if(C7222_ENABLE_BLE AND GATT_FILES) 

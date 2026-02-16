@@ -18,10 +18,12 @@ message(STATUS "C7222_ENABLE_BLE_DEBUG is defined: ${C7222_BLE_DEBUG}" )
 # Immediate child modules
 include(${ELEC_C7222_DIR}/devices/devices.cmake)
 include(${ELEC_C7222_DIR}/utils/utils.cmake)
+include(${ELEC_C7222_DIR}/freertos_wrappers/freertos_wrappers.cmake)
 
 target_link_libraries(ELEC_C7222 INTERFACE
     ELEC_C7222_DEVICES
     ELEC_C7222_UTILS
+    ELEC_C7222_FREERTOS_WRAPPERS
 )
 
 target_include_directories(ELEC_C7222 INTERFACE "${ELEC_C7222_DIR}/include")

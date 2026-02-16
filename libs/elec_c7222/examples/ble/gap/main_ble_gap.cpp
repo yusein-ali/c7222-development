@@ -12,19 +12,19 @@
  * - `c7222::Ble` and `c7222::Gap` encapsulate BTstack and provide the APIs for
  *   advertising and data updates.
  * - `c7222::OnBoardLED` provides a visible heartbeat while advertising.
+ * - `c7222::FreeRtosTask` wrapper is used for task lifecycle and delay/tick helpers.
  */
 #include <cstdint>
 #include <cstdio>
 
-#include "FreeRTOS.h"
 #include "advertisement_data.hpp"
 #include "../common/gap_event_handler.hpp"
 #include "ble.hpp"
+#include "freertos_task.hpp"
 #include "gap.hpp"
 #include "onboard_led.hpp"
 #include "pico/stdlib.h"
 #include "platform.hpp"
-#include "task.h"
 
 /// On-board LED used as a heartbeat while advertising.
 static c7222::OnBoardLED* onboard_led = nullptr;
@@ -87,10 +87,6 @@ static void on_turn_on() {
 	(void)params;
 	static uint32_t seconds = 0;
 
-	// Initialize platform (CYW43 + BTstack).
-	platform = c7222::Platform::GetInstance();
-	platform->Initialize();
-
 	// LED used for a visible heartbeat.
 	onboard_led = c7222::OnBoardLED::GetInstance();
 	auto* ble = c7222::Ble::GetInstance(false);
@@ -104,8 +100,8 @@ static void on_turn_on() {
 	std::printf("BLE Stack is ON!\n");
 
 	while(true) {
-		seconds = xTaskGetTickCount() / 1000;
-		vTaskDelay(pdMS_TO_TICKS(100));
+		seconds = c7222::FreeRtosTask::GetTickCount() / 1000;
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(100));
 
 		if(gap->IsAdvertisingEnabled()) {
 			// Update manufacturer data by replacing the last element in the builder:
@@ -130,12 +126,20 @@ static void on_turn_on() {
  * @brief Program entry point.
  */
 [[noreturn]] int main() {
-	stdio_init_all();
+	// Initialize platform (CYW43 + BTstack).
+	platform = c7222::Platform::GetInstance();
+	platform->Initialize();
+
 	std::printf("Starting FreeRTOS BLE GAP Example...\n");
 
 	// Launch the BLE GAP task.
-	xTaskCreate(ble_app_task, "BLE_App", 1024, NULL, tskIDLE_PRIORITY + 1, NULL);
-	vTaskStartScheduler();
+	static c7222::FreeRtosTask ble_task;
+	(void)ble_task.Initialize("BLE_App",
+							  1024,
+							  c7222::FreeRtosTask::IdlePriority() + 1,
+							  ble_app_task,
+							  nullptr);
+	c7222::FreeRtosTask::StartScheduler();
 
 	while(1) {}
 }

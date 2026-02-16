@@ -1,14 +1,16 @@
-**C7222 Pico W Board Interfaces and Pin Assignments**
+# C7222 Pico W Board Interfaces and Pin Assignments
 
-![C7222 Pico W Board Schematic](../images/c7222_pico2_board_schematic.png)
+The C7222 Pico W board is a very simple I/O board intended as a getting-started platform for Raspberry Pi Pico W development. It provides a UART connector, a reset button, four user buttons, and three red/green LED pairs so core embedded workflows can be tested quickly with minimal hardware complexity.
+
+<img src="c7222_pico2_board_schematic.png" alt="C7222 Pico W Board Schematic" style="width: 100%; max-width: 1000px;" />
 
 The schematic is shown in the image above. The 3D board view below is for reference only.
 
-![C7222 Pico W Board 3D View](../images/c7222_pico2_board_board.png)
+@image html c7222_pico2_board_board.png "C7222 Pico W Board 3D View"
 
 This document summarizes the external interfaces and GPIO assignments for the C7222 Pico W board, based on the schematic.
 
-**Board Overview**
+## Board Overview
 
 The board is built around a Raspberry Pi Pico W. It exposes:
 1. A debug UART header.
@@ -16,9 +18,9 @@ The board is built around a Raspberry Pi Pico W. It exposes:
 3. Three dual‑color LED pairs (red/green).
 4. A reset switch tied to RUN.
 
-**GPIO Assignments**
+## GPIO Assignments
 
-**LEDs (active‑low)**
+### LEDs (active‑low)
 
 Each LED is tied to 3V3 through a 470 Ω resistor. The GPIO drives the LED low to turn it on (active‑low).
 
@@ -37,7 +39,7 @@ These match the C++ API enums:
 5. `PicoWBoard::LedId::LED3_RED = 17`
 6. `PicoWBoard::LedId::LED3_GREEN = 16`
 
-**Buttons (active‑low)**
+### Buttons (active‑low)
 
 Each button pulls the GPIO to GND when pressed, with a 100 kΩ pull‑up to 3V3.
 
@@ -52,7 +54,7 @@ These match the C++ API enums:
 3. `PicoWBoard::ButtonId::BUTTON_B3 = 4`
 4. `PicoWBoard::ButtonId::BUTTON_B4 = 5`
 
-**Debug UART Header**
+### Debug UART Header
 
 The UART header exposes the Pico’s UART signals:
 
@@ -68,11 +70,11 @@ Notes:
    - Female orange ↔ male yellow
    - Female yellow ↔ male orange
 
-**Reset**
+## Reset
 
 The RESET switch ties the Pico `RUN` pin to GND to reset the board.
 
-**Usage Notes**
+## Usage Notes
 
 1. LEDs are active‑low: write `0` to turn on, `1` to turn off.
 2. Buttons are active‑low: pressed = logic `0`, released = logic `1`.
