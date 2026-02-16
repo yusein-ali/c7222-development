@@ -1,20 +1,21 @@
 site_name: "ELEC-C7222 Library Documentation"
 theme:
   name: material
-docs_dir: doc
+docs_dir: doc/markdown
 exclude_docs: |
-  BTstack-md/**
-  FreeRTOS-Kernel-Book/**
-  elec-c7222/**
+  ../BTstack-md/**
+  ../FreeRTOS-Kernel-Book/**
+  **/elec-c7222/**
+  mainpage.md
 
 plugins:
   - search
 
 nav:
-  - Home: markdown/index.md
-  - Getting Started: markdown/getting-started.md
-  - Build: markdown/building.md
-  - API Reference: markdown/api-reference.md
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Build: building.md
+  - API Reference: api-reference.md
 
 validation:
   links:
