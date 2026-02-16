@@ -110,15 +110,20 @@ function(c7222_define_development_interface)
     # Export common dependency link set.
     target_link_libraries(c7222_development INTERFACE
         pico_stdlib
+        pico_cyw43_arch_none
         hardware_adc
         hardware_clocks
         hardware_pwm
         FreeRTOS-Kernel-Heap4
-        pico_btstack_ble
-        pico_btstack_cyw43
-        pico_cyw43_arch_none
         ELEC_C7222
     )
+
+    if(C7222_ENABLE_BLE)
+        target_link_libraries(c7222_development INTERFACE
+            pico_btstack_ble
+            pico_btstack_cyw43
+        )
+    endif()
 
     # Export shared compile definitions for FreeRTOS C++ and board defaults.
     target_compile_definitions(c7222_development INTERFACE
