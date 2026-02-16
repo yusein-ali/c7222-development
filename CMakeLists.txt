@@ -34,6 +34,7 @@ option(C7222_ENABLE_BLE "Enable BLE helpers in ELEC_C7222" ON)
 option(C7222_BLE_DEBUG "Enable BLE debug logging" OFF)
 option(C7222_EXAMPLES_BUILD "Enable C7222 examples build" ON)
 option(C7222_GETTING_STARTED_BUILD "Enable getting-started build targets" ON)
+option(C7222_EXPORT_PICO_UF2 "Export UF2 image copy in build/images after build" ON)
 
 # internal list for gatt files
 if(C7222_ENABLE_BLE)
@@ -192,6 +193,18 @@ foreach(_lib IN LISTS APP_LIBS)
     pico_enable_stdio_usb(${APP_NAME} 0)
     pico_enable_stdio_uart(${APP_NAME}  1)
     pico_add_extra_outputs(${APP_NAME})
+
+    if(C7222_EXPORT_PICO_UF2)
+        set(EXPORTED_UF2_DIR "${CMAKE_BINARY_DIR}/images")
+        set(EXPORTED_UF2_PATH "${EXPORTED_UF2_DIR}/${APP_NAME}.uf2")
+        add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${EXPORTED_UF2_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.uf2"
+                "${EXPORTED_UF2_PATH}"
+            COMMAND ${CMAKE_COMMAND} -E echo "UF2 image: ${EXPORTED_UF2_PATH}"
+        )
+    endif()
 
 
     if(C7222_ENABLE_BLE AND GATT_FILES) 

@@ -45,6 +45,10 @@ Main options defined in the root CMake:
   - Enables example target collection from `libs/elec_c7222/examples`.
 - `C7222_GETTING_STARTED_BUILD` (default `ON`)
   - Enables getting-started targets from `getting-started/getting-started.cmake`.
+- `C7222_EXPORT_PICO_UF2` (default `ON`)
+  - Adds a post-build step that copies each target UF2 image into
+    `${CMAKE_BINARY_DIR}/images/<target>.uf2` for drag-and-drop flashing via
+    Pico MSC (BOOTSEL mode), without debugger tooling.
 
 Additional cache variables:
 
@@ -153,6 +157,17 @@ For each entry in `APP_LIBS`, root CMake:
    - `_GLIBCXX_USE_C99_STDINT_TR1=1`
 5. Enables Pico outputs (`.elf`, `.uf2`, etc.) via `pico_add_extra_outputs`
 6. If BLE and `GATT_FILES` are present, runs `pico_btstack_make_gatt_header`
+
+### 5.2 Post-build UF2 export for Pico MSC flashing
+
+When `C7222_EXPORT_PICO_UF2=ON` (default), each built executable adds a
+post-build copy step:
+
+- source UF2: `${CMAKE_CURRENT_BINARY_DIR}/<TARGET_NAME>.uf2`
+- exported UF2: `${CMAKE_BINARY_DIR}/images/<TARGET_NAME>.uf2`
+
+This exported file is intended for direct copy to the Pico mass-storage drive
+that appears when the board is connected in BOOTSEL mode.
 
 ### 5.1 BLE `.gatt` → generated header
 
