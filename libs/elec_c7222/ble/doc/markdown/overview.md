@@ -1,13 +1,5 @@
 # BLE Library Design Overview
 
-<div style="display:none">
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gap
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gatt
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2security-manager
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2creating-profiles
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2comprehensive-gatt-guide
-</div>
-
 This library wraps BTstack with C++ classes to provide a more structured, object‑oriented BLE API while keeping BTstack’s behavior and constraints visible. It is intentionally thin: it does not hide the underlying ATT/GATT and HCI concepts, and it expects the application to manage event dispatch and object lifetimes carefully.
 
 ## BTstack Configuration (Pico W)
