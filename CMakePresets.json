@@ -6,6 +6,7 @@
             "displayName": "Pico - Debug",
             "description": "Configure for Raspberry Pi Pico SDK and toolchain",
             "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/pico-toolchain-generic.cmake",
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
@@ -17,6 +18,7 @@
             "displayName": "Pico - Release",
             "description": "Configure for Raspberry Pi Pico SDK and toolchain",
             "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/pico-toolchain-generic.cmake",
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
