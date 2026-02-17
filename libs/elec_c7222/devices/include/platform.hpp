@@ -4,7 +4,8 @@
  *
  * The Platform singleton centralizes architecture initialization and provides
  * convenient access to board-level devices (on-board LED, temperature sensor,
- * and PicoWBoard IO). This keeps application code small and consistent across
+ * and PicoWBoard IO), plus Pico SDK timing helpers (sleep and tight-loop
+ * utilities). This keeps application code small and consistent across
  * platforms.
  */
 #ifndef ELEC_C7222_PLATFORM_HPP
@@ -12,6 +13,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <chrono>
 
 #include "c7222_pico_w_board.hpp"
 #include "onboard_led.hpp"
@@ -35,6 +37,8 @@ namespace c7222 {
  * - Provides **convenience accessors** for common board devices (LEDs and
  *   buttons) while still allowing direct use of the dedicated device classes
  *   (`OnBoardLED`, `OnChipTemperatureSensor`, `PicoWBoard`, `Led`, `Button`).
+ * - Exposes **timing helpers** for main-loop management (sleep and
+ *   tight-loop utilities) in a consistent, platform-owned API.
  *
  * Dependencies:
  * - `OnBoardLED`: accessed via `GetOnBoardLed()`; must be explicitly
@@ -43,6 +47,7 @@ namespace c7222 {
  *   must be explicitly initialized by the user.
  * - `PicoWBoard`: accessed via `GetPicoWBoard()` and the convenience LED/button
  *   helpers; provides higher-level board IO access.
+ * - Pico timing helpers: exposed as static functions (see "Timing helpers").
  *
  * Pico platform initialization:
  * - `Initialize()` calls `EnsureArchInitialized()`, which initializes the
@@ -100,6 +105,15 @@ namespace c7222 {
  *                           c7222::GpioInputEvent::FallingEdge,
  *                           [](uint32_t){ / * handle press * / });
  * @endcode
+ *
+ * Timing helpers:
+ * @code{.cpp}
+ * // Sleep for 250 ms between loop iterations.
+ * while (true) {
+ *   // ... do work ...
+ *   c7222::Platform::SleepMs(250);
+ * }
+ * @endcode
  */
 class Platform: public NonCopyableNonMovable {
   public:
@@ -123,6 +137,38 @@ class Platform: public NonCopyableNonMovable {
 	 * @return true when architecture init succeeds.
 	 */
 	bool EnsureArchInitialized();
+
+	/**
+	 * @name Timing helpers
+	 *
+	 * These static wrappers provide access to common Pico SDK timing utilities
+	 * for main-loop control and low-power waiting. Callers may use these without
+	 * a Platform instance.
+	 */
+	///@{
+	/**
+	 * @brief Sleep for a number of milliseconds.
+	 * @param ms Milliseconds to sleep.
+	 */
+	static void SleepMs(uint32_t ms);
+
+	/**
+	 * @brief Sleep for a number of microseconds.
+	 * @param us Microseconds to sleep.
+	 */
+	static void SleepUs(uint64_t us);
+
+	/**
+	 * @brief Sleep until a steady-clock time point.
+	 * @param target Target time point.
+	 */
+	static void SleepUntil(std::chrono::steady_clock::time_point target);
+
+	/**
+	 * @brief Body for tight polling loops (no-op hook).
+	 */
+	static void TightLoopContents();
+	///@}
 
 	/**
 	 * @brief Access the on-board LED.
