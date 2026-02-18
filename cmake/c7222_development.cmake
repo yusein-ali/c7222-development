@@ -56,6 +56,8 @@ endmacro()
 #   pico_sdk_init()
 #   c7222_prepare_post_project()
 macro(c7222_prepare_post_project)
+    # Initialize the Raspberry Pi Pico SDK.
+    pico_sdk_init()
     # Register project-local component targets after project()/SDK init.
     include("${C7222_DEVELOPMENT_ROOT_DIR}/libs/elec_c7222/elec_c7222.cmake")
     include("${C7222_DEVELOPMENT_ROOT_DIR}/getting-started/getting-started.cmake")
