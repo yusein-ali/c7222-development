@@ -114,10 +114,13 @@ static void on_ble_stack_on() {
         sm_params.io_capability = c7222::SecurityManager::IoCapability::kNoInputNoOutput;
 
         // No MITM required for the demo.
-        sm_params.authentication =
-            c7222::SecurityManager::AuthenticationRequirement::kMitmProtection;
+		sm_params.authentication =
+			c7222::SecurityManager::AuthenticationRequirement::kSecureConnections | c7222::SecurityManager::AuthenticationRequirement::kMitmProtection;
 
-        // Require at least an encrypted link for the GATT client.
+        // Note: the GATT client security level (encryption/authentication) is determined by the
+        // characteristic flags in the .gatt file (e.g. READ_ENCRYPTED), not by these parameters.
+
+		// Require at least an encrypted link for the GATT client.
         sm_params.gatt_client_required_security_level =
             c7222::SecurityManager::GattClientSecurityLevel::kLevel1;
 
