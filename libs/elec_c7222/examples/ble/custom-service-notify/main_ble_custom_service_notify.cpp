@@ -23,6 +23,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
 #include "../common/gap_event_handler.hpp"
@@ -125,11 +126,9 @@ static std::vector<uint8_t> u32_to_ascii(uint32_t v) {
         counter++;
 
         // Update characteristic value
-        (void)g_notify_value_ch->SetValue(u32_to_ascii(counter));
-
-        // Send notification (if not subscribed, the stack/handler will typically ignore/fail silently)
+        // This call also trigegrs notification (if not subscribed, the stack/handler will typically ignore/fail silently)
         // The underlying library handles CCCD subscription state.
-        (void)g_notify_value_ch->Notify();
+        (void)g_notify_value_ch->SetValue(u32_to_ascii(counter));
 
         c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(1000));
     }

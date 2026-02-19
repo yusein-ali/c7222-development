@@ -176,7 +176,9 @@ static void on_ble_stack_on() {
  * @brief Program entry point for the custom service RW example.
  */
 [[noreturn]] int main() {
-	stdio_init_all();
+	auto* platform = c7222::Platform::GetInstance();
+	platform->Initialize();
+	
 	std::printf("Starting FreeRTOS BLE Custom Service (RW) example...\n");
 
 	static c7222::FreeRtosTask ble_task;
