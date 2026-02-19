@@ -115,7 +115,7 @@ static void on_ble_stack_on() {
 
         // No MITM required for the demo.
         sm_params.authentication =
-            c7222::SecurityManager::AuthenticationRequirement::kNoMitmProtection;
+            c7222::SecurityManager::AuthenticationRequirement::kMitmProtection;
 
         // Require at least an encrypted link for the GATT client.
         sm_params.gatt_client_required_security_level =

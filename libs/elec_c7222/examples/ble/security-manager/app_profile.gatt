@@ -4,13 +4,10 @@ CHARACTERISTIC, GAP_DEVICE_NAME, READ, "c7222-sec-demo"
 PRIMARY_SERVICE, GATT_SERVICE
 CHARACTERISTIC, GATT_DATABASE_HASH, READ,
 
-# Custom vendor service (16-bit UUID, easy for examples)
 PRIMARY_SERVICE, FFF0
 
-# Public characteristic: readable without pairing
 CHARACTERISTIC, FFF1, DYNAMIC | READ, "hello"
 CHARACTERISTIC_USER_DESCRIPTION, READ
 
-# Secure characteristic: requires encryption before read
 CHARACTERISTIC, FFF2, DYNAMIC | READ | READ_ENCRYPTED, "top-secret"
 CHARACTERISTIC_USER_DESCRIPTION, READ
