@@ -1,5 +1,12 @@
 # ELEC-C7222 Library Examples
 
+<div style="display:none">
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2security-manager
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2custom-service-rw
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2custom-service-notify
+</div>
+
+
 This document describes the example applications shipped with `libs/elec_c7222` and how to build them. The examples are intended for teaching and validation of the library on Raspberry Pico W platforms.
 
 ## Overview
