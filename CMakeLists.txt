@@ -50,9 +50,6 @@ c7222_prepare_pre_project()
 # PROJECT
 project(${PROJECT_NAME} C CXX ASM)
 
-# Initialize the Raspberry Pi Pico SDK.
-pico_sdk_init()
-
 # ====================================================================================
 # Project component setup that depends on project()/pico_sdk_init().
 c7222_prepare_post_project()

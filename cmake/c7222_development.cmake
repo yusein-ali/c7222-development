@@ -41,22 +41,22 @@ endmacro()
 # -----------------------------------------------------------------------------
 # c7222_prepare_post_project
 # Intended use:
-#   Run once after project() and pico_sdk_init().
+#   Run once after project().
 #   Includes project-local component registration that requires project context.
 #
 # Inputs:
 #   None.
 #
 # Outputs / side effects:
+#   - Initializes the Raspberry Pi Pico SDK.
 #   - Includes elec_c7222 and getting-started component CMake files.
 #   - Populates example/app interface targets used later in target creation.
 #
 # Typical usage:
 #   project(my_app C CXX ASM)
-#   pico_sdk_init()
 #   c7222_prepare_post_project()
 macro(c7222_prepare_post_project)
-    # Initialize the Raspberry Pi Pico SDK.
+    # Initialize the Raspberry Pi Pico SDK once after project() exists.
     pico_sdk_init()
     # Register project-local component targets after project()/SDK init.
     include("${C7222_DEVELOPMENT_ROOT_DIR}/libs/elec_c7222/elec_c7222.cmake")
