@@ -16,6 +16,7 @@
  * - `c7222::FreeRtosTask` and `c7222::FreeRtosTimer` wrappers are used for
  *   task lifecycle and periodic callback scheduling.
  */
+#include <assert.h>
 #include <cstdint>
 #include <cstdio>
 
@@ -142,12 +143,6 @@ static void on_turn_on() {
 	(void) params;
 	
 	static uint32_t seconds = 0;
-	// Initialize CYW43 Architecture platform (starts the SDK background worker).
-	platform = c7222::Platform::GetInstance();
-	platform->Initialize();
-
-	onboard_led = c7222::OnBoardLED::GetInstance();
-	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
 
 	// Timer used for periodic temperature updates.
 	app_timer.Initialize("AppTimer",
@@ -267,7 +262,21 @@ static void on_turn_on() {
  * @brief Program entry point.
  */
 [[noreturn]] int main() {
-	stdio_init_all();
+	// Initialize CYW43 Architecture platform (starts the SDK background worker).
+	platform = c7222::Platform::GetInstance();
+	if (!platform->Initialize()) {
+		assert(false && "Failed to initialize CYW43 architecture");
+	}
+
+	onboard_led = c7222::OnBoardLED::GetInstance();
+	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
+
+	// initialize the onboard led and the temperature sensor
+	assert(temp_sensor != nullptr && "Temp sensor pointer is null at init call!");
+	assert(onboard_led != nullptr && "Onboard led instance is null at init call!");
+	temp_sensor->Initialize();
+	onboard_led->Initialize();
+	
 	printf("Starting FreeRTOS BLE Example...\n");
 
 	// Create the BLE application task.

@@ -140,8 +140,10 @@ static std::vector<uint8_t> u32_to_ascii(uint32_t v) {
  * @brief Program entry point for the custom service NOTIFY example.
  */
 [[noreturn]] int main() {
-    auto* platform = c7222::Platform::GetInstance();
-    platform->Initialize();
+	auto* platform = c7222::Platform::GetInstance();
+	if (!platform->Initialize()) {
+		assert(false && "Failed to initialize CYW43 architecture");
+	}
 
     std::printf("Starting FreeRTOS BLE Custom Service (NOTIFY) example...\n");
 

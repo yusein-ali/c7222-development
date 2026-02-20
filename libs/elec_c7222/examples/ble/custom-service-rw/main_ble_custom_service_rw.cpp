@@ -120,7 +120,9 @@ static void on_ble_stack_on() {
 [[noreturn]] void ble_custom_service_rw_task(void* /*params*/) {
 	// Platform init (CYW43/BTstack) — same pattern as other BLE examples
 	auto* platform = c7222::Platform::GetInstance();
-	platform->Initialize();
+	if (!platform->Initialize()) {
+		assert(false && "Failed to initialize CYW43 architecture");
+	}
 
 	auto* ble = c7222::Ble::GetInstance(false);
 
@@ -177,7 +179,9 @@ static void on_ble_stack_on() {
  */
 [[noreturn]] int main() {
 	auto* platform = c7222::Platform::GetInstance();
-	platform->Initialize();
+	if (!platform->Initialize()) {
+		assert(false && "Failed to initialize CYW43 architecture");
+	}
 	
 	std::printf("Starting FreeRTOS BLE Custom Service (RW) example...\n");
 

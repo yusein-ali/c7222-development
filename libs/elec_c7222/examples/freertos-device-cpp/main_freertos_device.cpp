@@ -52,6 +52,7 @@
  * - When Button 2 is not holding the LED, `system_monitor` blinks it by acquiring
  *   the LED for 500 ms, turning it on, then off and releasing it.
  */
+#include <cassert>
 #include <thread>
 #include <chrono>
 
@@ -236,7 +237,9 @@ void button1_irq_handler(uint32_t events){
 [[noreturn]] int main() {
 	// Create the platform singleton and initialize architecture (CYW43, etc).
 	auto* platform = c7222::Platform::GetInstance();
-	platform->Initialize();
+	if (!platform->Initialize()) {
+		assert(false && "Failed to initialize CYW43 architecture");
+	}
 
 	std::printf("Starting FreeRTOS C++ devices examples...\n");
 	// Initialize the on-board LED and wrap it in a SafeLed for thread-safe access.

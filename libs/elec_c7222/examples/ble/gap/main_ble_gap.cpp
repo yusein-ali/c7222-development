@@ -14,6 +14,7 @@
  * - `c7222::OnBoardLED` provides a visible heartbeat while advertising.
  * - `c7222::FreeRtosTask` wrapper is used for task lifecycle and delay/tick helpers.
  */
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 
@@ -128,7 +129,9 @@ static void on_turn_on() {
 [[noreturn]] int main() {
 	// Initialize platform (CYW43 + BTstack).
 	platform = c7222::Platform::GetInstance();
-	platform->Initialize();
+	if (!platform->Initialize()) {
+		assert(false && "Failed to initialize CYW43 architecture");
+	}
 
 	std::printf("Starting FreeRTOS BLE GAP Example...\n");
 

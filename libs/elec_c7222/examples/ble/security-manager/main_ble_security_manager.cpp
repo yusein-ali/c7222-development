@@ -174,7 +174,9 @@ static void on_ble_stack_on() {
  */
 [[noreturn]] int main() {
     auto* platform = c7222::Platform::GetInstance();
-    platform->Initialize();
+    if (!platform->Initialize()) {
+        assert(false && "Failed to initialize CYW43 architecture");
+    }
 
     std::printf("Starting FreeRTOS BLE Security Manager example...\n");
 
