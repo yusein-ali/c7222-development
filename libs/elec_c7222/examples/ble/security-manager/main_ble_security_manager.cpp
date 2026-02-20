@@ -60,6 +60,13 @@ static c7222::Characteristic* g_secure_value_ch = nullptr;
 static GapEventHandler g_gap_event_handler;
 static SecurityEventHandler g_security_event_handler;
 
+/**
+ * @brief Helper to set a characteristic value from a C-string.
+ *
+ * @param ch Characteristic to update (must be dynamic).
+ * @param s Null-terminated string to copy into the value.
+ * @return true on success; false if inputs are invalid or update fails.
+ */
 static bool set_string_value(c7222::Characteristic* ch, const char* s) {
     if(ch == nullptr || s == nullptr) {
         return false;
@@ -70,6 +77,12 @@ static bool set_string_value(c7222::Characteristic* ch, const char* s) {
     return ch->SetValue(std::move(bytes));
 }
 
+/**
+ * @brief BLE stack ON callback for the security manager demo.
+ *
+ * Configures advertising and prints expected behavior for secure vs. public
+ * reads so the test flow is clear in the serial log.
+ */
 static void on_ble_stack_on() {
     std::printf("Bluetooth stack turned ON\n");
 
@@ -103,6 +116,14 @@ static void on_ble_stack_on() {
     std::printf(" - Read SecureValue: fails before pairing, works after pairing\n");
 }
 
+/**
+ * @brief FreeRTOS task that configures security and brings up the GATT server.
+ *
+ * Responsibilities:
+ * - Initialize Security Manager parameters (pairing + security level).
+ * - Enable the ATT server and resolve the custom characteristics.
+ * - Seed initial values and start advertising.
+ */
 [[noreturn]] void ble_security_manager_task(void* /*params*/) {
     auto* ble = c7222::Ble::GetInstance(false);
 

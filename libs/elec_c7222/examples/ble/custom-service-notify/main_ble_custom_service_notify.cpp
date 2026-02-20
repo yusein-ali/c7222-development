@@ -50,6 +50,14 @@ static c7222::Characteristic* g_notify_value_ch = nullptr;
 static GapEventHandler g_gap_event_handler;
 static CharacteristicEventHandler g_notify_logger;
 
+/**
+ * @brief BLE stack ON callback for the notify demo.
+ *
+ * Responsibilities:
+ * - Configure advertising flags and device name.
+ * - Populate a minimal manufacturer payload for sanity checks.
+ * - Start advertising so the custom service is discoverable.
+ */
 static void on_ble_stack_on() {
     std::printf("Bluetooth stack turned ON\n");
 
@@ -80,6 +88,12 @@ static void on_ble_stack_on() {
     std::printf("Enable notifications on NotifyValue (0xFFD1) to receive updates.\n");
 }
 
+/**
+ * @brief Convert a 32-bit unsigned value into ASCII bytes.
+ *
+ * @param v Value to format.
+ * @return ASCII representation of @p v (no null terminator).
+ */
 static std::vector<uint8_t> u32_to_ascii(uint32_t v) {
     // Small, dependency-free conversion.
     char buf[16];
@@ -88,6 +102,13 @@ static std::vector<uint8_t> u32_to_ascii(uint32_t v) {
     return std::vector<uint8_t>(buf, buf + n);
 }
 
+/**
+ * @brief FreeRTOS task for the custom NOTIFY service.
+ *
+ * Initializes the ATT server from the generated GATT database, resolves the
+ * NotifyValue characteristic, then periodically updates its value. If a client
+ * has subscribed via CCCD, notifications are sent automatically.
+ */
 [[noreturn]] void ble_custom_service_notify_task(void* /*params*/) {
     auto* ble = c7222::Ble::GetInstance(false);
 

@@ -219,12 +219,7 @@ int main() {
 	std::cout << "Pico LED initialized\n";
 	auto func = std::bind(&BaseClass::startup, &BaseClass::instance());
 	// Create the ONE raw task manually
-	// led_thread = new std::thread{led_task};
-	// log_thread = new std::thread{log_task};
-	// TaskHandle_t xHandle = nullptr;
 	xTaskCreate([](void*){ BaseClass::instance().startup(); }, "Startup", 2048, NULL, 1, nullptr);
-	// hard_assert(xHandle != nullptr);
-	// C. Now detach works!
 	// Start Scheduler
 	vTaskStartScheduler();
 

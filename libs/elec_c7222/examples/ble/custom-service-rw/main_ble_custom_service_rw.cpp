@@ -117,6 +117,16 @@ static void on_ble_stack_on() {
 	std::printf("Try writing to WriteValue (0xFFE2) and then reading PublicValue (0xFFE1).\n");
 }
 
+/**
+ * @brief FreeRTOS task for the custom READ/WRITE service.
+ *
+ * Responsibilities:
+ * - Initialize the platform + BLE stack.
+ * - Enable the ATT server from the generated GATT DB.
+ * - Resolve the service/characteristics by UUID.
+ * - Attach event handlers and custom mirror logic.
+ * - Start advertising and keep the task alive.
+ */
 [[noreturn]] void ble_custom_service_rw_task(void* /*params*/) {
 	// Platform init (CYW43/BTstack) — same pattern as other BLE examples
 	auto* platform = c7222::Platform::GetInstance();
@@ -176,6 +186,8 @@ static void on_ble_stack_on() {
 
 /**
  * @brief Program entry point for the custom service RW example.
+ *
+ * Creates the BLE task and starts the FreeRTOS scheduler.
  */
 [[noreturn]] int main() {
 	auto* platform = c7222::Platform::GetInstance();

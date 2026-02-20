@@ -40,7 +40,11 @@ static GapEventHandler gap_event_handler;
 /**
  * @brief Callback executed when the BLE stack is fully initialized.
  *
- * Sets up advertising parameters and data, then starts advertising.
+ * Steps:
+ * - Attach a GAP event handler for logging.
+ * - Configure flags and device name.
+ * - Add a manufacturer-specific payload.
+ * - Start advertising with a fixed interval range.
  */
 static void on_turn_on() {
 	std::printf("Bluetooth Turned On\n");
@@ -81,8 +85,9 @@ static void on_turn_on() {
 /**
  * @brief FreeRTOS task that owns BLE initialization and periodic updates.
  *
- * Initializes the platform and BLE stack, then periodically updates
- * manufacturer data while advertising is active.
+ * Initializes the BLE stack, registers the stack-on callback, then periodically
+ * refreshes manufacturer data while advertising is enabled. The LED toggles as
+ * a heartbeat to confirm the task is running.
  */
 [[noreturn]] void ble_app_task(void* params) {
 	(void)params;
