@@ -14,6 +14,13 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
 	while(1) {}
 }
 
+void vApplicationMallocFailedHook(void) {
+	printf("Malloc failed! free=%u min=%u\n",
+		   (unsigned) xPortGetFreeHeapSize(),
+		   (unsigned) xPortGetMinimumEverFreeHeapSize());
+	while(1) {}
+}
+
 #if (configGENERATE_RUN_TIME_STATS == 1)
 void vConfigureTimerForRunTimeStats(void) {
 	// Pico SDK time base already running; nothing to configure.
