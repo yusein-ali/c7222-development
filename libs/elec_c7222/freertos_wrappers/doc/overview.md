@@ -10,7 +10,8 @@ communication, and tasking primitives across two targets:
   hosted fallback behavior), so tests can store/inspect state and drive events.
 
 The goal is to keep application code mostly platform-agnostic while preserving
-core FreeRTOS semantics (ticks, ISR variants, explicit start/stop/take/give).
+core FreeRTOS semantics (ticks, ISR variants, explicit start/stop/take/give),
+including critical section enter/exit behavior.
 
 ## Design model
 
@@ -147,6 +148,20 @@ Common pattern:
 Notes:
 
 - Prefer mutexes (not semaphores) for protecting shared data ownership.
+
+### `FreeRtosCriticalSection`
+
+Use for short non-blocking regions that require interrupt/scheduler exclusion.
+
+Common pattern:
+
+- `Enter()` immediately before the protected instructions.
+- `Exit()` immediately after the protected instructions.
+
+Notes:
+
+- Keep critical sections very short.
+- Do not perform blocking RTOS operations while entered.
 
 ### `FreeRtosEventGroup`
 
