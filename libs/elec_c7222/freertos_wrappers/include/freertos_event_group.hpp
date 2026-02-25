@@ -13,9 +13,25 @@ namespace c7222 {
 
 /**
  * @class FreeRtosEventGroup
- * @brief RAII wrapper for an event bit group.
+ * @brief Ownership-based wrapper for an event bit group.
  *
- * Event groups are useful for waiting on one or more flags across tasks.
+ * Event groups are useful for waiting on one or more flags across tasks. Wait
+ * and bit operations are explicit; RAII here refers to handle cleanup.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosEventGroup events;
+ * constexpr std::uint32_t kReadyBit = 1u << 0;
+ *
+ * // Producer:
+ * (void)events.SetBits(kReadyBit);
+ *
+ * // Consumer:
+ * const std::uint32_t bits = events.WaitBits(kReadyBit, true, true, 100);
+ * if((bits & kReadyBit) != 0U) {
+ *     // ready condition observed
+ * }
+ * @endcode
  */
 class FreeRtosEventGroup : public NonCopyableNonMovable {
   public:

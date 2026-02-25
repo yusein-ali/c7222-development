@@ -15,7 +15,8 @@ including critical section enter/exit behavior.
 
 ## Design model
 
-- Most classes are RAII owners of an underlying handle.
+- Most classes are ownership-based wrappers over an underlying handle, with
+  destructor cleanup for that handle.
 - Default constructors are lightweight; resources are created by `Initialize()`
   or convenience constructors.
 - Re-initialization typically deletes/unregisters previous resources first.
@@ -35,6 +36,9 @@ RAII is useful for deterministic cleanup:
 - If an object goes out of scope, wrapper destructor releases the RTOS/grader
   resource.
 - This reduces leaks and stale-handle bugs.
+- For synchronization operations, acquisition/release is still explicit
+  (`Lock/Unlock`, `Take/Give`, `Enter/Exit`); wrappers are not scoped guard
+  types that auto-acquire in constructors.
 
 RAII does **not** replace runtime lifecycle planning:
 
@@ -157,11 +161,13 @@ Common pattern:
 
 - `Enter()` immediately before the protected instructions.
 - `Exit()` immediately after the protected instructions.
+- `IsEntered()` reports whether this wrapper object currently owns the critical section.
 
 Notes:
 
 - Keep critical sections very short.
 - Do not perform blocking RTOS operations while entered.
+- The wrapper tracks a binary entered state (entered/not-entered), and destructor cleanup provides RAII if `Exit()` is missed.
 
 ### `FreeRtosEventGroup`
 

@@ -14,10 +14,23 @@ namespace c7222 {
 
 /**
  * @class FreeRtosTask
- * @brief RAII-style wrapper for a task/thread execution object.
+ * @brief Ownership-based wrapper for a task/thread execution object.
  *
  * The wrapper owns a task handle and stores a C++ callable task body. Platform
  * implementations bridge the native task entry point to `RunTaskBody()`.
+ * RAII here refers to task-handle cleanup on destruction.
+ *
+ * Typical usage:
+ * @code
+ * void Worker(void* arg) {
+ *     (void)arg;
+ *     for(;;) {
+ *         c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(100));
+ *     }
+ * }
+ *
+ * c7222::FreeRtosTask task("worker", 1024, c7222::FreeRtosTask::IdlePriority() + 1, Worker, nullptr);
+ * @endcode
  */
 class FreeRtosTask : public NonCopyableNonMovable {
   public:

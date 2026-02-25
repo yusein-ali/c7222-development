@@ -5,19 +5,29 @@
 
 namespace c7222 {
 
-FreeRtosCriticalSection::~FreeRtosCriticalSection() = default;
+FreeRtosCriticalSection::~FreeRtosCriticalSection() {
+	(void)Exit();
+}
 
 void FreeRtosCriticalSection::Enter() {
+	if(depth_ != 0) {
+		return;
+	}
 	taskENTER_CRITICAL();
+	depth_ = 1;
 }
 
 bool FreeRtosCriticalSection::Exit() {
+	if(depth_ == 0) {
+		return false;
+	}
 	taskEXIT_CRITICAL();
+	depth_ = 0;
 	return true;
 }
 
 bool FreeRtosCriticalSection::IsEntered() const {
-	return false;
+	return depth_ != 0;
 }
 
 } // namespace c7222

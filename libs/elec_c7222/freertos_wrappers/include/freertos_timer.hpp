@@ -26,7 +26,7 @@ void FreeRtosTimerCallback(void* timer);
 
 /**
  * @class FreeRtosTimer
- * @brief RAII-style C++ wrapper for FreeRTOS software timers.
+ * @brief Ownership-based C++ wrapper for FreeRTOS software timers.
  *
  * This class provides a small, ownership-based interface around a FreeRTOS
  * software timer handle. It uses a single internal callback trampoline
@@ -55,6 +55,18 @@ void FreeRtosTimerCallback(void* timer);
  * - Start/Stop/Reset/ChangePeriod map directly to the underlying FreeRTOS
  *   APIs and accept optional `ticks_to_wait` parameters to control command
  *   queue blocking time.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosTimer timer("blink",
+ *                            c7222::FreeRtosTask::MsToTicks(500),
+ *                            c7222::FreeRtosTimer::Type::kPeriodic,
+ *                            [](void* arg) {
+ *                                (void)arg;
+ *                                // periodic work
+ *                            });
+ * (void)timer.Start();
+ * @endcode
  */
 class FreeRtosTimer : public NonCopyableNonMovable {
   public:

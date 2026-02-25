@@ -13,11 +13,24 @@ namespace c7222 {
 
 /**
  * @class FreeRtosBinarySemaphore
- * @brief RAII wrapper for a FreeRTOS-style binary semaphore.
+ * @brief Ownership-based wrapper for a FreeRTOS-style binary semaphore.
  *
  * Typical usage is event signaling between execution contexts
  * (task-to-task or ISR-to-task). Unlike a mutex, binary semaphores do not
- * provide ownership tracking or priority inheritance.
+ * provide ownership tracking or priority inheritance. Take/give is explicit.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosBinarySemaphore ready(false);
+ *
+ * // Producer task/ISR:
+ * (void)ready.Give();
+ *
+ * // Consumer task:
+ * if(ready.Take(50)) {
+ *     // proceed after signal
+ * }
+ * @endcode
  */
 class FreeRtosBinarySemaphore : public NonCopyableNonMovable {
   public:
@@ -62,10 +75,21 @@ class FreeRtosBinarySemaphore : public NonCopyableNonMovable {
 
 /**
  * @class FreeRtosCountingSemaphore
- * @brief RAII wrapper for a FreeRTOS-style counting semaphore.
+ * @brief Ownership-based wrapper for a FreeRTOS-style counting semaphore.
  *
  * Counting semaphores model a bounded resource count and can be used for
  * producer/consumer pacing, pooled-resource limits, and event accumulation.
+ * Take/give is explicit.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosCountingSemaphore slots(4, 4);
+ *
+ * if(slots.Take(10)) {
+ *     // use one resource slot
+ *     (void)slots.Give();
+ * }
+ * @endcode
  */
 class FreeRtosCountingSemaphore : public NonCopyableNonMovable {
   public:

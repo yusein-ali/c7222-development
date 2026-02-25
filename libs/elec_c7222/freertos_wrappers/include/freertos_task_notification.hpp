@@ -15,6 +15,20 @@ namespace c7222 {
  *
  * Task notifications are lightweight per-task signaling values and are often
  * used as fast alternatives to semaphores/queues for many one-to-one cases.
+ *
+ * Typical usage:
+ * @code
+ * // Sender:
+ * (void)c7222::FreeRtosTaskNotification::Notify(task_handle,
+ *                                                1u << 0,
+ *                                                c7222::FreeRtosTaskNotification::Action::kSetBits);
+ *
+ * // Receiver task:
+ * std::uint32_t value = 0;
+ * if(c7222::FreeRtosTaskNotification::Wait(0, 0, &value, 100)) {
+ *     // process notification value
+ * }
+ * @endcode
  */
 class FreeRtosTaskNotification final {
   public:

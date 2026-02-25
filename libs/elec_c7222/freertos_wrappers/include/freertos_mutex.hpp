@@ -13,9 +13,20 @@ namespace c7222 {
 
 /**
  * @class FreeRtosMutex
- * @brief RAII wrapper for a standard mutex.
+ * @brief Ownership-based wrapper for a standard mutex with destructor cleanup.
  *
- * This mutex is intended for mutual exclusion in task context.
+ * This mutex is intended for mutual exclusion in task context. Lock/unlock is
+ * explicit (`Lock()` / `Unlock()`), not constructor/destructor scoped locking.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosMutex mutex;
+ *
+ * if(mutex.Lock(10)) {
+ *     // access shared state
+ *     (void)mutex.Unlock();
+ * }
+ * @endcode
  */
 class FreeRtosMutex : public NonCopyableNonMovable {
   public:
@@ -45,10 +56,21 @@ class FreeRtosMutex : public NonCopyableNonMovable {
 
 /**
  * @class FreeRtosRecursiveMutex
- * @brief RAII wrapper for a recursive mutex.
+ * @brief Ownership-based wrapper for a recursive mutex with destructor cleanup.
  *
  * A recursive mutex may be locked multiple times by the same owner and must be
  * unlocked the same number of times.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosRecursiveMutex mutex;
+ *
+ * if(mutex.Lock(10)) {
+ *     (void)mutex.Lock(10);   // same owner re-enters
+ *     (void)mutex.Unlock();   // release one level
+ *     (void)mutex.Unlock();   // release final level
+ * }
+ * @endcode
  */
 class FreeRtosRecursiveMutex : public NonCopyableNonMovable {
   public:

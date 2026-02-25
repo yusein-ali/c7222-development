@@ -14,10 +14,24 @@ namespace c7222 {
 
 /**
  * @class FreeRtosQueue
- * @brief RAII wrapper for a fixed-size item queue.
+ * @brief Ownership-based wrapper for a fixed-size item queue.
  *
  * This wrapper models the classic FreeRTOS queue behavior with task-context
- * and ISR-context send/receive helpers.
+ * and ISR-context send/receive helpers. Send/receive operations are explicit;
+ * RAII here refers to queue-handle cleanup.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosQueue queue(8, sizeof(std::uint32_t));
+ *
+ * std::uint32_t tx = 42;
+ * (void)queue.Send(&tx, 10);
+ *
+ * std::uint32_t rx = 0;
+ * if(queue.Receive(&rx, 10)) {
+ *     // use rx
+ * }
+ * @endcode
  */
 class FreeRtosQueue : public NonCopyableNonMovable {
   public:

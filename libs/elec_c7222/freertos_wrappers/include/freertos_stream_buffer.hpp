@@ -14,10 +14,22 @@ namespace c7222 {
 
 /**
  * @class FreeRtosStreamBuffer
- * @brief RAII wrapper for byte-stream buffering.
+ * @brief Ownership-based wrapper for byte-stream buffering.
  *
  * Stream buffers provide contiguous byte FIFO semantics and are useful for
  * variable chunk transport where record/message boundaries are not required.
+ * Send/receive operations are explicit; RAII here refers to handle cleanup.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosStreamBuffer stream(256, 1);
+ * const char payload[] = "abc";
+ * (void)stream.Send(payload, sizeof(payload), 10);
+ *
+ * char out[8] = {};
+ * const std::size_t n = stream.Receive(out, sizeof(out), 10);
+ * (void)n;
+ * @endcode
  */
 class FreeRtosStreamBuffer : public NonCopyableNonMovable {
   public:
@@ -60,10 +72,22 @@ class FreeRtosStreamBuffer : public NonCopyableNonMovable {
 
 /**
  * @class FreeRtosMessageBuffer
- * @brief RAII wrapper for discrete message buffering.
+ * @brief Ownership-based wrapper for discrete message buffering.
  *
  * Message buffers preserve message boundaries and are suitable for variable-size
- * packet/message transfer between contexts.
+ * packet/message transfer between contexts. Send/receive operations are
+ * explicit; RAII here refers to handle cleanup.
+ *
+ * Typical usage:
+ * @code
+ * c7222::FreeRtosMessageBuffer messages(256);
+ * const std::uint32_t value = 7;
+ * (void)messages.Send(&value, sizeof(value), 10);
+ *
+ * std::uint32_t out = 0;
+ * const std::size_t n = messages.Receive(&out, sizeof(out), 10);
+ * (void)n;
+ * @endcode
  */
 class FreeRtosMessageBuffer : public NonCopyableNonMovable {
   public:
