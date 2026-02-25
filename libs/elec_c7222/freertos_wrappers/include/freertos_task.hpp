@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 
 #include "non_copyable.hpp"
 
@@ -36,6 +37,8 @@ class FreeRtosTask : public NonCopyableNonMovable {
   public:
 	/** @brief Task callable signature. */
 	using TaskFunction = std::function<void(void*)>;
+	/** @brief Sentinel tick value representing an infinite wait. */
+	static constexpr std::uint32_t kInfinite = std::numeric_limits<std::uint32_t>::max();
 
 	/** @brief Construct an uninitialized task wrapper. */
 	FreeRtosTask() = default;
