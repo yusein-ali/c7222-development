@@ -331,41 +331,56 @@ class SecurityManager : public NonCopyableNonMovable {
 	struct EventHandler {
 		/**
 		 * @brief Called when "Just Works" confirmation is requested.
+		 * @param connection_handle Connection on which pairing is requested.
 		 */
-		virtual void OnJustWorksRequest(ConnectionHandle) const {}
+		virtual void OnJustWorksRequest(ConnectionHandle connection_handle) const {}
 		/**
 		 * @brief Called when numeric comparison is requested.
+		 * @param connection_handle Connection associated with the request.
+		 * @param numeric_value 6-digit numeric comparison value to confirm.
 		 */
-		virtual void OnNumericComparisonRequest(ConnectionHandle, uint32_t) const {}
+		virtual void OnNumericComparisonRequest(ConnectionHandle connection_handle,
+												uint32_t numeric_value) const {}
 		/**
 		 * @brief Called when the stack requests passkey display.
+		 * @param connection_handle Connection on which passkey display is required.
+		 * @param passkey Passkey value that should be shown to the user.
 		 */
-		virtual void OnPasskeyDisplay(ConnectionHandle, uint32_t) const {}
+		virtual void OnPasskeyDisplay(ConnectionHandle connection_handle, uint32_t passkey) const {}
 		/**
 		 * @brief Called when the stack requests passkey input.
+		 * @param connection_handle Connection on which passkey entry is required.
 		 */
-		virtual void OnPasskeyInput(ConnectionHandle) const {}
+		virtual void OnPasskeyInput(ConnectionHandle connection_handle) const {}
 		/**
 		 * @brief Called when pairing completes.
 		 *
+		 * @param connection_handle Connection for which pairing completed.
 		 * @param status High-level pairing status.
 		 * @param status_code Stack-specific status value.
 		 */
-		virtual void OnPairingComplete(ConnectionHandle,
+		virtual void OnPairingComplete(ConnectionHandle connection_handle,
 									   PairingStatus status,
 									   uint8_t status_code) const {}
 		/**
 		 * @brief Called when re-encryption completes.
+		 * @param connection_handle Connection for which re-encryption completed.
+		 * @param status_code Stack-specific re-encryption status code.
 		 */
-		virtual void OnReencryptionComplete(ConnectionHandle, uint8_t /*status*/) const {}
+		virtual void OnReencryptionComplete(ConnectionHandle connection_handle,
+											uint8_t status_code) const {}
 		/**
 		 * @brief Called when authorization is required.
+		 * @param connection_handle Connection requesting authorization.
 		 */
-		virtual void OnAuthorizationRequest(ConnectionHandle) const {}
+		virtual void OnAuthorizationRequest(ConnectionHandle connection_handle) const {}
 		/**
 		 * @brief Called when an authorization decision is available.
+		 * @param connection_handle Connection associated with the decision.
+		 * @param result Authorization decision for the connection.
 		 */
-		virtual void OnAuthorizationResult(ConnectionHandle, AuthorizationResult) const {}
+		virtual void OnAuthorizationResult(ConnectionHandle connection_handle,
+										   AuthorizationResult result) const {}
 
 	   protected:
 		~EventHandler() = default;
