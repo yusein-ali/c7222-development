@@ -32,6 +32,7 @@ bool AdvertisementData::ValidateLength(AdvertisementDataType type, size_t length
 			if(data_size < 3) {
 				return false;
 			}
+			break;
 		case AdvertisementDataType::kManufacturerSpecific:
 		case AdvertisementDataType::kShortenedLocalName:
 		case AdvertisementDataType::kCompleteLocalName:
