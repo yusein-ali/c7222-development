@@ -16,7 +16,7 @@ if ((NOT FREERTOS_CPP11_PATH OR FREERTOS_CPP11_PATH STREQUAL "") AND DEFINED CMA
         file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/libs)
         message(STATUS "Cloning FreeRTOS-cpp11 into ${_freertos_cpp11_local_path}")
         execute_process(
-            COMMAND git clone git@github.com:yusein-ali/FreeRTOS_cpp11.git ${_freertos_cpp11_local_path}
+            COMMAND git clone https://github.com/yusein-ali/FreeRTOS_cpp11.git ${_freertos_cpp11_local_path}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
             RESULT_VARIABLE freertos_cpp11_clone_result
             ERROR_VARIABLE freertos_cpp11_clone_error
