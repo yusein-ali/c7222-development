@@ -78,7 +78,7 @@
     "clangd.path": "clangd",
     "clangd.arguments": [
         "--compile-commands-dir=${command:cmake.buildDirectory}",
-        "--query-driver=${env:USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-g++.exe",
+        "--query-driver=${env:USERPROFILE}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-g++.exe,${env:HOME}/.pico-sdk/toolchain/14_2_Rel1/bin/arm-none-eabi-g++",
     ],
     "cSpell.diagnosticLevel": "Hint",
     "cSpell.words": [
@@ -88,5 +88,6 @@
         "Pico",
         "RSSI",
         "SCCD"
-    ]
+    ],
+    "C_Cpp.intelliSenseEngine": "disabled"
 }
