@@ -10,51 +10,79 @@
 
 namespace c7222 {
 
+namespace {
+
+// Manual Characteristic construction synthesizes ATT payload bytes in memory.
+// These helpers are only for that constructor path and should not be used for
+// parsed ATT DB attributes or as general-purpose Attribute builders.
+void AppendLe16(std::vector<uint8_t>& out, uint16_t value) {
+	out.push_back(static_cast<uint8_t>(value & 0xFF));
+	out.push_back(static_cast<uint8_t>((value >> 8) & 0xFF));
+}
+
+// Manual Characteristic construction only: appends UUID bytes in ATT payload order.
+void AppendUuidBytes(std::vector<uint8_t>& out, const Uuid& uuid) {
+	const std::size_t uuid_size = uuid.Is16Bit() ? 2u : 16u;
+	out.insert(out.end(), uuid.data(), uuid.data() + uuid_size);
+}
+
+// Manual Characteristic construction only: maps characteristic capabilities to
+// the runtime-managed value attribute properties used by the constructor path.
+uint16_t MakeValueAttributeProperties(uint8_t characteristic_properties) {
+	uint16_t attr_props = 0;
+
+	if((characteristic_properties & static_cast<uint8_t>(Characteristic::Properties::kRead)) != 0) {
+		attr_props |= static_cast<uint16_t>(Attribute::Properties::kRead);
+	}
+	if((characteristic_properties & static_cast<uint8_t>(Characteristic::Properties::kWrite)) != 0) {
+		attr_props |= static_cast<uint16_t>(Attribute::Properties::kWrite);
+	}
+	if((characteristic_properties &
+		static_cast<uint8_t>(Characteristic::Properties::kWriteWithoutResponse)) != 0) {
+		attr_props |= static_cast<uint16_t>(Attribute::Properties::kWriteWithoutResponse);
+	}
+	if((characteristic_properties &
+		static_cast<uint8_t>(Characteristic::Properties::kAuthenticatedSignedWrites)) != 0) {
+		attr_props |= static_cast<uint16_t>(Attribute::Properties::kAuthenticatedSignedWrite);
+	}
+	attr_props |= static_cast<uint16_t>(Attribute::Properties::kDynamic);
+
+	return attr_props;
+}
+
+// Manual Characteristic construction only: builds an owned declaration
+// attribute because the declaration bytes are synthesized at runtime rather
+// than coming from a persistent ATT DB image.
+Attribute MakeOwnedDeclarationAttribute(uint8_t properties,
+										 uint16_t declaration_handle,
+										 uint16_t value_handle,
+										 const Uuid& uuid) {
+	std::vector<uint8_t> declaration_value;
+	declaration_value.reserve(uuid.Is128Bit() ? 19 : 5);
+	declaration_value.push_back(properties);
+	AppendLe16(declaration_value, value_handle);
+	AppendUuidBytes(declaration_value, uuid);
+
+	return Attribute(Uuid::CharacteristicDeclaration(),
+					 static_cast<uint16_t>(Attribute::Properties::kRead |
+										   Attribute::Properties::kDynamic),
+					 declaration_value.data(),
+					 declaration_value.size(),
+					 declaration_handle);
+}
+
+}  // namespace
+
 Characteristic::Characteristic(const Uuid& uuid,
 							   uint8_t properties,
-							   uint16_t value_handle,
-							   uint16_t declaration_handle)
+							   uint16_t declaration_handle,
+							   uint16_t value_handle)
 	: uuid_(uuid),
 	  properties_(static_cast<Properties>(properties)),
 	  connection_handle_(0),
 	  notification_pending_(false),
-	  declaration_attr_(Attribute::CharacteristicDeclaration(properties, value_handle, uuid, declaration_handle)),
-	  value_attr_(uuid, 0) {
-	// Set handles on the attributes
-	value_attr_.SetHandle(value_handle);
-
-	// Map characteristic properties (bitfield) to attribute properties (bitfield)
-	// Properties is a bitfield enum: each bit represents a capability (Read, Write, Notify,
-	// Indicate, etc.)
-	uint16_t attr_props = 0;
-
-	// Map read capability
-	if((static_cast<uint8_t>(properties) & static_cast<uint8_t>(Properties::kRead)) != 0)
-		attr_props |= static_cast<uint16_t>(Attribute::Properties::kRead);
-
-	// Map write capability
-	if((static_cast<uint8_t>(properties) & static_cast<uint8_t>(Properties::kWrite)) != 0)
-		attr_props |= static_cast<uint16_t>(Attribute::Properties::kWrite);
-
-	// Map write without response capability
-	if((static_cast<uint8_t>(properties) &
-		static_cast<uint8_t>(Properties::kWriteWithoutResponse)) != 0)
-		attr_props |= static_cast<uint16_t>(Attribute::Properties::kWriteWithoutResponse);
-
-	// Mark as dynamic if it supports server-initiated notifications or indications
-	// These require callbacks and dynamic value management
-	uint8_t notify_indicate =
-		(static_cast<uint8_t>(properties) &
-		 (static_cast<uint8_t>(Properties::kNotify) | static_cast<uint8_t>(Properties::kIndicate)));
-	if(notify_indicate != 0)
-		attr_props |= static_cast<uint16_t>(Attribute::Properties::kDynamic);
-
-	// Map authenticated signed writes capability
-	if((static_cast<uint8_t>(properties) &
-		static_cast<uint8_t>(Properties::kAuthenticatedSignedWrites)) != 0)
-		attr_props |= static_cast<uint16_t>(Attribute::Properties::kAuthenticatedSignedWrite);
-
-	value_attr_.SetProperties(attr_props);
+	  declaration_attr_(MakeOwnedDeclarationAttribute(properties, declaration_handle, value_handle, uuid)),
+	  value_attr_(uuid, MakeValueAttributeProperties(properties), value_handle) {
 
 	// Set up read and write callbacks for the value attribute
 	value_attr_.SetReadCallback([this](uint16_t offset, uint8_t* buffer, uint16_t buffer_size) {

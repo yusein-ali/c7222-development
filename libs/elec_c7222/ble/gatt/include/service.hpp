@@ -105,7 +105,8 @@ namespace c7222 {
  * c7222::Service svc(c7222::Uuid(0x180F));  // Battery Service
  * auto& level = svc.CreateCharacteristic(c7222::Uuid(0x2A19),
  *                                        static_cast<uint8_t>(c7222::Characteristic::Properties::kRead),
- *                                        0 ); // value handle is 0
+ *                                        0,
+ *                                        0);
  * level.SetValue(&initial_level, sizeof(initial_level));
  * // Parsing from a compiled ATT DB (Pico W)
  * auto* server = c7222::AttributeServer::GetInstance();
@@ -452,12 +453,14 @@ class Service : public MovableOnly {
 	 * 
 	 * @param uuid UUID for the characteristic
 	 * @param properties Characteristic properties bitfield
+	 * @param declaration_handle Handle of the Declaration attribute
 	 * @param value_handle Handle of the Value attribute
-	 * @param declaration_handle Optional handle for the Declaration attribute
 	 * @return Reference to the newly added characteristic
 	 */
-	Characteristic& CreateCharacteristic(const Uuid& uuid, uint8_t properties,
-		uint16_t value_handle, uint16_t declaration_handle = 0);
+	Characteristic& CreateCharacteristic(const Uuid& uuid,
+										 uint8_t properties,
+										 uint16_t declaration_handle,
+										 uint16_t value_handle);
 
 	/**
 	 * @brief Remove a characteristic by index.

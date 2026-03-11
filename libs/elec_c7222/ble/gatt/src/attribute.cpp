@@ -18,12 +18,8 @@ void AppendLe16(std::vector<uint8_t>& out, uint16_t value) {
 }
 
 void AppendUuidBytes(std::vector<uint8_t>& out, const Uuid& uuid) {
-	if(uuid.Is16Bit()) {
-		AppendLe16(out, uuid.Get16Bit());
-	} else if(uuid.Is128Bit()) {
-		const auto& bytes = uuid.Get128Bit();
-		out.insert(out.end(), bytes.begin(), bytes.end());
-	}
+	const std::size_t uuid_size = uuid.Is16Bit() ? 2u : 16u;
+	out.insert(out.end(), uuid.data(), uuid.data() + uuid_size);
 }
 
 }  // namespace
@@ -268,7 +264,8 @@ Attribute Attribute::PrimaryServiceDeclaration(const Uuid& service_uuid, uint16_
 	std::vector<uint8_t> value;
 	AppendUuidBytes(value, service_uuid);
 	return Attribute(Uuid::PrimaryServiceDeclaration(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
@@ -278,7 +275,8 @@ Attribute Attribute::SecondaryServiceDeclaration(const Uuid& service_uuid, uint1
 	std::vector<uint8_t> value;
 	AppendUuidBytes(value, service_uuid);
 	return Attribute(Uuid::SecondaryServiceDeclaration(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
@@ -293,7 +291,8 @@ Attribute Attribute::IncludedServiceDeclaration(uint16_t start_handle,
 	AppendLe16(value, end_handle);
 	AppendUuidBytes(value, service_uuid);
 	return Attribute(Uuid::IncludedServiceDeclaration(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
@@ -308,7 +307,8 @@ Attribute Attribute::CharacteristicDeclaration(uint8_t properties,
 	AppendLe16(value, value_handle);
 	AppendUuidBytes(value, characteristic_uuid);
 	return Attribute(Uuid::CharacteristicDeclaration(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
@@ -342,7 +342,8 @@ Attribute Attribute::CharacteristicUserDescription(const std::string& descriptio
 												   uint16_t handle) {
 	const std::vector<uint8_t> value(description.begin(), description.end());
 	return Attribute(Uuid::CharacteristicUserDescription(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
@@ -352,7 +353,8 @@ Attribute Attribute::CharacteristicExtendedProperties(uint16_t value, uint16_t h
 	std::vector<uint8_t> bytes;
 	AppendLe16(bytes, value);
 	return Attribute(Uuid::CharacteristicExtendedProperties(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 bytes.data(),
 					 bytes.size(),
 					 handle);
@@ -371,7 +373,8 @@ Attribute Attribute::CharacteristicPresentationFormat(uint8_t format,
 	value.push_back(name_space);
 	AppendLe16(value, description);
 	return Attribute(Uuid::CharacteristicPresentationFormat(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
@@ -385,7 +388,8 @@ Attribute Attribute::CharacteristicAggregateFormat(const std::vector<uint16_t>& 
 		AppendLe16(value, entry);
 	}
 	return Attribute(Uuid::CharacteristicAggregateFormat(),
-					 static_cast<uint16_t>(Properties::kRead),
+					 static_cast<uint16_t>(Properties::kRead |
+										   Properties::kDynamic),
 					 value.data(),
 					 value.size(),
 					 handle);
