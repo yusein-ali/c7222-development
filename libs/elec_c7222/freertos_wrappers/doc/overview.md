@@ -1,4 +1,4 @@
-# FreeRTOS Wrappers Overview
+# ELEC-C7222 FreeRTOS Wrappers
 
 ## Purpose
 

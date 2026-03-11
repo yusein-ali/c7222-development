@@ -1,4 +1,4 @@
-# Example: Custom Service (READ + WRITE)
+# ELEC-C7222 Library Examples: Custom Service READ + WRITE Example
 
 This example demonstrates the minimal pattern for implementing a custom BLE service with a readable characteristic and a writable characteristic.
 

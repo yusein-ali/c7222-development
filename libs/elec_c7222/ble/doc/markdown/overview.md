@@ -1,4 +1,11 @@
-# BLE Library Design Overview
+# ELEC-C7222 BLE API
+
+<div style="display:none">
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gap "BLE Library Design Overview: GAP Module Overview"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gatt "BLE Library Design Overview: GATT/ATT Module Overview"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2security-manager "BLE Library Design Overview: Security Manager Module Overview"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2creating-profiles "BLE Library Design Overview: Creating GATT Profiles"
+</div>
 
 This library wraps BTstack with C++ classes to provide a more structured, object‑oriented BLE API while keeping BTstack’s behavior and constraints visible. It is intentionally thin: it does not hide the underlying ATT/GATT and HCI concepts, and it expects the application to manage event dispatch and object lifetimes carefully.
 
@@ -202,5 +209,3 @@ Notes:
   the value attribute read/write callbacks.
 - If you override the value attribute with `SetReadCallback()`/`SetWriteCallback()`,
   the default handlers (and therefore `OnRead`/`OnWrite`) are bypassed.
-
-

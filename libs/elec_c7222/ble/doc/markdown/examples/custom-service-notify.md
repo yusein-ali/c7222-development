@@ -1,4 +1,4 @@
-# Example: Custom Service (NOTIFY)
+# ELEC-C7222 Library Examples: Custom Service NOTIFY Example
 
 This example demonstrates the minimal pattern for implementing a custom BLE service with a NOTIFY characteristic.
 

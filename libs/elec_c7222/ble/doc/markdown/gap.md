@@ -1,4 +1,4 @@
-# GAP Module Overview
+# BLE Library Design Overview: GAP Module Overview
 
 This module wraps the BTstack GAP APIs with C++ classes and event handlers. It is designed for embedded BLE peripherals where advertising and connection state are managed by a single owner.
 

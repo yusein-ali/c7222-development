@@ -1,4 +1,4 @@
-# GATT/ATT Module Overview
+# BLE Library Design Overview: GATT/ATT Module Overview
 
 This module encapsulates BTstack’s ATT database and GATT‑level routing with C++ classes. It provides parsing, handle‑based routing, and characteristic‑level events while preserving BTstack’s ATT semantics.
 

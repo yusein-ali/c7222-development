@@ -1,7 +1,7 @@
-# Devices Overview
+# ELEC-C7222 Devices API
 
 <div style="display:none">
-\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2c7222__board
+\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2c7222__board "Devices API Overview: C7222 Pico W Board Interfaces and Pin Assignments"
 </div>
 
 This document introduces the ELEC_C7222 devices layer, its design principles, and how to use it across the two supported platforms. It is intended to help students and teaching staff understand what each device abstraction does, how platform-specific behavior is isolated, and how to use the APIs correctly.

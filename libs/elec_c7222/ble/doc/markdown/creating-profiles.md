@@ -1,4 +1,8 @@
-# Creating GATT Profiles (BTstack + This Library)
+# BLE Library Design Overview: Creating GATT Profiles (BTstack + This Library)
+
+<div style="display:none">
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2comprehensive-gatt-guide "BLE Library Design Overview: Creating GATT Profiles: Comprehensive GATT Development Guide for Pico BTstack"
+</div>
 
 This note summarizes the BTstack GATT Server guidance (from `doc/BTstack-md/profiles.md`, section "GATT Server") and adds **GATT‑file‑specific** caveats used in this project.
 

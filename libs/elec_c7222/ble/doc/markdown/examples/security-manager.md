@@ -1,4 +1,4 @@
-# Example: Security Manager (Encrypted GATT)
+# ELEC-C7222 Library Examples: Security Manager Example
 
 This example demonstrates how the BLE Security Manager integrates with the GATT server and how encrypted characteristic access behaves in practice.
 
