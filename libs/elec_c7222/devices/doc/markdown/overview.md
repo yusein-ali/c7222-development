@@ -175,6 +175,7 @@ bool level = in_pin.Read();
 1. Assertions are used heavily to enforce valid configuration and single-pin ownership. This assumes debug builds. Release builds will not enforce these checks.
 2. `OnBoardLED` and `OnChipTemperatureSensor` are not auto-initialized. Users must call `Initialize()` explicitly.
 3. `PicoWBoard` construction performs its own initialization, so it should only be created after platform initialization.
+4. **BLE builds warning**: When BLE is enabled, do not call `Platform::Initialize()` from `main()`. `main()` can run before the RTOS scheduler starts, so BLE stack init must be performed from a FreeRTOS task context.
 
 ## C API Note
 

@@ -161,7 +161,9 @@ BleError AttributeServer::Init(const void* context) {
 	if(attributes) {
 		InitServices(*attributes);
 	}
-
+	// we must give some time before we can initialize the ATT server, 
+	// otherwise btstack may fail to register callbacks.
+	vTaskDelay(pdMS_TO_TICKS(100));
 	// Ensure L2CAP/SM are initialized before registering the ATT server.
 	l2cap_init();
 	sm_init();
