@@ -99,6 +99,8 @@ static void on_turn_on() {
 	auto* gap = ble->GetGap();
 	auto& adb = ble->GetAdvertisementDataBuilder();
 
+	onboard_led->Initialize();
+
 	// Register the stack-on callback and power up the BLE stack.
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
@@ -137,6 +139,9 @@ static void on_turn_on() {
 	if (!platform->Initialize()) {
 		assert(false && "Failed to initialize CYW43 architecture");
 	}
+	std::printf("Platform initialized successfully.\n");
+	// ensure board IO is initialized so LEDs and buttons work out of the box
+	platform->GetPicoWBoard();
 
 	std::printf("Starting FreeRTOS BLE GAP Example...\n");
 
