@@ -84,8 +84,9 @@ static void timer_callback() {
 		if(att_server->IsConnected()) {
 			temperature_characteristic->SetValue(temp_fixed_point);
 		}
+		std::printf("Timer Callback: Updated temperature to %.2f C (raw: 0x%04x)\n", temperature_c, temp_fixed_point);
 	} else {
-		printf("Timer Callback: T = %.2f C\n", temperature_c);
+		std::printf("Timer Callback: T = %.2f C\n", temperature_c);
 	}
 }
 

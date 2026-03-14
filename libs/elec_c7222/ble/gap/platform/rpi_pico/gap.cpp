@@ -368,7 +368,11 @@ BleError Gap::DispatchEvent(EventId event_id,
 				for(const auto* handler: event_handlers_) {
 					handler->OnAdvertisingStart(status);
 				}
+				if(status == ERROR_CODE_SUCCESS) {
+					advertising_ = true;
+				}
 			} else {
+				advertising_ = false;
 				for(const auto* handler: event_handlers_) {
 					handler->OnAdvertisingEnd(status, 0);
 				}
@@ -469,7 +473,8 @@ BleError Gap::DispatchEvent(EventId event_id,
 		if(status == ERROR_CODE_SUCCESS) {
 			connection_parameters_[con_handle] = {conn_interval, conn_latency, supervision_timeout};
 			connected_ = true;
-			if(advertisement_enabled_) {
+			if(advertising_) {
+				advertising_ = false;
 				advertisement_enabled_ = false;
 				for(const auto* handler: event_handlers_) {
 					handler->OnAdvertisingEnd(status, con_handle);
@@ -508,7 +513,8 @@ BleError Gap::DispatchEvent(EventId event_id,
 		if(status == ERROR_CODE_SUCCESS) {
 			connection_parameters_[con_handle] = {conn_interval, conn_latency, supervision_timeout};
 			connected_ = true;
-			if(advertisement_enabled_) {
+			if(advertising_) {
+				advertising_ = false;
 				advertisement_enabled_ = false;
 				for(const auto* handler: event_handlers_) {
 					handler->OnAdvertisingEnd(status, con_handle);
@@ -597,6 +603,7 @@ BleError Gap::DispatchEvent(EventId event_id,
 		const uint8_t status = hci_subevent_le_advertising_set_terminated_get_status(event_data);
 		const auto con_handle = static_cast<ConnectionHandle>(
 			hci_subevent_le_advertising_set_terminated_get_connection_handle(event_data));
+		advertising_ = false;
 		advertisement_enabled_ = false;
 		for(const auto* handler: event_handlers_) {
 			handler->OnAdvertisingEnd(status, con_handle);

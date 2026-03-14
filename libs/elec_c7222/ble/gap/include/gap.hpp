@@ -1173,6 +1173,17 @@ class Gap : public NonCopyableNonMovable {
 	}
 
 	/**
+	 * @brief Check if advertising is currently running on the controller.
+	 *
+	 * This follows stack events and is set true after a successful
+	 * `OnAdvertisingStart` callback, and set false before an
+	 * `OnAdvertisingEnd` callback.
+	 */
+	bool IsAdvertising() const {
+		return advertising_;
+	}
+
+	/**
 	 * @brief Check if advertising parameters have been set.
 	 */
 	bool IsAdvertisingParametersSet() const {
@@ -1315,6 +1326,11 @@ class Gap : public NonCopyableNonMovable {
 	 * @brief True when advertising is enabled by the application.
 	 */
 	bool advertisement_enabled_ = false;
+
+	/**
+	 * @brief True while the stack currently reports advertising as active.
+	 */
+	bool advertising_ = false;
 	/**
 	 * @brief True once SetAdvertisingParameters() has been called.
 	 */

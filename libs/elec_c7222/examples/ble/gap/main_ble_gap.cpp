@@ -100,18 +100,18 @@ static void on_turn_on() {
 	auto& adb = ble->GetAdvertisementDataBuilder();
 
 	onboard_led->Initialize();
-
+	c7222::FreeRtosTask::Delay(100);	// Ensure LED is ready before BLE turns on.
 	// Register the stack-on callback and power up the BLE stack.
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
 
-	std::printf("BLE Stack is ON!\n");
+	std::printf("BLE Stack ON is requested!\n");
 
 	while(true) {
-		seconds = c7222::FreeRtosTask::GetTickCount() / 1000;
-		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(100));
-
-		if(gap->IsAdvertisingEnabled()) {
+		c7222::FreeRtosTask::Delay(c7222::FreeRtosTask::MsToTicks(1000));
+		
+		if(gap->IsAdvertising()) {
+			seconds = c7222::FreeRtosTask::GetTickCount() / 1000;
 			// Update manufacturer data by replacing the last element in the builder:
 			// Pop removes the most recently added advertising element, and Push appends
 			// the new element. After the update, SetAdvertisingData() rebuilds and applies
@@ -123,6 +123,8 @@ static void on_turn_on() {
 			adb.Push(ad);
 			ble->SetAdvertisingData();
 			onboard_led->Toggle();
+		} else {
+			onboard_led->Off();
 		}
 	}
 }

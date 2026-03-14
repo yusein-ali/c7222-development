@@ -44,8 +44,8 @@
 #define HCI_HOST_SCO_PACKET_NUM 3
 
 // Minimal NVM sizes to satisfy btstack_tlv build (keep bonding off to avoid writes).
-#define NVM_NUM_DEVICE_DB_ENTRIES 1
-#define NVM_NUM_LINK_KEYS 1
+#define NVM_NUM_DEVICE_DB_ENTRIES 2
+#define NVM_NUM_LINK_KEYS 2
 // Disable persistent CCC storage.
 #define NVN_NUM_GATT_SERVER_CCC 16
 
