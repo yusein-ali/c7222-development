@@ -10,7 +10,36 @@
 
 #include "c7222_pico_w_board.hpp"
 
+#define C7222_HAS_FREERTOS 0
+#if defined(CYW43_WL_GPIO_LED_PIN) && __has_include("FreeRTOS.h")
+#undef C7222_HAS_FREERTOS
+#define C7222_HAS_FREERTOS 1
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
+#endif
 
+namespace {
+	#if defined(CYW43_WL_GPIO_LED_PIN)
+	#if C7222_HAS_FREERTOS
+static bool cyw43_init_timer_started = false;
+static bool timer_run = false;
+static TimerHandle_t cyw43_init_timer = nullptr;
+
+static void cyw43_arch_init_timer_callback(TimerHandle_t timer) {
+	(void)timer;
+	timer_run = true;
+	auto* platform = c7222::Platform::GetInstance();
+	(void)platform->EnsureArchInitialized();
+	if(cyw43_init_timer){
+		(void) xTimerDelete(cyw43_init_timer, 0);
+		cyw43_init_timer = nullptr;
+	}
+}
+#endif
+#endif
+
+}
 
 namespace c7222 {
 
@@ -21,13 +50,61 @@ bool Platform::EnsureArchInitialized() {
 		return true;
 	}
 	stdio_init_all();
-	if (cyw43_arch_init() != 0) {
-		arch_initialized_ = false;
-		return false;
+	#if !defined(C7222_ENABLE_BLE)
+		timer_run = true;
+	#endif
+	#if C7222_HAS_FREERTOS
+		if(timer_run) {
+			if(cyw43_arch_init() != 0) {
+				timer_run = false;
+				arch_initialized_ = false;
+				return false;
+			}
+			arch_initialized_ = true;
+			return true;
 	}
-	arch_initialized_ = true;
+	else {
+		if(!cyw43_init_timer_started) {
+			if(!cyw43_init_timer) {
+				cyw43_init_timer = xTimerCreate("cyw43_init",
+												pdMS_TO_TICKS(1),
+												pdFALSE,
+												nullptr,
+												cyw43_arch_init_timer_callback);
+				assert(cyw43_init_timer != nullptr && "Failed to create CYW43 init timer");
+			}
+
+			if(cyw43_init_timer == nullptr) {
+				arch_initialized_ = false;
+				return false;
+			}
+			(void) xTimerStart(cyw43_init_timer, 0);
+			cyw43_init_timer_started = true;
+			return true;
+		} else if(xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED) {
+			return true;
+		} else {
+			uint32_t wait_ms = 0;
+			while(timer_run == false) {
+				vTaskDelay(pdMS_TO_TICKS(10));
+				wait_ms += 10;
+				if(wait_ms > 5000) {
+					assert(false && "CYW43 architecture initialization timed out");
+					return false;
+				}
+			}
+			return arch_initialized_;
+		}
+	}
+#else // no freertos, safe to init directly
+		if (cyw43_arch_init() != 0) {
+			arch_initialized_ = false;
+			return false;
+		}
+		arch_initialized_ = true;
 	return true;
-#else
+	#endif
+#else // no cyw43, just mark as initialized
 	arch_initialized_ = true;
 	return true;
 #endif

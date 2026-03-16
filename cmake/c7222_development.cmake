@@ -140,12 +140,26 @@ function(c7222_define_development_interface)
         )
     endif()
 
+    # Keep flash TLV settings deterministic and visible at configure time.
+    set(PICO_FLASH_BANK_TOTAL_SIZE 8192)
+    if(DEFINED PICO_FLASH_SIZE_BYTES)
+        math(EXPR PICO_FLASH_BANK_STORAGE_OFFSET_VALUE "${PICO_FLASH_SIZE_BYTES} - ${PICO_FLASH_BANK_TOTAL_SIZE}")
+        message(STATUS "BTstack flash bank size: ${PICO_FLASH_BANK_TOTAL_SIZE} bytes")
+        message(STATUS "BTstack flash bank storage offset: ${PICO_FLASH_BANK_STORAGE_OFFSET_VALUE} (flash size ${PICO_FLASH_SIZE_BYTES})")
+    else()
+        message(WARNING "PICO_FLASH_SIZE_BYTES is not defined; using default TLV storage macro expression.")
+        set(PICO_FLASH_BANK_STORAGE_OFFSET_VALUE "PICO_FLASH_SIZE_BYTES-PICO_FLASH_BANK_TOTAL_SIZE")
+    endif()
+
     # Export shared compile definitions for FreeRTOS C++ and board defaults.
     target_compile_definitions(c7222_development INTERFACE
         _GLIBCXX_HAS_GTHREADS=1
         _GLIBCXX_USE_C99_STDINT_TR1=1
         PICO_DEFAULT_UART_BAUD_RATE=921600
         CYW43_LWIP=0
+        PICO_FLASH_BANK_TOTAL_SIZE=${PICO_FLASH_BANK_TOTAL_SIZE}
+        PICO_FLASH_BANK_STORAGE_OFFSET=${PICO_FLASH_BANK_STORAGE_OFFSET_VALUE}
+        $<$<BOOL:${C7222_ENABLE_BLE}>:C7222_ENABLE_BLE=1>
         $<$<BOOL:${C7222_BLE_DEBUG}>:C7222_BLE_DEBUG=1>
     )
 endfunction()

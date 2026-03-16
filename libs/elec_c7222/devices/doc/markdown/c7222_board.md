@@ -1,4 +1,4 @@
-# C7222 Pico W Board Interfaces and Pin Assignments
+# Devices API Overview: C7222 Pico W Board Interfaces and Pin Assignments
 
 The C7222 Pico W board is a very simple I/O board intended as a getting-started platform for Raspberry Pi Pico W development. It provides a UART connector, a reset button, four user buttons, and three red/green LED pairs so core embedded workflows can be tested quickly with minimal hardware complexity.
 

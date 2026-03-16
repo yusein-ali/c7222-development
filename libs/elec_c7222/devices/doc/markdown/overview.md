@@ -1,7 +1,7 @@
-# Devices Overview
+# ELEC-C7222 Devices API
 
 <div style="display:none">
-\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2c7222__board
+\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2c7222__board "Devices API Overview: C7222 Pico W Board Interfaces and Pin Assignments"
 </div>
 
 This document introduces the ELEC_C7222 devices layer, its design principles, and how to use it across the two supported platforms. It is intended to help students and teaching staff understand what each device abstraction does, how platform-specific behavior is isolated, and how to use the APIs correctly.
@@ -175,6 +175,7 @@ bool level = in_pin.Read();
 1. Assertions are used heavily to enforce valid configuration and single-pin ownership. This assumes debug builds. Release builds will not enforce these checks.
 2. `OnBoardLED` and `OnChipTemperatureSensor` are not auto-initialized. Users must call `Initialize()` explicitly.
 3. `PicoWBoard` construction performs its own initialization, so it should only be created after platform initialization.
+4. **BLE builds warning**: When BLE is enabled, do not call `Platform::Initialize()` from `main()`. `main()` can run before the RTOS scheduler starts, so BLE stack init must be performed from a FreeRTOS task context.
 
 ## C API Note
 

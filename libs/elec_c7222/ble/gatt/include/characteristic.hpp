@@ -39,7 +39,10 @@ namespace c7222 {
  *
  * There are two common ways to create a Characteristic:
  * 1. **Manual construction:** Use the constructor with UUID, properties, and handles.
- *    This is useful when you are assembling attributes in code.
+ *    This is useful when you are assembling attributes in code. In this path,
+ *    the Characteristic synthesizes its Declaration and Value attributes in
+ *    memory and stores them using owned dynamic storage rather than relying on
+ *    an external ATT DB image.
  * 2. **Parse from attributes:** Use `ParseFromAttributes()` to extract the first
  *    characteristic from an ordered attribute list (Declaration, Value, then Descriptors).
  *    The extracted attributes are removed from the list and moved into the new
@@ -99,6 +102,9 @@ namespace c7222 {
  * to peel one characteristic at a time from the ordered list.
  *
  * Important implications:
+ * - Manually constructed characteristics do not reference ATT DB storage for
+ *   their synthesized Declaration and Value attributes; those bytes are owned
+ *   by the characteristic-side runtime representation.
  * - Parsed static attributes keep pointers into the DB blob; the DB memory
  *   must remain valid for the lifetime of the `Attribute`/`Characteristic`.
  * - Parsing moves the attribute objects; callbacks are not copied, so register
@@ -488,13 +494,13 @@ class Characteristic final : public MovableOnly {
 	 * The value handle is typically declaration_handle + 1.
 	 * @param uuid The UUID identifying this characteristic
 	 * @param properties Characteristic properties bitfield (combination of Properties enum flags)
+	 * @param declaration_handle Handle of the Declaration attribute
 	 * @param value_handle Handle of the Value attribute (typically declaration_handle + 1)
-	 * @param declaration_handle Optional handle for the Declaration attribute (used in DB)
 	 */
 	explicit Characteristic(const Uuid& uuid,
 							uint8_t properties,
-							uint16_t value_handle,
-							uint16_t declaration_handle = 0);
+							uint16_t declaration_handle,
+							uint16_t value_handle);
 
 	/**
 	 * @brief Construct a Characteristic by moving parsed attributes.

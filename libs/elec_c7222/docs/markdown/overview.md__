@@ -1,0 +1,8 @@
+# ELEC-C7222 Library
+
+The `libs/elec_c7222` library provides shared course infrastructure. It includes four major subsystems:
+
+1. Devices: hardware abstraction for GPIO, LEDs, buttons, and board helpers.
+2. BLE: a C++ wrapper around BTstack with GAP/GATT helpers and profile tooling.
+3. FreeRTOS Wrappers: C++ wrappers for FreeRTOS primitives with platform-specific implementations.
+4. Utils: common utilities such as copy/move policy helpers.

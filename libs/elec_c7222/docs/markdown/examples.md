@@ -1,9 +1,9 @@
 # ELEC-C7222 Library Examples
 
 <div style="display:none">
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2security-manager
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2custom-service-rw
-\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2custom-service-notify
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2security-manager "ELEC-C7222 Library Examples: Security Manager Example"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2custom-service-rw "ELEC-C7222 Library Examples: Custom Service READ + WRITE Example"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2examples_2custom-service-notify "ELEC-C7222 Library Examples: Custom Service NOTIFY Example"
 </div>
 
 

@@ -84,8 +84,9 @@ static void timer_callback() {
 		if(att_server->IsConnected()) {
 			temperature_characteristic->SetValue(temp_fixed_point);
 		}
+		std::printf("Timer Callback: Updated temperature to %.2f C (raw: 0x%04x)\n", temperature_c, temp_fixed_point);
 	} else {
-		printf("Timer Callback: T = %.2f C\n", temperature_c);
+		std::printf("Timer Callback: T = %.2f C\n", temperature_c);
 	}
 }
 
@@ -143,6 +144,16 @@ static void on_turn_on() {
 	(void) params;
 	
 	static uint32_t seconds = 0;
+	// intialize the Onboard LED and the on-chip temperature sensor, which will 
+	// be used in the timer callback and characteristic updates.
+	onboard_led = c7222::OnBoardLED::GetInstance();
+	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
+
+	// initialize the onboard led and the temperature sensor
+	assert(temp_sensor != nullptr && "Temp sensor pointer is null at init call!");
+	assert(onboard_led != nullptr && "Onboard led instance is null at init call!");
+	temp_sensor->Initialize();
+	onboard_led->Initialize();
 
 	// Timer used for periodic temperature updates.
 	app_timer.Initialize("AppTimer",
@@ -268,14 +279,6 @@ static void on_turn_on() {
 		assert(false && "Failed to initialize CYW43 architecture");
 	}
 
-	onboard_led = c7222::OnBoardLED::GetInstance();
-	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
-
-	// initialize the onboard led and the temperature sensor
-	assert(temp_sensor != nullptr && "Temp sensor pointer is null at init call!");
-	assert(onboard_led != nullptr && "Onboard led instance is null at init call!");
-	temp_sensor->Initialize();
-	onboard_led->Initialize();
 	
 	printf("Starting FreeRTOS BLE Example...\n");
 

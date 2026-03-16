@@ -1,4 +1,4 @@
-# Utils Overview
+# ELEC-C7222 Utility API
 
 This document summarizes the `libs/elec_c7222/utils` utilities layer. These helpers provide small, reusable building blocks used across the course codebase.
 
@@ -23,4 +23,3 @@ Purpose:
 5. `CopyableOnly`: allows copy but forbids move (convenience base).
 
 These base classes are intended for hardware handles, singleton-like services, and objects that must not be duplicated or relocated.
-

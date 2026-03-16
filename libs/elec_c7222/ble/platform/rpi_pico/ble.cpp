@@ -136,7 +136,7 @@ BleError Ble::DispatchBleHciPacket(uint8_t packet_type,
 			}
 			return BleError::kSuccess;
 		// the following must be return immediately since we are not handling them
-		case HCI_EVENT_COMMAND_COMPLETE:
+		// case HCI_EVENT_COMMAND_COMPLETE: // --> This is needed to process command complete events for the GAP layer, so it cannot be ignored here.
 		case HCI_EVENT_TRANSPORT_READY:
 		case HCI_EVENT_TRANSPORT_PACKET_SENT:
 		case HCI_EVENT_TRANSPORT_SLEEP_MODE:

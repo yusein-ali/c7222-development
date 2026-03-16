@@ -1,11 +1,15 @@
-# ELEC-C7222 Embedded Development Project
+# ELEC-C7222 Embedded C++ Library
 
 
 <!--
 Doxygen subpages (hidden from GitHub renderer)
 \subpage md_doc_2markdown_2getting-started "Getting Started"
 \subpage md_doc_2markdown_2building "Building The Project"
-\subpage md_libs_2elec__c7222_2docs_2markdown_2overview "ELEC-C7222 Library Overview"
+\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2overview "ELEC-C7222 Devices API"
+\subpage md_libs_2elec__c7222_2freertos__wrappers_2doc_2overview "ELEC-C7222 FreeRTOS Wrappers"
+\subpage md_libs_2elec__c7222_2utils_2doc_2markdown_2overview "ELEC-C7222 Utility API"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2overview "ELEC-C7222 BLE API"
+\subpage md_libs_2elec__c7222_2docs_2markdown_2examples "ELEC-C7222 Library Examples"
 -->
 
 
@@ -92,9 +96,6 @@ Library board support targets the **ELEC-C7222 Pico2W board**. Board-specific de
 
 - [`libs/elec_c7222/devices/doc/markdown/c7222_board.md`](libs/elec_c7222/devices/doc/markdown/c7222_board.md)
 
-Reference:
-
-- [`libs/elec_c7222/docs/markdown/overview.md`](libs/elec_c7222/docs/markdown/overview.md)
 
 ## External FreeRTOS-Related Developments in `libs/`
 
@@ -154,5 +155,9 @@ Comments, feedback, and suggestions are welcome.
 <!-- Doxygen subpages (not used by GitHub) -->
 \subpage md_doc_2markdown_2getting-started "Getting Started"
 \subpage md_doc_2markdown_2building "Building The Project"
-\subpage md_libs_2elec__c7222_2docs_2markdown_2overview "ELEC-C7222 Library Overview"
+\subpage md_libs_2elec__c7222_2devices_2doc_2markdown_2overview "ELEC-C7222 Devices API"
+\subpage md_libs_2elec__c7222_2freertos__wrappers_2doc_2overview "ELEC-C7222 FreeRTOS Wrappers"
+\subpage md_libs_2elec__c7222_2utils_2doc_2markdown_2overview "ELEC-C7222 Utility API"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2overview "ELEC-C7222 BLE API"
+\subpage md_libs_2elec__c7222_2docs_2markdown_2examples "ELEC-C7222 Library Examples"
 </div>

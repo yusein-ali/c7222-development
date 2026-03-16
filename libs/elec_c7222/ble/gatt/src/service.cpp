@@ -246,9 +246,12 @@ Characteristic& Service::AddCharacteristic(Characteristic&& characteristic) {
 
 Characteristic& Service::CreateCharacteristic(const Uuid& uuid,
 											  uint8_t properties,
-											  uint16_t value_handle,
-											  uint16_t declaration_handle) {
-	characteristics_.emplace_back(uuid, properties, value_handle, declaration_handle);
+											  uint16_t declaration_handle,
+											  uint16_t value_handle) {
+	characteristics_.emplace_back(uuid,
+								  properties,
+								  declaration_handle,
+								  value_handle);
 	return characteristics_.back();
 }
 

@@ -1,4 +1,4 @@
-# Comprehensive GATT Development Guide for Pico BTstack
+# BLE Library Design Overview: Creating GATT Profiles: Comprehensive GATT Development Guide for Pico BTstack
 
 This document provides a full reference for defining, generating, and integrating BLE GATT services on the Raspberry Pi Pico using the BTstack framework. It assumes you are comfortable with embedded C/C++, binary layouts, and the BLE ATT/GATT model.
 

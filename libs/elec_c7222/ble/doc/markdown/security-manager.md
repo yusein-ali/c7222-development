@@ -1,4 +1,4 @@
-# Security Manager Module Overview
+# BLE Library Design Overview: Security Manager Module Overview
 
 This module encapsulates BTstack’s Security Manager (SM) configuration and event handling. It provides a structured C++ interface for pairing, authentication, and authorization workflows.
 

@@ -278,11 +278,15 @@ class Attribute : public MovableOnly {
 
 	/**
 	 * @brief Create a Primary Service Declaration with a service UUID payload.
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute PrimaryServiceDeclaration(const Uuid& service_uuid, uint16_t handle = 0);
 
 	/**
 	 * @brief Create a Secondary Service Declaration with a service UUID payload.
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute SecondaryServiceDeclaration(const Uuid& service_uuid, uint16_t handle = 0);
 
@@ -292,6 +296,8 @@ class Attribute : public MovableOnly {
 	 * @param end_handle Last attribute handle of the included service
 	 * @param service_uuid Included service UUID (16-bit or 128-bit)
 	 * @param handle Optional attribute handle (0 = auto-assign)
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute IncludedServiceDeclaration(uint16_t start_handle,
 												uint16_t end_handle,
@@ -304,6 +310,8 @@ class Attribute : public MovableOnly {
 	 * @param value_handle Handle of the characteristic value attribute
 	 * @param characteristic_uuid Characteristic UUID (16-bit or 128-bit)
 	 * @param handle Optional attribute handle (0 = auto-assign)
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute CharacteristicDeclaration(uint8_t properties,
 											   uint16_t value_handle,
@@ -322,17 +330,23 @@ class Attribute : public MovableOnly {
 
 	/**
 	 * @brief Create a Characteristic User Description with a UTF-8 string.
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute CharacteristicUserDescription(const std::string& description,
 												   uint16_t handle = 0);
 
 	/**
 	 * @brief Create a Characteristic Extended Properties with a 16-bit value.
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute CharacteristicExtendedProperties(uint16_t value, uint16_t handle = 0);
 
 	/**
 	 * @brief Create a Characteristic Presentation Format payload (0x2904).
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute CharacteristicPresentationFormat(uint8_t format,
 													  int8_t exponent,
@@ -343,6 +357,8 @@ class Attribute : public MovableOnly {
 
 	/**
 	 * @brief Create a Characteristic Aggregate Format from a list of handles.
+	 * @note This factory synthesizes the payload in memory and therefore returns
+	 * an Attribute with dynamic-backed owned storage.
 	 */
 	static Attribute CharacteristicAggregateFormat(const std::vector<uint16_t>& handles,
 												   uint16_t handle = 0);
@@ -708,8 +724,8 @@ class Attribute : public MovableOnly {
 	 * - Always nullptr
 	 * - Value stored in dynamic_value_ vector instead
 	 *
-	 * @note This pointer is NOT owned by Attribute unless SetStaticValue()
-	 *       is used, in which case it points into static_value_storage_.
+	 * @note This pointer is not owned by Attribute. The referenced storage must
+	 *       remain valid for the lifetime of the Attribute or until replaced.
 	 */
 	const uint8_t* static_value_ptr_ = nullptr;
 
