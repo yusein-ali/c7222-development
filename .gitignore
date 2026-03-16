@@ -28,5 +28,6 @@ site/
 !.vscode/*
 
 libs/FreeRTOS-Kernel/*
+libs/FreeRTOS_cpp11/*
+libs/picotool/*
 compile_commands.json
-libs/FreeRTOS-Kernel/

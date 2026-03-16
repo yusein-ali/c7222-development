@@ -10,17 +10,22 @@ if (DEFINED ENV{FREERTOS_KERNEL_PATH} AND (NOT FREERTOS_KERNEL_PATH))
     message("Using FREERTOS_KERNEL_PATH from environment ('${FREERTOS_KERNEL_PATH}')")
 endif ()
 
-# If no path provided, prefer a workspace-local checkout under libs/FreeRTOS-Kernel; clone and init submodules when absent
+# If no path provided, prefer the shared c7222-development checkout under libs/FreeRTOS-Kernel.
 if ((NOT FREERTOS_KERNEL_PATH OR FREERTOS_KERNEL_PATH STREQUAL "") AND DEFINED CMAKE_SOURCE_DIR)
-    set(_freertos_kernel_local_path ${CMAKE_SOURCE_DIR}/libs/FreeRTOS-Kernel)
+    if(DEFINED C7222_DEVELOPMENT_LIBS_DIR)
+        set(_freertos_kernel_libs_dir ${C7222_DEVELOPMENT_LIBS_DIR})
+    else()
+        get_filename_component(_freertos_kernel_libs_dir "${CMAKE_CURRENT_LIST_DIR}/../libs" ABSOLUTE)
+    endif()
+    set(_freertos_kernel_local_path ${_freertos_kernel_libs_dir}/FreeRTOS-Kernel)
     if (EXISTS ${_freertos_kernel_local_path})
         set(FREERTOS_KERNEL_PATH ${_freertos_kernel_local_path})
         message(STATUS "Using existing FreeRTOS-Kernel at ${_freertos_kernel_local_path}")
     else()
-        file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/libs)
+        file(MAKE_DIRECTORY ${_freertos_kernel_libs_dir})
         execute_process(
             COMMAND git clone --recurse-submodules --depth 1 https://github.com/FreeRTOS/FreeRTOS-Kernel.git ${_freertos_kernel_local_path}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            WORKING_DIRECTORY ${_freertos_kernel_libs_dir}
             RESULT_VARIABLE freertos_clone_result
             ERROR_VARIABLE freertos_clone_error
         )
@@ -47,6 +52,7 @@ if ((NOT FREERTOS_KERNEL_PATH OR FREERTOS_KERNEL_PATH STREQUAL "") AND DEFINED C
         endif()
     endif()
     unset(_freertos_port_dir)
+    unset(_freertos_kernel_libs_dir)
     unset(_freertos_kernel_local_path)
 endif()
 
