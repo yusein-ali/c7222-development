@@ -3,6 +3,9 @@ include_guard(GLOBAL)
 # Resolve stable paths once for all helpers in this module.
 set(C7222_DEVELOPMENT_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 get_filename_component(C7222_DEVELOPMENT_ROOT_DIR "${C7222_DEVELOPMENT_CMAKE_DIR}/.." ABSOLUTE)
+set(C7222_DEVELOPMENT_LIBS_DIR "${C7222_DEVELOPMENT_ROOT_DIR}/libs")
+set(C7222_PICOTOOL_INSTALL_ROOT "${C7222_DEVELOPMENT_LIBS_DIR}/picotool")
+set(C7222_PICOTOOL_CONFIG_DIR "${C7222_PICOTOOL_INSTALL_ROOT}/picotool")
 
 # -----------------------------------------------------------------------------
 # c7222_prepare_pre_project
@@ -27,6 +30,16 @@ get_filename_component(C7222_DEVELOPMENT_ROOT_DIR "${C7222_DEVELOPMENT_CMAKE_DIR
 #   c7222_prepare_pre_project()
 #   project(my_app C CXX ASM)
 macro(c7222_prepare_pre_project)
+    # Reuse a shared picotool install across all workspace projects when present.
+    if(EXISTS "${C7222_PICOTOOL_CONFIG_DIR}/picotool-config.cmake")
+        set(picotool_DIR "${C7222_PICOTOOL_CONFIG_DIR}" CACHE PATH
+            "Path to the shared picotool package config directory" FORCE)
+    endif()
+
+    # If picotool is missing, fetch/build it once into c7222-development/libs.
+    set(PICOTOOL_FETCH_FROM_GIT_PATH "${C7222_PICOTOOL_INSTALL_ROOT}" CACHE PATH
+        "Directory where Pico SDK should install picotool" FORCE)
+
     # Configure compiler/toolchain defaults and PATH handling.
     include("${C7222_DEVELOPMENT_CMAKE_DIR}/pico-compiler-settings.cmake")
     # Import Pico SDK.
