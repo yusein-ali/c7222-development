@@ -19,12 +19,9 @@ bool OnBoardLED::Initialize() {
 	state_ = false;
 	return true;
 #elif defined(CYW43_WL_GPIO_LED_PIN)
-	if (!Platform::GetInstance()->EnsureArchInitialized()) {
-		initialized_ = false;
-		return false;
-	}
-	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, false);
+	// initialize the CYW43 architecture if not already done by the platform (e.g., for BLE usage).
 	initialized_ = true;
+	Set(false);
 	state_ = false;
 	return true;
 #else
@@ -35,6 +32,9 @@ bool OnBoardLED::Initialize() {
 
 void OnBoardLED::Set(bool on) {
 	if(!initialized_) {
+		return;
+	}
+	if(!Platform::GetInstance()->EnsureArchInitialized()) {
 		return;
 	}
 #if defined(PICO_DEFAULT_LED_PIN)

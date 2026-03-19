@@ -28,8 +28,8 @@ static TimerHandle_t cyw43_init_timer = nullptr;
 
 static void cyw43_arch_init_timer_callback(TimerHandle_t timer) {
 	(void)timer;
-	timer_run = true;
 	auto* platform = c7222::Platform::GetInstance();
+	timer_run = true;
 	(void)platform->EnsureArchInitialized();
 	if(cyw43_init_timer){
 		(void) xTimerDelete(cyw43_init_timer, 0);
@@ -49,21 +49,20 @@ bool Platform::EnsureArchInitialized() {
 	if (arch_initialized_) {
 		return true;
 	}
-	stdio_init_all();
 	#if !defined(C7222_ENABLE_BLE)
 		timer_run = true;
 	#endif
 	#if C7222_HAS_FREERTOS
-		if(timer_run) {
-			if(cyw43_arch_init() != 0) {
-				timer_run = false;
-				arch_initialized_ = false;
-				return false;
-			}
-			arch_initialized_ = true;
-			return true;
-	}
-	else {
+	if(timer_run) {
+		if(cyw43_arch_init() != 0) {
+			timer_run = false;
+			arch_initialized_ = false;
+			return false;
+		}
+		arch_initialized_ = true;
+		return true;
+	} else {
+		stdio_init_all();
 		if(!cyw43_init_timer_started) {
 			if(!cyw43_init_timer) {
 				cyw43_init_timer = xTimerCreate("cyw43_init",
@@ -85,7 +84,7 @@ bool Platform::EnsureArchInitialized() {
 			return true;
 		} else {
 			uint32_t wait_ms = 0;
-			while(timer_run == false) {
+			while(arch_initialized_ == false) {
 				vTaskDelay(pdMS_TO_TICKS(10));
 				wait_ms += 10;
 				if(wait_ms > 5000) {
@@ -96,15 +95,17 @@ bool Platform::EnsureArchInitialized() {
 			return arch_initialized_;
 		}
 	}
-#else // no freertos, safe to init directly
-		if (cyw43_arch_init() != 0) {
-			arch_initialized_ = false;
-			return false;
-		}
+	#else // no freertos, safe to init directly
+	stdio_init_all();
+	if(cyw43_arch_init() != 0) {
+		arch_initialized_ = false;
+		return false;
+	}
 		arch_initialized_ = true;
 	return true;
 	#endif
 #else // no cyw43, just mark as initialized
+	stdio_init_all();
 	arch_initialized_ = true;
 	return true;
 #endif

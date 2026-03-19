@@ -1,7 +1,7 @@
 #include "ble.hpp"
 
 #include <cassert>
-
+#include "platform.hpp"
 namespace c7222 {
 
 Ble* Ble::instance_ = nullptr;
@@ -11,6 +11,12 @@ Ble* Ble::GetInstance(bool enable_hci_logging) {
 		instance_ = new Ble();
 	}
 	assert(instance_ != nullptr && "Failed to allocate Ble singleton instance");
+	// make sure that platform is initialized before enabling HCI logging, as it may be required for logging to work properly.
+	auto* platform = Platform::GetInstance();
+	assert(platform != nullptr && "Platform singleton instance is null in Ble::GetInstance");
+	const bool platform_initialized = platform->EnsureArchInitialized();
+	assert(platform_initialized && "Failed to initialize platform in Ble::GetInstance");
+	// Enable HCI logging if requested (requires platform initialization).
 	if(enable_hci_logging) {
 		instance_->EnableHCILoggingToStdout();
 	}

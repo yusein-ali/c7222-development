@@ -100,7 +100,6 @@ static void on_turn_on() {
 	auto& adb = ble->GetAdvertisementDataBuilder();
 
 	onboard_led->Initialize();
-	c7222::FreeRtosTask::Delay(100);	// Ensure LED is ready before BLE turns on.
 	// Register the stack-on callback and power up the BLE stack.
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
