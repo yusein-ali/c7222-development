@@ -3,9 +3,6 @@ include_guard(GLOBAL)
 # Resolve stable paths once for all helpers in this module.
 set(C7222_DEVELOPMENT_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 get_filename_component(C7222_DEVELOPMENT_ROOT_DIR "${C7222_DEVELOPMENT_CMAKE_DIR}/.." ABSOLUTE)
-set(C7222_DEVELOPMENT_LIBS_DIR "${C7222_DEVELOPMENT_ROOT_DIR}/libs")
-set(C7222_PICOTOOL_INSTALL_ROOT "${C7222_DEVELOPMENT_LIBS_DIR}/picotool")
-set(C7222_PICOTOOL_CONFIG_DIR "${C7222_PICOTOOL_INSTALL_ROOT}/picotool")
 
 # -----------------------------------------------------------------------------
 # c7222_prepare_pre_project
@@ -30,16 +27,6 @@ set(C7222_PICOTOOL_CONFIG_DIR "${C7222_PICOTOOL_INSTALL_ROOT}/picotool")
 #   c7222_prepare_pre_project()
 #   project(my_app C CXX ASM)
 macro(c7222_prepare_pre_project)
-    # Reuse a shared picotool install across all workspace projects when present.
-    if(EXISTS "${C7222_PICOTOOL_CONFIG_DIR}/picotool-config.cmake")
-        set(picotool_DIR "${C7222_PICOTOOL_CONFIG_DIR}" CACHE PATH
-            "Path to the shared picotool package config directory" FORCE)
-    endif()
-
-    # If picotool is missing, fetch/build it once into c7222-development/libs.
-    set(PICOTOOL_FETCH_FROM_GIT_PATH "${C7222_PICOTOOL_INSTALL_ROOT}" CACHE PATH
-        "Directory where Pico SDK should install picotool" FORCE)
-
     # Configure compiler/toolchain defaults and PATH handling.
     include("${C7222_DEVELOPMENT_CMAKE_DIR}/pico-compiler-settings.cmake")
     # Import Pico SDK.
@@ -140,16 +127,6 @@ function(c7222_define_development_interface)
         )
     endif()
 
-    # Keep flash TLV settings deterministic and visible at configure time.
-    set(PICO_FLASH_BANK_TOTAL_SIZE 8192)
-    if(DEFINED PICO_FLASH_SIZE_BYTES)
-        math(EXPR PICO_FLASH_BANK_STORAGE_OFFSET_VALUE "${PICO_FLASH_SIZE_BYTES} - ${PICO_FLASH_BANK_TOTAL_SIZE}")
-        message(STATUS "BTstack flash bank size: ${PICO_FLASH_BANK_TOTAL_SIZE} bytes")
-        message(STATUS "BTstack flash bank storage offset: ${PICO_FLASH_BANK_STORAGE_OFFSET_VALUE} (flash size ${PICO_FLASH_SIZE_BYTES})")
-    else()
-        message(WARNING "PICO_FLASH_SIZE_BYTES is not defined; using default TLV storage macro expression.")
-        set(PICO_FLASH_BANK_STORAGE_OFFSET_VALUE "PICO_FLASH_SIZE_BYTES-PICO_FLASH_BANK_TOTAL_SIZE")
-    endif()
 
     # Export shared compile definitions for FreeRTOS C++ and board defaults.
     target_compile_definitions(c7222_development INTERFACE
@@ -157,11 +134,9 @@ function(c7222_define_development_interface)
         _GLIBCXX_USE_C99_STDINT_TR1=1
         PICO_DEFAULT_UART_BAUD_RATE=921600
         CYW43_LWIP=0
-        PICO_FLASH_BANK_TOTAL_SIZE=${PICO_FLASH_BANK_TOTAL_SIZE}
-        PICO_FLASH_BANK_STORAGE_OFFSET=${PICO_FLASH_BANK_STORAGE_OFFSET_VALUE}
         $<$<BOOL:${C7222_ENABLE_BLE}>:C7222_ENABLE_BLE=1>
         $<$<BOOL:${C7222_BLE_DEBUG}>:C7222_BLE_DEBUG=1>
-    )
+        )
 endfunction()
 
 # -----------------------------------------------------------------------------

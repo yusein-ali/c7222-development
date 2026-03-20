@@ -7,6 +7,9 @@
 #include "pico/stdlib.h"
 #include "pico/time.h"
 #include "pico/cyw43_arch.h"
+#include "ble/le_device_db_tlv.h"
+#include "btstack_tlv.h"
+#include "btstack_tlv_none.h"
 
 #include "c7222_pico_w_board.hpp"
 
@@ -36,6 +39,17 @@ static void cyw43_arch_init_timer_callback(TimerHandle_t timer) {
 		cyw43_init_timer = nullptr;
 	}
 }
+void DisableBtstackPersistenceStorage() {
+	static bool persistence_disabled = false;
+	if(persistence_disabled) {
+		return;
+	}
+
+	const btstack_tlv_t* tlv_none = btstack_tlv_none_init_instance();
+	btstack_tlv_set_instance(tlv_none, nullptr);
+	le_device_db_tlv_configure(tlv_none, nullptr);
+	persistence_disabled = true;
+}
 #endif
 #endif
 
@@ -59,6 +73,7 @@ bool Platform::EnsureArchInitialized() {
 			arch_initialized_ = false;
 			return false;
 		}
+		DisableBtstackPersistenceStorage();
 		arch_initialized_ = true;
 		return true;
 	} else {
