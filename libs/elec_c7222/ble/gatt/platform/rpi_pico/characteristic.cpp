@@ -97,7 +97,8 @@ BleError Characteristic::DispatchEvent(EventId event_id,
 		// Call OnConfirmationComplete on all registered event handlers
 		for(auto* handler: event_handlers_) {
 			if(handler) {
-				handler->OnConfirmationReceived(status != 0);
+				handler->OnIndicationComplete(status);
+				handler->OnConfirmationReceived(status == ERROR_CODE_SUCCESS);
 			}
 		}
 		break;

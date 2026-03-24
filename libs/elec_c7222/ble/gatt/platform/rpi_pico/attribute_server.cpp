@@ -135,6 +135,18 @@ int att_write_callback(hci_con_handle_t connection_handle,
 	return ATT_ERROR_UNLIKELY_ERROR;
 }
 
+void att_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* packet, uint16_t size) {
+	(void)channel;
+	auto* server = AttributeServer::GetInstance();
+	if(server == nullptr) {
+		return;
+	}
+	std::printf("[BLE] AttributeServer:att_packet_handler received packet type=0x%02x size=%u\n",
+		static_cast<unsigned>(packet_type),
+		static_cast<unsigned>(size));
+	(void)server->DispatchBleHciPacket(packet_type, packet, size);
+}
+
 }  // namespace
 
 BleError AttributeServer::Init(const void* context) {
@@ -170,6 +182,7 @@ BleError AttributeServer::Init(const void* context) {
 
 	// Register ATT read/write callbacks with BTstack using the ATT DB blob.
 	att_server_init(att_db, att_read_callback, att_write_callback);
+	att_server_register_packet_handler(att_packet_handler);
 	initialized_ = true;
 	return BleError::kSuccess;
 }

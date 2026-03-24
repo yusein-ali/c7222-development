@@ -381,7 +381,10 @@ class Characteristic final : public MovableOnly {
 		 *
 		 * This callback is invoked when a client writes to the CCCD to enable
 		 * updates for this characteristic.
-		 * The CCCD value has already been written when this fires.
+		 * The CCCD write has been validated, but the stored descriptor value is
+		 * committed only after the write callback returns. Use the
+		 * @p is_indication argument to understand the requested mode instead of
+		 * querying the CCCD inside this callback.
 		 *
 		 * @param is_indication true if indications are enabled, false if notifications are enabled
 		 */
@@ -393,7 +396,8 @@ class Characteristic final : public MovableOnly {
 		 *
 		 * This callback is invoked when a client writes to the CCCD to disable
 		 * updates for this characteristic (or writes 0x0000).
-		 * The CCCD value has already been written when this fires.
+		 * The CCCD write has been validated, but the stored descriptor value is
+		 * committed only after the write callback returns.
 		 */
 		virtual void OnUpdatesDisabled() {
 		}

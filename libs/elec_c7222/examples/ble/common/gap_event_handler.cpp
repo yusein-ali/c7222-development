@@ -17,6 +17,7 @@ void GapEventHandler::OnScanRequestReceived(uint8_t advertising_handle,
 
 void GapEventHandler::OnAdvertisingStart(uint8_t status) const {
 	(void)status;
+	std::printf("GAP event: AdvertisingStart (status=0x%02X)\n", status);
 }
 
 void GapEventHandler::OnAdvertisingEnd(uint8_t status,

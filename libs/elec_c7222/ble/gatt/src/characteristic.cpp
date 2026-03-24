@@ -877,8 +877,6 @@ BleError Characteristic::HandleCccdWrite(uint16_t offset, const uint8_t* data, u
 
 	uint16_t new_config = *reinterpret_cast<const uint16_t*>(data);
 
-	// cccd_->SetValue(data+offset, size-offset);
-
 	bool old_notify = (old_config & static_cast<uint16_t>(CCCDProperties::kNotifications)) != 0;
 	bool old_indicate = (old_config & static_cast<uint16_t>(CCCDProperties::kIndications)) != 0;
 	bool new_notify = (new_config & static_cast<uint16_t>(CCCDProperties::kNotifications)) != 0;
