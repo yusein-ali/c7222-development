@@ -1047,6 +1047,9 @@ class Gap : public NonCopyableNonMovable {
 
 	/**
 	 * @brief Set legacy advertising data payload.
+	 *
+	 * The payload is copied into the internal advertisement data builder and
+	 * then applied to BTstack immediately.
 	 */
 	void SetAdvertisingData(const uint8_t* data, size_t size);
 

@@ -148,13 +148,13 @@ The `Gap` class supports live updates to advertising and scan response data. Whe
 - `SetAdvertisingData(...)`
 - `SetScanResponseData(...)`
 
-it will:
+the implementation copies the payload into local storage and then forwards it
+to BTstack. On the Pico port:
 
-1. Stop advertising if it is currently active.
-2. Apply the new data through the BTstack API.
-3. Restart advertising if it was previously running.
+1. `SetAdvertisingData(...)` applies the new advertising payload directly.
+2. `SetScanResponseData(...)` stops and restarts advertising if needed before applying the new scan response payload.
 
-This ensures that the controller always sees a consistent payload without requiring the application to manually stop and restart advertising.
+This means scan response updates preserve the previous advertising state automatically, while advertising data updates are pushed without an explicit stop/start cycle in the wrapper.
 
 ### Typical Flow
 
@@ -169,10 +169,8 @@ ad.add(c7222::AdvertisementDataType::kFlags,
 ad.add(c7222::AdvertisementDataType::kCompleteLocalName, "PicoW-BLE");
 
 // Apply at runtime
-const bool ok = gap.SetAdvertisingData(ad);
-if(ok) {
-    gap.StartAdvertising();
-}
+gap.SetAdvertisingData(ad);
+gap.StartAdvertising();
 ```
 
 ### Updating While Advertising
@@ -182,7 +180,7 @@ if(ok) {
 c7222::AdvertisementDataBuilder ad;
 ad.add(c7222::AdvertisementDataType::kCompleteLocalName, "PicoW-BLE-v2");
 
-gap.SetAdvertisingData(ad); // internally stops + restarts if needed
+gap.SetAdvertisingData(ad); // updates the advertising payload in BTstack
 ```
 
 ### Basic Types and Payload Support

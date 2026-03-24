@@ -58,23 +58,13 @@ void Gap::SetAdvertisingParameters(const AdvertisementParameters& params) {
 }
 
 void Gap::SetAdvertisingData(const uint8_t* data, size_t size) {
-	const bool was_advertising = IsAdvertisingEnabled();
-	if(was_advertising) {
-		StopAdvertising();
-	}
-	// generate a local copy of the data to retain it
 	advertisement_data_builder_.Set(data, size);
 	advertising_data_set_ = true;
 
-
 	const auto& adv_data = advertisement_data_builder_.data();
-	auto* payload = adv_data.empty() ? nullptr : adv_data.data();
+	const auto* payload = adv_data.empty() ? nullptr : adv_data.data();
 	gap_advertisements_set_data(static_cast<uint8_t>(adv_data.size()),
 								const_cast<uint8_t*>(payload));
-
-	if(was_advertising) {
-		StartAdvertising();
-	}
 }
 
 void Gap::SetScanResponseData(uint8_t length, const uint8_t* data) {
