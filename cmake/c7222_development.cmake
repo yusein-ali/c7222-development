@@ -112,7 +112,6 @@ function(c7222_define_development_interface)
     # Export common dependency link set.
     target_link_libraries(c7222_development INTERFACE
         pico_stdlib
-        pico_cyw43_arch_sys_freertos
         hardware_adc
         hardware_clocks
         hardware_pwm
@@ -120,11 +119,24 @@ function(c7222_define_development_interface)
         ELEC_C7222
     )
 
+    if(C7222_PLATFORM STREQUAL "rpi_pico2w" OR PLATFORM_HAS_CYW43)
+        target_link_libraries(c7222_development INTERFACE
+            pico_cyw43_arch_sys_freertos
+        )
+        target_compile_definitions(c7222_development INTERFACE
+            CYW43_LWIP=0
+        )
+    endif()
+
     if(C7222_ENABLE_BLE)
         target_link_libraries(c7222_development INTERFACE
             pico_btstack_ble
-            pico_btstack_cyw43
         )
+        if(C7222_PLATFORM STREQUAL "rpi_pico2w" OR PLATFORM_HAS_CYW43)
+            target_link_libraries(c7222_development INTERFACE
+                pico_btstack_cyw43
+            )
+        endif()
     endif()
 
 
@@ -133,7 +145,6 @@ function(c7222_define_development_interface)
         _GLIBCXX_HAS_GTHREADS=1
         _GLIBCXX_USE_C99_STDINT_TR1=1
         PICO_DEFAULT_UART_BAUD_RATE=921600
-        CYW43_LWIP=0
         $<$<BOOL:${C7222_ENABLE_BLE}>:C7222_ENABLE_BLE=1>
         $<$<BOOL:${C7222_BLE_DEBUG}>:C7222_BLE_DEBUG=1>
         )
