@@ -1,3 +1,8 @@
+if(NOT C7222_HAS_PICO_W_BOARD)
+    message(STATUS "Skipping FreeRTOS device C++ example (requires PICO_BOARD=pico2_w)")
+    return()
+endif()
+
 add_library(C7222_EXAMPLE_FREERTOS_DEVICE_CPP INTERFACE)
 set_property(TARGET C7222_EXAMPLE_FREERTOS_DEVICE_CPP PROPERTY TARGET_NAME "example-freertos-device-cpp")
 set_property(TARGET C7222_EXAMPLE_FREERTOS_DEVICE_CPP PROPERTY TARGET_PATH "${CMAKE_CURRENT_LIST_DIR}")

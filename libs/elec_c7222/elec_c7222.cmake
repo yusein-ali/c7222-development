@@ -24,11 +24,34 @@ elseif(C7222_PLATFORM STREQUAL "grader")
 elseif(C7222_PLATFORM STREQUAL "rp2350_custom_board")
     set(C7222_PLATFORM_SOURCE_DIR rp2350_custom_board)
     set(C7222_PLATFORM_USES_PICO_SDK TRUE)
-    option(PLATFORM_HAS_CYW43 "Platform has a CYW43 wireless chip" ON)
+    option(PLATFORM_HAS_CYW43 "Platform has a CYW43 wireless chip" OFF)
+endif()
+
+if(C7222_PLATFORM_USES_PICO_SDK)
+    set(C7222_SUPPORTED_PICO_BOARDS pico pico2 pico_w pico2_w)
+    string(REPLACE ";" ", " C7222_SUPPORTED_PICO_BOARDS_MESSAGE "${C7222_SUPPORTED_PICO_BOARDS}")
+    list(FIND C7222_SUPPORTED_PICO_BOARDS "${PICO_BOARD}" C7222_PICO_BOARD_INDEX)
+    if(C7222_PICO_BOARD_INDEX EQUAL -1)
+        message(FATAL_ERROR
+            "C7222 Pico SDK platforms require PICO_BOARD to be one of: "
+            "${C7222_SUPPORTED_PICO_BOARDS_MESSAGE}. Current PICO_BOARD='${PICO_BOARD}'.")
+    endif()
+endif()
+
+set(C7222_HAS_PICO_W_BOARD FALSE)
+set(C7222_HAS_ONBOARD_LED FALSE)
+if(C7222_PLATFORM_USES_PICO_SDK AND PICO_BOARD STREQUAL "pico2_w")
+    set(C7222_HAS_PICO_W_BOARD TRUE)
+    set(C7222_HAS_ONBOARD_LED TRUE)
+elseif(C7222_PLATFORM STREQUAL "grader")
+    set(C7222_HAS_ONBOARD_LED TRUE)
 endif()
 
 message(STATUS "C7222_PLATFORM is defined: ${C7222_PLATFORM}")
 message(STATUS "PLATFORM_HAS_CYW43 is defined: ${PLATFORM_HAS_CYW43}")
+message(STATUS "C7222_PLATFORM_USES_PICO_SDK is defined: ${C7222_PLATFORM_USES_PICO_SDK}")
+message(STATUS "C7222_HAS_PICO_W_BOARD is defined: ${C7222_HAS_PICO_W_BOARD}")
+message(STATUS "C7222_HAS_ONBOARD_LED is defined: ${C7222_HAS_ONBOARD_LED}")
 
 # Determine whether BLE support is enabled
 if (NOT DEFINED C7222_ENABLE_BLE)
@@ -42,7 +65,7 @@ if (NOT DEFINED C7222_ENABLE_BLE)
 endif()
 
 message(STATUS "C7222_ENABLE_BLE is defined: ${C7222_ENABLE_BLE}")
-message(STATUS "C7222_ENABLE_BLE_DEBUG is defined: ${C7222_BLE_DEBUG}" )
+message(STATUS "C7222_BLE_DEBUG is defined: ${C7222_BLE_DEBUG}" )
 # Immediate child modules
 include(${ELEC_C7222_DIR}/devices/devices.cmake)
 include(${ELEC_C7222_DIR}/utils/utils.cmake)

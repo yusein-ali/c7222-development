@@ -7,6 +7,11 @@ if(NOT C7222_ENABLE_BLE)
     return()
 endif()
 
+if(NOT C7222_HAS_ONBOARD_LED)
+    message(STATUS "Skipping BLE GATT SERVER example (requires an on-board LED backend)")
+    return()
+endif()
+
 add_library(C7222_EXAMPLE_BLE_GATT_SERVER INTERFACE)
 set_property(TARGET C7222_EXAMPLE_BLE_GATT_SERVER PROPERTY TARGET_NAME "example-ble-gatt-server")
 set_property(TARGET C7222_EXAMPLE_BLE_GATT_SERVER PROPERTY TARGET_PATH "${CMAKE_CURRENT_LIST_DIR}")

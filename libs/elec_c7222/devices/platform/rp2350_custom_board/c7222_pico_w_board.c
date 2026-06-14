@@ -4,7 +4,7 @@
 
 #include "hardware/gpio.h"
 
-#if defined(CYW43_WL_GPIO_LED_PIN)
+#if defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 #include "pico/cyw43_arch.h"
 #endif
 
@@ -115,7 +115,7 @@ bool c7222_pico_w_onboard_led_init(void) {
 	gpio_put(PICO_DEFAULT_LED_PIN, 0);
 	pico_w_onboard_led_initialized = true;
 	return true;
-#elif defined(CYW43_WL_GPIO_LED_PIN)
+#elif defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, false);
 	pico_w_onboard_led_initialized = true;
 	return true;
@@ -129,7 +129,7 @@ void c7222_pico_w_onboard_led_set(bool on) {
 		   "c7222_pico_w_onboard_led_set: call c7222_pico_w_onboard_led_init() first");
 #if defined(PICO_DEFAULT_LED_PIN)
 	gpio_put(PICO_DEFAULT_LED_PIN, on);
-#elif defined(CYW43_WL_GPIO_LED_PIN)
+#elif defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, on);
 #else
 	(void) on;
@@ -160,7 +160,7 @@ bool c7222_pico_w_onboard_led_read(void) {
 		   "c7222_pico_w_onboard_led_read: call c7222_pico_w_onboard_led_init() first");
 #if defined(PICO_DEFAULT_LED_PIN)
 	return gpio_get(PICO_DEFAULT_LED_PIN);
-#elif defined(CYW43_WL_GPIO_LED_PIN)
+#elif defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	// No direct read API; track state externally if needed.
 	return false;
 #else

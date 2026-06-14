@@ -119,20 +119,21 @@ function(c7222_define_development_interface)
         ELEC_C7222
     )
 
-    if(C7222_PLATFORM STREQUAL "rpi_pico2w" OR PLATFORM_HAS_CYW43)
+    if(PLATFORM_HAS_CYW43)
         target_link_libraries(c7222_development INTERFACE
             pico_cyw43_arch_sys_freertos
         )
         target_compile_definitions(c7222_development INTERFACE
+            C7222_PLATFORM_HAS_CYW43=1
             CYW43_LWIP=0
         )
     endif()
 
-    if(C7222_ENABLE_BLE)
+    if(C7222_ENABLE_BLE AND C7222_PLATFORM_USES_PICO_SDK)
         target_link_libraries(c7222_development INTERFACE
             pico_btstack_ble
         )
-        if(C7222_PLATFORM STREQUAL "rpi_pico2w" OR PLATFORM_HAS_CYW43)
+        if(PLATFORM_HAS_CYW43)
             target_link_libraries(c7222_development INTERFACE
                 pico_btstack_cyw43
             )
@@ -257,7 +258,10 @@ function(c7222_configure_app_target target_name app_lib)
 
     # Optionally compile app GATT profiles into generated headers.
     get_property(_gatt_files TARGET ${app_lib} PROPERTY GATT_FILES)
-    if(C7222_ENABLE_BLE AND _gatt_files AND NOT _gatt_files STREQUAL "NOTFOUND")
+    if(C7222_ENABLE_BLE
+       AND C7222_PLATFORM_USES_PICO_SDK
+       AND _gatt_files
+       AND NOT _gatt_files STREQUAL "NOTFOUND")
         foreach(_app_gatt_file IN LISTS _gatt_files)
             pico_btstack_make_gatt_header(${target_name} PRIVATE "${_app_gatt_file}")
         endforeach()

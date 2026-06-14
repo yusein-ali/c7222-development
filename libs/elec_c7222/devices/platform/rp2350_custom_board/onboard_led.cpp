@@ -3,7 +3,10 @@
 
 #include "platform.hpp"
 
+#include "hardware/gpio.h"
+#if defined(C7222_PLATFORM_HAS_CYW43)
 #include "pico/cyw43_arch.h"
+#endif
 namespace c7222 {
 
 
@@ -18,7 +21,7 @@ bool OnBoardLED::Initialize() {
 	initialized_ = true;
 	state_ = false;
 	return true;
-#elif defined(CYW43_WL_GPIO_LED_PIN)
+#elif defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	// initialize the CYW43 architecture if not already done by the platform (e.g., for BLE usage).
 	initialized_ = true;
 	Set(false);
@@ -39,7 +42,7 @@ void OnBoardLED::Set(bool on) {
 	}
 #if defined(PICO_DEFAULT_LED_PIN)
 	gpio_put(PICO_DEFAULT_LED_PIN, on);
-#elif defined(CYW43_WL_GPIO_LED_PIN)
+#elif defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, on);
 #endif
 	state_ = on;

@@ -6,15 +6,19 @@
 
 #include "pico/stdlib.h"
 #include "pico/time.h"
+#if defined(C7222_PLATFORM_HAS_CYW43)
 #include "pico/cyw43_arch.h"
+#if defined(C7222_ENABLE_BLE)
 #include "ble/le_device_db_tlv.h"
 #include "btstack_tlv.h"
 #include "btstack_tlv_none.h"
+#endif
+#endif
 
 #include "c7222_pico_w_board.hpp"
 
 #define C7222_HAS_FREERTOS 0
-#if defined(CYW43_WL_GPIO_LED_PIN) && __has_include("FreeRTOS.h")
+#if defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN) && __has_include("FreeRTOS.h")
 #undef C7222_HAS_FREERTOS
 #define C7222_HAS_FREERTOS 1
 #include "FreeRTOS.h"
@@ -23,7 +27,7 @@
 #endif
 
 namespace {
-	#if defined(CYW43_WL_GPIO_LED_PIN)
+	#if defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	#if C7222_HAS_FREERTOS
 static bool cyw43_init_timer_started = false;
 static bool timer_run = false;
@@ -40,6 +44,7 @@ static void cyw43_arch_init_timer_callback(TimerHandle_t timer) {
 	}
 }
 void DisableBtstackPersistenceStorage() {
+#if defined(C7222_ENABLE_BLE)
 	static bool persistence_disabled = false;
 	if(persistence_disabled) {
 		return;
@@ -49,6 +54,7 @@ void DisableBtstackPersistenceStorage() {
 	btstack_tlv_set_instance(tlv_none, nullptr);
 	le_device_db_tlv_configure(tlv_none, nullptr);
 	persistence_disabled = true;
+#endif
 }
 #endif
 #endif
@@ -59,7 +65,7 @@ namespace c7222 {
 
 
 bool Platform::EnsureArchInitialized() {
-#if defined(CYW43_WL_GPIO_LED_PIN)
+#if defined(C7222_PLATFORM_HAS_CYW43) && defined(CYW43_WL_GPIO_LED_PIN)
 	if (arch_initialized_) {
 		return true;
 	}

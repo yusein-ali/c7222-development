@@ -15,13 +15,19 @@
 #include <memory>
 #include <chrono>
 
-#include "c7222_pico_w_board.hpp"
-#include "onboard_led.hpp"
 #include "onchip_temperature_sensor.hpp"
 
 #include "led.hpp"
 #include "button.hpp"
 #include "pwm.hpp"
+
+#if defined(C7222_HAS_ONBOARD_LED)
+#include "onboard_led.hpp"
+#endif
+
+#if defined(C7222_HAS_PICO_W_BOARD)
+#include "c7222_pico_w_board.hpp"
+#endif
 
 
 
@@ -188,9 +194,11 @@ class Platform: public NonCopyableNonMovable {
 	/**
 	 * @brief Access the on-board LED singleton.
 	 */
+#if defined(C7222_HAS_ONBOARD_LED)
 	OnBoardLED* GetOnBoardLed(){
 		return OnBoardLED::GetInstance();
 	}
+#endif
 
 	/**
 	 * @brief Access the on-chip temperature sensor.
@@ -217,6 +225,7 @@ class Platform: public NonCopyableNonMovable {
 	/**
 	 * @brief Access the PicoWBoard singleton.
 	 */
+#if defined(C7222_HAS_PICO_W_BOARD)
 	PicoWBoard* GetPicoWBoard() {
 		return PicoWBoard::GetInstance();
 	}
@@ -292,6 +301,7 @@ class Platform: public NonCopyableNonMovable {
 	void LedOff(PicoWBoard::LedId id) {
 		GetPicoWBoard()->GetLed(id).Off();
 	}
+#endif
 
 	/**
 	 * @brief Return true if platform initialization has completed.

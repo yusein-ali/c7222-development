@@ -6,6 +6,12 @@ if(NOT C7222_ENABLE_BLE)
     message(STATUS "C7222_EXAMPLES_BUILD requires C7222_ENABLE_BLE=ON for BLE examples. Skipping BLE GAP example...")
     return()
 endif()
+
+if(NOT C7222_HAS_PICO_W_BOARD)
+    message(STATUS "Skipping BLE GAP example (requires PICO_BOARD=pico2_w)")
+    return()
+endif()
+
 add_library(C7222_EXAMPLE_BLE_GAP INTERFACE)
 set_property(TARGET C7222_EXAMPLE_BLE_GAP PROPERTY TARGET_NAME "example-ble-gap")
 set_property(TARGET C7222_EXAMPLE_BLE_GAP PROPERTY TARGET_PATH "${CMAKE_CURRENT_LIST_DIR}")

@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <ostream>
 
-#include <bluetooth_gatt.h>  // For BTstack defined UUIDs
 namespace c7222 {
 
 /**
@@ -31,9 +30,6 @@ namespace c7222 {
  *       16-bit and 128-bit UUID values, ensuring compatibility with
  *       Bluetooth Low Energy (BLE) specifications and BTstack's
  *       attribute database layout.
- *
- * @note You can find BTstack defined UUIDs in "bluetooth_gatt.h" file in ".pico-sdk/sdk/2.2.0/lib/btstack/src/bluetooth_gatt.h"
- *
  *
  * Example (16-bit construction and access):
  * @code

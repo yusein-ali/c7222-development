@@ -24,7 +24,16 @@ if (EXISTS ${picoVscode})
 endif()
 # ==========================================================================
 
-set(PICO_BOARD pico2_w CACHE STRING "Board type")
+set(C7222_PLATFORM "rpi_pico2w" CACHE STRING "ELEC_C7222 platform implementation")
+set_property(CACHE C7222_PLATFORM PROPERTY STRINGS rpi_pico2w grader rp2350_custom_board)
+
+if(NOT DEFINED PICO_BOARD)
+    if(C7222_PLATFORM STREQUAL "rp2350_custom_board")
+        set(PICO_BOARD pico2 CACHE STRING "Board type")
+    else()
+        set(PICO_BOARD pico2_w CACHE STRING "Board type")
+    endif()
+endif()
 
 # ====================================================================================
 # OPTIONS

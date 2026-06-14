@@ -19,9 +19,37 @@ target_include_directories(ELEC_C7222_BLE INTERFACE
 )
 
 if(C7222_PLATFORM_USES_PICO_SDK)
-    target_include_directories(ELEC_C7222_BLE INTERFACE
-        "${ELEC_C7222_BLE_DIR}/platform/${C7222_PLATFORM_SOURCE_DIR}/config"
+    target_compile_definitions(ELEC_C7222_BLE INTERFACE
+        C7222_BLE_HAS_BTSTACK=1
     )
+
+    if(NOT DEFINED PICO_BTSTACK_PATH AND DEFINED PICO_SDK_PATH)
+        set(PICO_BTSTACK_PATH "${PICO_SDK_PATH}/lib/btstack")
+    endif()
+endif()
+
+if(C7222_PLATFORM_USES_PICO_SDK
+   AND DEFINED PICO_BTSTACK_PATH
+   AND EXISTS "${PICO_BTSTACK_PATH}/platform/freertos/btstack_run_loop_freertos.c")
+    target_sources(ELEC_C7222_BLE INTERFACE
+        "${PICO_BTSTACK_PATH}/platform/freertos/btstack_run_loop_freertos.c"
+    )
+    target_include_directories(ELEC_C7222_BLE INTERFACE
+        "${PICO_BTSTACK_PATH}/platform/freertos"
+    )
+endif()
+
+set(ELEC_C7222_BLE_PLATFORM_CONFIG_DIR
+    "${ELEC_C7222_BLE_DIR}/platform/${C7222_PLATFORM_SOURCE_DIR}/config")
+
+if(EXISTS "${ELEC_C7222_BLE_PLATFORM_CONFIG_DIR}/btstack_config.h")
+    target_include_directories(ELEC_C7222_BLE INTERFACE
+        "${ELEC_C7222_BLE_PLATFORM_CONFIG_DIR}"
+    )
+elseif(C7222_PLATFORM_USES_PICO_SDK)
+    message(FATAL_ERROR
+        "C7222_ENABLE_BLE=ON requires btstack_config.h for platform "
+        "'${C7222_PLATFORM}' at ${ELEC_C7222_BLE_PLATFORM_CONFIG_DIR}.")
 endif()
 
 include(${ELEC_C7222_BLE_DIR}/gap/gap.cmake)
