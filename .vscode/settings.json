@@ -28,6 +28,7 @@
     "cmake.configureOnOpen": true,
     "cmake.generator": "Ninja",
     "cmake.configureSettings": {
+        "C7222_PLATFORM": "rpi_pico2w",
         "CMAKE_MAKE_PROGRAM": "${env:HOME}/.pico-sdk/ninja/v1.12.1/ninja"
     },
     "cmake.cmakePath": "cmake",

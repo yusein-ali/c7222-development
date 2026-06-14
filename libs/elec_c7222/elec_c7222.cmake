@@ -2,6 +2,30 @@ set(ELEC_C7222_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 add_library(ELEC_C7222 INTERFACE)
 
+set(C7222_PLATFORM "rpi_pico2w" CACHE STRING "ELEC_C7222 platform implementation")
+set_property(CACHE C7222_PLATFORM PROPERTY STRINGS rpi_pico2w grader rp2350_custom_board)
+
+set(C7222_SUPPORTED_PLATFORMS rpi_pico2w grader rp2350_custom_board)
+list(FIND C7222_SUPPORTED_PLATFORMS "${C7222_PLATFORM}" C7222_PLATFORM_INDEX)
+if(C7222_PLATFORM_INDEX EQUAL -1)
+    message(FATAL_ERROR
+        "Unsupported C7222_PLATFORM='${C7222_PLATFORM}'. "
+        "Supported values are: ${C7222_SUPPORTED_PLATFORMS}")
+endif()
+
+if(C7222_PLATFORM STREQUAL "rpi_pico2w")
+    set(C7222_PLATFORM_SOURCE_DIR rpi_pico)
+    set(C7222_PLATFORM_USES_PICO_SDK TRUE)
+elseif(C7222_PLATFORM STREQUAL "grader")
+    set(C7222_PLATFORM_SOURCE_DIR grader)
+    set(C7222_PLATFORM_USES_PICO_SDK FALSE)
+elseif(C7222_PLATFORM STREQUAL "rp2350_custom_board")
+    set(C7222_PLATFORM_SOURCE_DIR rp2350_custom_board)
+    set(C7222_PLATFORM_USES_PICO_SDK TRUE)
+endif()
+
+message(STATUS "C7222_PLATFORM is defined: ${C7222_PLATFORM}")
+
 # Determine whether BLE support is enabled
 if (NOT DEFINED C7222_ENABLE_BLE)
     if(DEFINED PICO_BT_ENABLE_BLE)

@@ -1,16 +1,9 @@
 set(ELEC_C7222_BLE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-if(DEFINED PICO_SDK_PATH AND NOT PICO_SDK_PATH STREQUAL "")
-    file(GLOB ELEC_C7222_BLE_SOURCES
-        "${ELEC_C7222_BLE_DIR}/rpi_pico/*.cpp"
-        "${ELEC_C7222_BLE_DIR}/platform/rpi_pico/*.cpp"
-    )
-else()
-    file(GLOB ELEC_C7222_BLE_SOURCES
-        "${ELEC_C7222_BLE_DIR}/grader/*.cpp"
-        "${ELEC_C7222_BLE_DIR}/platform/grader/*.cpp"
-    )
-endif()
+file(GLOB ELEC_C7222_BLE_SOURCES
+    "${ELEC_C7222_BLE_DIR}/${C7222_PLATFORM_SOURCE_DIR}/*.cpp"
+    "${ELEC_C7222_BLE_DIR}/platform/${C7222_PLATFORM_SOURCE_DIR}/*.cpp"
+)
 
 file(GLOB ELEC_C7222_BLE_COMMON_SOURCES "${ELEC_C7222_BLE_DIR}/src/*.cpp")
 
@@ -25,9 +18,9 @@ target_include_directories(ELEC_C7222_BLE INTERFACE
     "${ELEC_C7222_BLE_DIR}/include"
 )
 
-if(DEFINED PICO_SDK_PATH AND NOT PICO_SDK_PATH STREQUAL "")
+if(C7222_PLATFORM_USES_PICO_SDK)
     target_include_directories(ELEC_C7222_BLE INTERFACE
-        "${ELEC_C7222_BLE_DIR}/platform/rpi_pico/config"
+        "${ELEC_C7222_BLE_DIR}/platform/${C7222_PLATFORM_SOURCE_DIR}/config"
     )
 endif()
 

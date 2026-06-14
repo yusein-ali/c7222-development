@@ -11,6 +11,7 @@
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
                 "CMAKE_BUILD_TYPE": "Debug",
+                "C7222_PLATFORM": "rpi_pico2w",
                 "CMAKE_MAKE_PROGRAM": "$env{HOME}/.pico-sdk/ninja/v1.12.1/ninja"
             }
         },
@@ -24,6 +25,7 @@
             "cacheVariables": {
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
                 "CMAKE_BUILD_TYPE": "Release",
+                "C7222_PLATFORM": "rpi_pico2w",
                 "CMAKE_MAKE_PROGRAM": "$env{HOME}/.pico-sdk/ninja/v1.12.1/ninja"
             }
         }
