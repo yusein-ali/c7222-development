@@ -112,7 +112,7 @@ function(c7222_define_development_interface)
     # Export common dependency link set.
     target_link_libraries(c7222_development INTERFACE
         pico_stdlib
-        pico_cyw43_arch_threadsafe_background
+        pico_cyw43_arch_sys_freertos
         hardware_adc
         hardware_clocks
         hardware_pwm

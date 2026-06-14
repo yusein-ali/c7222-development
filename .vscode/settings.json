@@ -27,6 +27,9 @@
     "cmake.automaticReconfigure": true,
     "cmake.configureOnOpen": true,
     "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "CMAKE_MAKE_PROGRAM": "${env:HOME}/.pico-sdk/ninja/v1.12.1/ninja"
+    },
     "cmake.cmakePath": "cmake",
     // "C_Cpp.debugShortcut": false,
     // "C_Cpp.formatting": "Disabled",
