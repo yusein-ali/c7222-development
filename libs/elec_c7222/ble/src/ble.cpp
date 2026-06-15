@@ -1,8 +1,6 @@
 #include "ble.hpp"
 
 #include <cassert>
-#include <cstdlib>
-#include <new>
 
 #include "platform.hpp"
 
@@ -15,40 +13,25 @@ constexpr std::uint32_t kBtstackRunLoopTaskPriorityOffset = 2;
 } // namespace
 #endif
 
-namespace {
-
-[[noreturn]] void BleFatal(const char* message) {
-	assert(false && message);
-	(void)message;
-	std::abort();
-}
-
-void BleRequire(bool condition, const char* message) {
-	if(!condition) {
-		BleFatal(message);
-	}
-}
-
-} // namespace
-
 Ble* Ble::instance_ = nullptr;
 
 Ble* Ble::GetInstance(bool enable_hci_logging, BtstackPort* btstack_port) {
 	if(instance_ == nullptr) {
-		instance_ = new (std::nothrow) Ble(btstack_port);
-		BleRequire(instance_ != nullptr, "Failed to allocate Ble singleton instance");
+		instance_ = new Ble(btstack_port);
 	} else if(btstack_port != nullptr) {
 		if(instance_->btstack_port_ == nullptr) {
 			instance_->btstack_port_ = btstack_port;
 		}
-		BleRequire(instance_->btstack_port_ == btstack_port,
-				   "Ble singleton was already created with a different BtstackPort");
+		assert(instance_->btstack_port_ == btstack_port &&
+			   "Ble singleton was already created with a different BtstackPort");
 	}
+	assert(instance_ != nullptr && "Failed to allocate Ble singleton instance");
 	// make sure that platform is initialized before enabling HCI logging, as it may be required for logging to work properly.
 	auto* platform = Platform::GetInstance();
-	BleRequire(platform != nullptr, "Platform singleton instance is null in Ble::GetInstance");
+	assert(platform != nullptr && "Platform singleton instance is null in Ble::GetInstance");
 	const bool platform_initialized = platform->EnsureArchInitialized();
-	BleRequire(platform_initialized, "Failed to initialize platform in Ble::GetInstance");
+	assert(platform_initialized && "Failed to initialize platform in Ble::GetInstance");
+	(void)platform_initialized;
 	// Enable HCI logging if requested (requires platform initialization).
 	if(enable_hci_logging) {
 		instance_->EnableHCILoggingToStdout();
@@ -57,8 +40,8 @@ Ble* Ble::GetInstance(bool enable_hci_logging, BtstackPort* btstack_port) {
 }
 
 void Ble::EnsureBtstackPortInitialized() {
-	BleRequire(btstack_port_ != nullptr, "Ble requires a non-null BtstackPort");
-	BleRequire(btstack_port_->Validate(), "BtstackPort validation failed");
+	assert(btstack_port_ != nullptr && "Ble requires a non-null BtstackPort");
+	assert(btstack_port_->Validate() && "BtstackPort validation failed");
 	if(!btstack_port_->IsInitialized()) {
 #if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
 		if(btstack_port_->UsesFreeRtosRunLoop()) {
@@ -80,7 +63,7 @@ void Ble::EnsureBtstackPortInitialized() {
 
 #if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
 void Ble::StartBtstackRunLoopTask() {
-	BleRequire(btstack_port_ != nullptr, "Ble requires a non-null BtstackPort");
+	assert(btstack_port_ != nullptr && "Ble requires a non-null BtstackPort");
 	if(btstack_run_loop_task_.IsValid()) {
 		while(!btstack_run_loop_ready_.load() && !btstack_run_loop_failed_.load()) {
 			FreeRtosTask::Delay(FreeRtosTask::MsToTicks(1));
