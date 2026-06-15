@@ -41,6 +41,10 @@ namespace {
 
 constexpr uint16_t kEnvironmentalSensingServiceUuid = 0x181A;
 constexpr uint16_t kTemperatureCharacteristicUuid = 0x2A6E;
+constexpr c7222::BleAddress::RawAddress kStaticRandomAddress = {
+	0x01, 0x00, 0x50, 0x23, 0x22, 0xC7};
+static_assert((kStaticRandomAddress[5] & 0xC0) == 0xC0,
+			  "Static random BLE addresses must have the two most significant bits set");
 
 } // namespace
 
@@ -104,6 +108,9 @@ static void on_turn_on() {
 	printf("Bluetooth Turned On\n");
 	auto* ble = c7222::Ble::GetInstance();
 	auto* gap = ble->GetGap();
+
+	ble->SetRandomAddress(c7222::BleAddress(c7222::BleAddress::AddressType::kLeRandom,
+											kStaticRandomAddress));
 
 	// Register GAP event handler for logging.
 	gap->AddEventHandler(gap_event_handler);
@@ -281,7 +288,7 @@ static void on_turn_on() {
 	// Create the BLE application task.
 	static c7222::FreeRtosTask ble_task;
 	(void)ble_task.Initialize("BLE_App",
-							  1024,
+							  4096,
 							  c7222::FreeRtosTask::IdlePriority() + 1,
 							  ble_app_task,
 							  nullptr);
