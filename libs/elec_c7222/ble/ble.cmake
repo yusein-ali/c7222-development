@@ -37,6 +37,10 @@ if(C7222_PLATFORM_USES_PICO_SDK
     target_include_directories(ELEC_C7222_BLE INTERFACE
         "${PICO_BTSTACK_PATH}/platform/freertos"
     )
+    target_compile_definitions(ELEC_C7222_BLE INTERFACE
+        C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP=1
+    )
+    target_link_libraries(ELEC_C7222_BLE INTERFACE ELEC_C7222_FREERTOS_WRAPPERS)
 endif()
 
 set(ELEC_C7222_BLE_PLATFORM_CONFIG_DIR

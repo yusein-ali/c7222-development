@@ -5,6 +5,10 @@
 #ifndef ELEC_C7222_BLE_H_
 #define ELEC_C7222_BLE_H_
 
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+#include <atomic>
+#endif
+#include <cassert>
 #include <functional>
 #include <string>
 #include <utility>
@@ -13,6 +17,10 @@
 #include "attribute_server.hpp"
 #include "ble_address.hpp"
 #include "ble_error.hpp"
+#include "btstack_port.hpp"
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+#include "freertos_task.hpp"
+#endif
 #include "gap.hpp"
 #include "non_copyable.hpp"
 #include "security_manager.hpp"
@@ -164,8 +172,17 @@ class Ble : public NonCopyableNonMovable {
 	 */
 	/**
 	 * @brief Get the singleton instance.
+	 *
+	 * The first call must provide a non-null BTstack port. Later calls may omit
+	 * it and will return the existing singleton.
 	 */
-	static Ble* GetInstance(bool enable_hci_logging = false);
+	static Ble* GetInstance(BtstackPort* btstack_port = nullptr,
+							bool enable_hci_logging = false);
+
+	/**
+	 * @brief Get the singleton instance while only changing HCI logging.
+	 */
+	static Ble* GetInstance(bool enable_hci_logging);
 	/** @} */
 
 	/**
@@ -266,6 +283,22 @@ class Ble : public NonCopyableNonMovable {
 	 */
 	const AttributeServer* GetAttributeServer() const {
 		return attribute_server_;
+	}
+
+	/**
+	 * @brief Access the BTstack port used by this BLE instance.
+	 */
+	BtstackPort& GetBtstackPort() {
+		assert(btstack_port_ != nullptr && "Ble has no BTstack port");
+		return *btstack_port_;
+	}
+
+	/**
+	 * @brief Access the BTstack port used by this BLE instance.
+	 */
+	const BtstackPort& GetBtstackPort() const {
+		assert(btstack_port_ != nullptr && "Ble has no BTstack port");
+		return *btstack_port_;
 	}
 	/** @} */
 
@@ -634,7 +667,7 @@ class Ble : public NonCopyableNonMovable {
 	/** @} */
 
    private:
-	Ble();
+	explicit Ble(BtstackPort& btstack_port);
 	virtual ~Ble();
 
 	/**
@@ -675,6 +708,18 @@ class Ble : public NonCopyableNonMovable {
 	 */
 	AttributeServer* attribute_server_ = nullptr;
 	/**
+	 * @brief Platform/controller BTstack port required before stack startup.
+	 */
+	BtstackPort* btstack_port_ = nullptr;
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+	/**
+	 * @brief Dedicated task that owns BTstack's FreeRTOS run loop.
+	 */
+	FreeRtosTask btstack_run_loop_task_;
+	std::atomic<bool> btstack_run_loop_ready_{false};
+	std::atomic<bool> btstack_run_loop_failed_{false};
+#endif
+	/**
 	 * @brief True when HCI logging is enabled.
 	 */
 	bool hci_logging_enabled_ = false;
@@ -693,6 +738,16 @@ class Ble : public NonCopyableNonMovable {
 	 * @brief Ensure SM event handler is registered with the platform.
 	 */
 	void EnsureSmEventHandlerRegistered();
+
+	/**
+	 * @brief Validate and initialize the configured BTstack port once.
+	 */
+	void EnsureBtstackPortInitialized();
+
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+	void StartBtstackRunLoopTask();
+	void BtstackRunLoopTaskBody();
+#endif
 };
 
 }  // namespace c7222

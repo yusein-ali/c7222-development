@@ -1,6 +1,9 @@
 #include "btstack_port.hpp"
 
 #include <cassert>
+#include <cstdint>
+
+#include "pico/time.h"
 
 #if defined(C7222_BLE_HAS_BTSTACK)
 extern "C" {
@@ -10,6 +13,12 @@ extern "C" {
 #include "hci.h"
 
 const btstack_run_loop_t* btstack_run_loop_freertos_get_instance(void);
+}
+#endif
+
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+extern "C" uint32_t hal_time_ms(void) {
+	return static_cast<uint32_t>(to_ms_since_boot(get_absolute_time()));
 }
 #endif
 
@@ -39,9 +48,8 @@ BtstackPortTables BtstackPortTables::CreateWithFreeRtosRunLoop(
 }
 
 bool BtstackPort::Apply() {
-	if(!Validate()) {
-		assert(false && "BtstackPort::Apply requires at least one configured BTstack table");
-		return false;
+	if(!GetTables().Validate()) {
+		return true;
 	}
 
 	const auto& tables = GetTables();
@@ -85,6 +93,26 @@ bool BtstackPort::Apply() {
 	}
 
 	return true;
+#endif
+}
+
+bool BtstackPort::Validate() const {
+	// Pico W/CYW43 BTstack setup is owned by the Pico SDK CYW43 BTstack port.
+	// Empty C7222 BTstack tables are therefore valid for this platform.
+	return true;
+}
+
+bool BtstackPort::UsesFreeRtosRunLoop() const {
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+	return GetRunLoop() == btstack_run_loop_freertos_get_instance();
+#else
+	return false;
+#endif
+}
+
+void BtstackPort::ExecuteRunLoop() {
+#if defined(C7222_BLE_HAS_BTSTACK_FREERTOS_RUN_LOOP)
+	btstack_run_loop_execute();
 #endif
 }
 

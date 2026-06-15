@@ -46,6 +46,7 @@ BleError Ble::TurnOn() {
 		C7222_BLE_DEBUG_PRINT("[BLE] TurnOn: already on\n");
 		return BleError::kSuccess;
 	}
+	EnsureBtstackPortInitialized();
 	// intialize L2CAP if not already done
 	auto context = static_cast<BleContext*>(context_);
 	if(!context->l2cap_initialized) {
@@ -202,10 +203,11 @@ void Ble::DumpAttributeServerContext() {
 #endif
 }
 
-Ble::Ble()
+Ble::Ble(BtstackPort& btstack_port)
 	: gap_(Gap::GetInstance()),
 	  security_manager_(nullptr),
-	  attribute_server_(nullptr) {
+	  attribute_server_(nullptr),
+	  btstack_port_(&btstack_port) {
 	auto context = new BleContext();
 	context->hci_event_registration.callback = &ble_packet_handler;
 	context_ = context;

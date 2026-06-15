@@ -355,18 +355,33 @@ class BtstackPort : public NonCopyableNonMovable {
 	}
 
 	/**
+	 * @brief Check whether this port selected BTstack's FreeRTOS run loop.
+	 *
+	 * Platforms that link BTstack's FreeRTOS run-loop implementation need a
+	 * dedicated task to execute it. SDK-owned ports that do not use the C7222
+	 * run-loop table should return false.
+	 */
+	bool UsesFreeRtosRunLoop() const;
+
+	/**
+	 * @brief Execute the selected BTstack run loop.
+	 *
+	 * This blocks until the run loop exits and is intended to be called from the
+	 * dedicated BTstack task when `UsesFreeRtosRunLoop()` returns true.
+	 */
+	void ExecuteRunLoop();
+
+	/**
 	 * @brief Validate the configured BTstack table bundle.
 	 *
-	 * This delegates to `BtstackPortTables::Validate()` and intentionally
-	 * performs only the common non-empty check. Concrete ports can add stricter
-	 * requirements, such as requiring both a run loop and HCI transport.
+	 * The validation policy is platform-specific. Custom controller ports
+	 * generally reject an entirely empty table bundle, while SDK-owned ports can
+	 * accept empty C7222 tables because their BTstack setup is provided
+	 * elsewhere.
 	 *
-	 * @return false when the port has an entirely empty table bundle; true
-	 * otherwise.
+	 * @return true when the active platform considers the port usable.
 	 */
-	virtual bool Validate() const {
-		return tables_.Validate();
-	}
+	virtual bool Validate() const;
 
   protected:
 	/**
