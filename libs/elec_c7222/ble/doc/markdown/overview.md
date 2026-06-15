@@ -5,6 +5,7 @@
 \subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2gatt "BLE Library Design Overview: GATT/ATT Module Overview"
 \subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2security-manager "BLE Library Design Overview: Security Manager Module Overview"
 \subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2creating-profiles "BLE Library Design Overview: Creating GATT Profiles"
+\subpage md_libs_2elec__c7222_2ble_2doc_2markdown_2custom-board-setup "BLE Library Design Overview: Custom Board Setup (RP2350)"
 </div>
 
 This library wraps BTstack with C++ classes to provide a more structured, object‑oriented BLE API while keeping BTstack’s behavior and constraints visible. It is intentionally thin: it does not hide the underlying ATT/GATT and HCI concepts, and it expects the application to manage event dispatch and object lifetimes carefully.
@@ -124,6 +125,64 @@ The main configuration file is `btstack_config.h`.
 
 - `platform/rpi_pico` provides the real BTstack integration for Pico W.
 - `platform/grader` offers a lightweight stub for grading/testing.
+
+## Examples
+
+| Example | Target | Doc |
+|---------|--------|-----|
+| GAP advertising + event handling | `example-ble-gap` | `doc/markdown/examples/gap.md` |
+| Pico W GATT server + security | `example-ble-gatt-server` | `doc/markdown/examples/gatt-server.md` |
+| Custom service READ + WRITE | `example-ble-custom-service-rw` | `doc/markdown/examples/custom-service-rw.md` |
+| Custom service NOTIFY | `example-ble-custom-service-notify` | `doc/markdown/examples/custom-service-notify.md` |
+| Security Manager (Just Works) | `example-ble-security-manager` | `doc/markdown/examples/security-manager.md` |
+| RP2350 custom board GATT server | `example-ble-rp2350-custom-board-gatt-server` | `doc/markdown/examples/rp2350-custom-board-gatt-server.md` |
+
+### GAP Example
+
+`libs/elec_c7222/examples/ble/gap/`
+
+Minimal advertising demo with no GATT server. Shows how to configure advertising data,
+register a GAP event handler, and update manufacturer-specific data in a loop.
+
+### Pico W GATT Server
+
+`libs/elec_c7222/examples/ble/gatt-server/`
+
+Runs on the Raspberry Pi Pico W. BLE transport is provided by the CYW43 module via
+`pico_cyw43_arch_sys_freertos`. No custom `BtstackPort` is needed. Demonstrates
+SecurityManager + AttributeServer + periodic temperature characteristic updates.
+
+### Custom Service READ + WRITE
+
+`libs/elec_c7222/examples/ble/custom-service-rw/`
+
+Minimal pattern for a custom vendor service with a readable and a writable characteristic.
+
+### Custom Service NOTIFY
+
+`libs/elec_c7222/examples/ble/custom-service-notify/`
+
+Minimal pattern for a NOTIFY characteristic, including CCCD handling and periodic value
+updates.
+
+### Security Manager (Just Works)
+
+`libs/elec_c7222/examples/ble/security-manager/`
+
+Demonstrates "Just Works" pairing and how `READ_ENCRYPTED` characteristics are blocked
+before pairing and accessible after.
+
+### RP2350 Custom Board GATT Server
+
+`libs/elec_c7222/examples/ble/rp2350-custom-board-gatt-server/`
+
+Runs on a custom RP2350 board where a separate BLE controller is connected over UART
+(H4 protocol, 921600 bps, hardware flow control). The key difference from the Pico W
+example is the `RpiBdBtstackPort` subclass which supplies the HCI transport and FreeRTOS
+run loop tables to the `Ble` singleton. See
+\ref md_libs_2elec__c7222_2ble_2doc_2markdown_2custom-board-setup "custom-board-setup.md"
+for a full walkthrough of the port implementation, initialization order, GATT profile,
+and FreeRTOS task sizing.
 
 ## Usage Notes to Avoid Common Pitfalls
 
