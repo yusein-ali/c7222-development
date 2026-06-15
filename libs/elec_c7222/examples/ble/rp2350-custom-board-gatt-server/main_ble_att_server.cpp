@@ -1,6 +1,6 @@
 /**
  * @file main_ble_att_server.cpp
- * @brief BLE GATT server example with AttributeServer and SecurityManager.
+ * @brief RP2350 custom board BLE GATT server example with AttributeServer and SecurityManager.
  *
  * Demonstrates how to:
  * - Enable the AttributeServer with a GATT profile database.
@@ -28,20 +28,22 @@
 #include "freertos_task.hpp"
 #include "freertos_timer.hpp"
 #include "gap.hpp"
-#include "onboard_led.hpp"
 #include "onchip_temperature_sensor.hpp"
-#include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 #include "pico/time.h"
 #include "platform.hpp"
+#include "rpi_bd_btstack_port.hpp"
 #include "security_event_handler.hpp"
 #include "security_manager.hpp"
 #include "app_profile.h"
-#include "bluetooth_gatt.h"
 
+namespace {
 
-/// On-board LED used as a heartbeat while advertising.
-static c7222::OnBoardLED* onboard_led = nullptr;
+constexpr uint16_t kEnvironmentalSensingServiceUuid = 0x181A;
+constexpr uint16_t kTemperatureCharacteristicUuid = 0x2A6E;
+
+} // namespace
+
 /// Temperature sensor wrapper used to read on-chip temperature.
 static c7222::OnChipTemperatureSensor* temp_sensor = nullptr;
 /// Periodic timer used to update the temperature characteristic.
@@ -56,6 +58,8 @@ static c7222::Platform* platform = nullptr;
 static c7222::SecurityManager* security_manager = nullptr;
 /// AttributeServer instance providing GATT database access.
 static c7222::AttributeServer* att_server = nullptr;
+/// BTstack port for the RP2350 custom board controller transport.
+static RpiBdBtstackPort btstack_port;
 
 /// Helper that binds characteristic event handlers for logging.
 static BleOnchipTemperature* ble_temperature_manager = nullptr;
@@ -71,12 +75,9 @@ static GapEventHandler gap_event_handler;
  * the temperature characteristic when a connection is active.
  */
 static void timer_callback() {
-	assert(onboard_led != nullptr && "OnBoardLED instance is null in timer callback!");
 	assert(temp_sensor != nullptr && "OnChipTemperatureSensor instance is null in timer callback!");
 
 	auto temperature_c = temp_sensor->GetCelsius();
-
-	onboard_led->Toggle();
 
 	// Update the temperature characteristic if present.
 	if(temperature_characteristic != nullptr) {
@@ -111,7 +112,7 @@ static void on_turn_on() {
 	// Generate the packet using the advertisement data class.
 	ble->SetAdvertisementFlags(c7222::AdvertisementData::Flags::kLeGeneralDiscoverableMode |
 							   c7222::AdvertisementData::Flags::kBrEdrNotSupported);
-	ble->SetDeviceName("Pico2_BLE++");
+	ble->SetDeviceName("RP2350_Custom_BLE");
 
 	uint32_t value = 0x12345678;
 	adv_builder.Add(c7222::AdvertisementData(c7222::AdvertisementDataType::kManufacturerSpecific,
@@ -128,7 +129,7 @@ static void on_turn_on() {
 	}
 	// Start advertising.
 	gap->StartAdvertising();
-	printf("Advertising started as 'Pico2_BLE'...\n");
+	printf("Advertising started as 'RP2350_Custom_BLE'...\n");
 }
 
 // -------------------------------------------------------------------------
@@ -145,16 +146,11 @@ static void on_turn_on() {
 	(void) params;
 	
 	static uint32_t seconds = 0;
-	// intialize the Onboard LED and the on-chip temperature sensor, which will 
-	// be used in the timer callback and characteristic updates.
-	onboard_led = c7222::OnBoardLED::GetInstance();
+	// Initialize the on-chip temperature sensor used in characteristic updates.
 	temp_sensor = c7222::OnChipTemperatureSensor::GetInstance();
 
-	// initialize the onboard led and the temperature sensor
 	assert(temp_sensor != nullptr && "Temp sensor pointer is null at init call!");
-	assert(onboard_led != nullptr && "Onboard led instance is null at init call!");
 	temp_sensor->Initialize();
-	onboard_led->Initialize();
 
 	// Timer used for periodic temperature updates.
 	app_timer.Initialize("AppTimer",
@@ -162,7 +158,7 @@ static void on_turn_on() {
 						 c7222::FreeRtosTimer::Type::kPeriodic,
 						 std::bind(&timer_callback));
 
-	auto* ble = c7222::Ble::GetInstance(false);
+	auto* ble = c7222::Ble::GetInstance(false, &btstack_port);
 	auto* gap = ble->GetGap();
 	// Configure and enable Security Manager.
 	{
@@ -185,7 +181,7 @@ static void on_turn_on() {
 
 	// Verify the Environmental Sensing Service exists in the DB.
 	auto* service = att_server->FindServiceByUuid(
-		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
+		c7222::Uuid(kEnvironmentalSensingServiceUuid));
 	if(service != nullptr) {
 		std::cout << "Environmental Sensing Service found in ATT DB." << std::endl << *service
 				  << std::endl;
@@ -216,12 +212,12 @@ static void on_turn_on() {
 
 	// Resolve the temperature characteristic.
 	auto* temp_service = att_server->FindServiceByUuid(
-		c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_SERVICE_ENVIRONMENTAL_SENSING)));
+		c7222::Uuid(kEnvironmentalSensingServiceUuid));
 
 	if(temp_service != nullptr) {
 		std::cout << "Found Temperature Service!" << std::endl;
 		temperature_characteristic = temp_service->FindCharacteristicByUuid(
-			c7222::Uuid(static_cast<uint16_t>(ORG_BLUETOOTH_CHARACTERISTIC_TEMPERATURE)));
+			c7222::Uuid(kTemperatureCharacteristicUuid));
 		temperature_characteristic->SetUserDescription("Temperature");
 	} else {
 		std::cout << "Temperature Service not found!" << std::endl;
@@ -238,7 +234,7 @@ static void on_turn_on() {
 	std::cout << "Printing Attribute Server" << std::endl;
 	std::cout << *att_server << std::endl;
 
-	printf("CYW43 init complete. Powering up BTstack... here!\n");
+	printf("Platform init complete. Powering up BTstack...\n");
 	// Start BLE stack; on_turn_on() will begin advertising.
 	ble->SetOnBleStackOnCallback(on_turn_on);
 	ble->TurnOn();
@@ -262,7 +258,6 @@ static void on_turn_on() {
 			adb.Pop();
 			adb.Push(ad);
 			ble->SetAdvertisingData();
-			onboard_led->Toggle();
 		}
 	}
 }
@@ -274,14 +269,14 @@ static void on_turn_on() {
  * @brief Program entry point.
  */
 [[noreturn]] int main() {
-	// Initialize CYW43 Architecture platform (starts the SDK background worker).
+	// Initialize the RP2350 custom board platform.
 	platform = c7222::Platform::GetInstance();
 	if (!platform->Initialize()) {
-		assert(false && "Failed to initialize CYW43 architecture");
+		assert(false && "Failed to initialize RP2350 custom board platform");
 	}
 
 	
-	printf("Starting FreeRTOS BLE Example...\n");
+	printf("Starting RP2350 custom board FreeRTOS BLE GATT server example...\n");
 
 	// Create the BLE application task.
 	static c7222::FreeRtosTask ble_task;

@@ -9,8 +9,10 @@ message(STATUS "C7222_EXAMPLES_BUILD is defined: ${C7222_EXAMPLES_BUILD}")
 if(C7222_EXAMPLES_BUILD)
     set(C7222_EXAMPLES "")
 
-    include(${ELEC_C7222_EXAMPLES_DIR}/freertos-board-example/freertos-board-example.cmake)
-    include(${ELEC_C7222_EXAMPLES_DIR}/freertos-device-cpp/freertos-device-cpp.cmake)
+    if(C7222_HAS_PICO_W_BOARD)
+        include(${ELEC_C7222_EXAMPLES_DIR}/freertos-board-example/freertos-board-example.cmake)
+        include(${ELEC_C7222_EXAMPLES_DIR}/freertos-device-cpp/freertos-device-cpp.cmake)
+    endif()
     include(${ELEC_C7222_EXAMPLES_DIR}/ble/ble-examples.cmake)
 
     list(LENGTH C7222_EXAMPLES _c7222_examples_count)

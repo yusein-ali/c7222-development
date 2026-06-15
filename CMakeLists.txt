@@ -27,12 +27,12 @@ endif()
 set(C7222_PLATFORM "rpi_pico2w" CACHE STRING "ELEC_C7222 platform implementation")
 set_property(CACHE C7222_PLATFORM PROPERTY STRINGS rpi_pico2w grader rp2350_custom_board)
 
-if(NOT DEFINED PICO_BOARD)
-    if(C7222_PLATFORM STREQUAL "rp2350_custom_board")
-        set(PICO_BOARD pico2 CACHE STRING "Board type")
-    else()
-        set(PICO_BOARD pico2_w CACHE STRING "Board type")
-    endif()
+if(NOT DEFINED PICO_BOARD AND NOT C7222_PLATFORM STREQUAL "rp2350_custom_board")
+    set(PICO_BOARD pico2_w CACHE STRING "Board type")
+endif()
+
+if(C7222_PLATFORM STREQUAL "rp2350_custom_board")
+    include(${CMAKE_CURRENT_LIST_DIR}/libs/elec_c7222/examples/ble/rp2350-custom-board-gatt-server/board/rpi_bd_hub_mcu.cmake)
 endif()
 
 # ====================================================================================

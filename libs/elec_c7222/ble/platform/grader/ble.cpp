@@ -3,11 +3,11 @@
 
 namespace c7222 {
 
-Ble::Ble(BtstackPort& btstack_port)
+Ble::Ble(BtstackPort* btstack_port)
 	: gap_(Gap::GetInstance()),
 	  security_manager_(nullptr),
 	  attribute_server_(nullptr),
-	  btstack_port_(&btstack_port) {
+	  btstack_port_(btstack_port) {
 	C7222_BLE_DEBUG_PRINT("[BLE] Constructed (grader)\n");
 }
 

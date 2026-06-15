@@ -173,16 +173,12 @@ class Ble : public NonCopyableNonMovable {
 	/**
 	 * @brief Get the singleton instance.
 	 *
-	 * The first call must provide a non-null BTstack port. Later calls may omit
-	 * it and will return the existing singleton.
+	 * A BTstack port may be provided when the singleton is created, or attached
+	 * later by calling this function again with a non-null port. Calls that need
+	 * BTstack initialization assert if no port has been provided.
 	 */
-	static Ble* GetInstance(BtstackPort* btstack_port = nullptr,
-							bool enable_hci_logging = false);
-
-	/**
-	 * @brief Get the singleton instance while only changing HCI logging.
-	 */
-	static Ble* GetInstance(bool enable_hci_logging);
+	static Ble* GetInstance(bool enable_hci_logging = false,
+							BtstackPort* btstack_port = nullptr);
 	/** @} */
 
 	/**
@@ -667,7 +663,7 @@ class Ble : public NonCopyableNonMovable {
 	/** @} */
 
    private:
-	explicit Ble(BtstackPort& btstack_port);
+	explicit Ble(BtstackPort* btstack_port = nullptr);
 	virtual ~Ble();
 
 	/**

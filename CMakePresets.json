@@ -2,9 +2,9 @@
     "version": 8,
     "configurePresets": [
         {
-            "name": "Debug",
-            "displayName": "Pico - Debug",
-            "description": "Configure for Raspberry Pi Pico SDK and toolchain",
+            "name": "Debug-rpi-pico2w",
+            "displayName": "RPI Pico 2 W - Debug",
+            "description": "Configure Debug for the Raspberry Pi Pico 2 W platform",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "toolchainFile": "${sourceDir}/cmake/pico-toolchain-generic.cmake",
             "generator": "Ninja",
@@ -16,9 +16,9 @@
             }
         },
         {
-            "name": "Release",
-            "displayName": "Pico - Release",
-            "description": "Configure for Raspberry Pi Pico SDK and toolchain",
+            "name": "Release-rpi-pico2w",
+            "displayName": "RPI Pico 2 W - Release",
+            "description": "Configure Release for the Raspberry Pi Pico 2 W platform",
             "binaryDir": "${sourceDir}/build/${presetName}",
             "toolchainFile": "${sourceDir}/cmake/pico-toolchain-generic.cmake",
             "generator": "Ninja",
@@ -26,6 +26,34 @@
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
                 "CMAKE_BUILD_TYPE": "Release",
                 "C7222_PLATFORM": "rpi_pico2w",
+                "CMAKE_MAKE_PROGRAM": "$env{HOME}/.pico-sdk/ninja/v1.12.1/ninja"
+            }
+        },
+        {
+            "name": "Debug-rp2350-custom-board",
+            "displayName": "RP2350 Custom Board - Debug",
+            "description": "Configure Debug for the RP2350 custom board platform",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/pico-toolchain-generic.cmake",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "C7222_PLATFORM": "rp2350_custom_board",
+                "CMAKE_MAKE_PROGRAM": "$env{HOME}/.pico-sdk/ninja/v1.12.1/ninja"
+            }
+        },
+        {
+            "name": "Release-rp2350-custom-board",
+            "displayName": "RP2350 Custom Board - Release",
+            "description": "Configure Release for the RP2350 custom board platform",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/pico-toolchain-generic.cmake",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
+                "CMAKE_BUILD_TYPE": "Release",
+                "C7222_PLATFORM": "rp2350_custom_board",
                 "CMAKE_MAKE_PROGRAM": "$env{HOME}/.pico-sdk/ninja/v1.12.1/ninja"
             }
         }
